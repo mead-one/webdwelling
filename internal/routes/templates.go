@@ -8,6 +8,9 @@ import (
     "sort"
     "strconv"
     "strings"
+
+    "golang.org/x/text/cases"
+    "golang.org/x/text/language"
 )
 
 type NavItem struct {
@@ -62,7 +65,10 @@ func GetNavItems() []NavItem {
             continue
         }
 
-        pages = append(pages, NavItem{Name: strings.Title(name), URL: "/" + name, Weight: weight})
+        // Set up language caser for casing titles
+        caser := cases.Title(language.BritishEnglish)
+
+        pages = append(pages, NavItem{Name: caser.String(name), URL: "/" + name, Weight: weight})
 
         sort.Slice(pages, func(i, j int) bool {
             if pages[i].Weight == pages[j].Weight {
