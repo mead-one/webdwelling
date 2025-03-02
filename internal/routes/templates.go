@@ -50,7 +50,7 @@ func GetNavItems() []NavItem {
                 for _, part := range parts {
                     part = strings.TrimSpace(strings.Trim(part, "<!-- -->"))
                     if strings.HasPrefix(part, "nav:") {
-                        include = strings.TrimSpace(strings.TrimPrefix(part, "nav:"))
+                        include = strings.TrimSpace(strings.TrimPrefix(part, "nav:")) == "include"
                     } else if strings.HasPrefix(part, "weight:") {
                         weight, _ = strconv.Atoi(strings.TrimSpace(strings.TrimPrefix(part, "weight:")))
                     }
