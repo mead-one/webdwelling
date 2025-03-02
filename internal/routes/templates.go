@@ -49,6 +49,7 @@ func GetNavItems() []NavItem {
 
             // Extract metadata
             if strings.Contains(line, "nav:") {
+                line = strings.TrimSpace(strings.Trim(line, "<!-- -->"))
                 for len(line) > 0 {
                     var part string
                     part, line, _ = strings.Cut(line, ",")
