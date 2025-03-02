@@ -49,9 +49,9 @@ func GetNavItems() []NavItem {
 
             // Extract metadata
             if strings.Contains(line, "nav:") {
-                parts := strings.Split(line, ",")
-                for _, part := range parts {
-                    part = strings.TrimSpace(strings.Trim(part, "<!-- -->"))
+                for len(line) > 0 {
+                    var part string
+                    part, line, _ = strings.Cut(line, ",")
                     if strings.HasPrefix(part, "nav:") {
                         include = strings.TrimSpace(strings.TrimPrefix(part, "nav:")) == "include"
                     } else if strings.HasPrefix(part, "weight:") {
