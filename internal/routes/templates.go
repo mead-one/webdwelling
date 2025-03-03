@@ -45,7 +45,7 @@ func GetNavItems() []NavItem {
         name := strings.TrimSuffix(base, ".html")
 
         // Exclude the base template
-        if name == "header" || name == "footer" {
+        if name == "header" || name == "footer" || name == "login" {
             continue
         }
 
