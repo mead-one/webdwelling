@@ -2,24 +2,46 @@
 package routes
 
 import (
+    "github.com/cjm-1/webdwelling/internal/auth"
+)
+
+import (
     "net/http"
 
     "github.com/labstack/echo/v4"
 )
 
-func Index(c echo.Context) error {
-    return c.String(http.StatusOK, "Hello, World!")
-}
+func RegisterRoutes(e *echo.Echo, templatesDir string) {
+    renderer := TemplateRenderer(templatesDir)
+    e.Renderer = renderer
 
-func Bookmarks(c echo.Context) error {
-    return c.String(http.StatusOK, "Bookmarks")
-}
+    navItems := GetNavItems()
 
-func CreateBookmark(c echo.Context) error {
-    title := c.FormValue("title");
-    url := c.FormValue("url");
+    // Route / to rendered homepage
+    e.GET("/", func(c echo.Context) error {
+        return c.Render(http.StatusOK, "home.html", map[string]interface{}{
+            "title": "Home",
+            "NavItems": navItems,
+        })
+    })
 
-    // TODO: Return to /bookmarks, with success message
-    return c.String(http.StatusOK, "Create Bookmark: " + title + " (" + url + ")")
+    e.GET("/login", func(c echo.Context) error {
+        return c.Render(http.StatusOK, "login.html", map[string]interface{}{
+            "title": "Login",
+            "NavItems": navItems,
+        })
+    })
+
+    e.POST("/login", auth.Login)
+
+    // Route all nav items to rendered nav item
+    // for _, navItem := range navItems {
+    //     e.GET(navItem.URL, func(c echo.Context) error {
+    //         return c.Render(http.StatusOK, navItem.Name + ".html", map[string]interface{}{
+    //             "title": navItem.Name,
+    //             "NavItems": navItems,
+    //         })
+    //     })
+    // }
 }
 

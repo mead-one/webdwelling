@@ -2,6 +2,8 @@
 package routes
 
 import (
+    "io"
+    "html/template"
     "bufio"
     "os"
     "path/filepath"
@@ -9,9 +11,24 @@ import (
     "strconv"
     "strings"
 
+    "github.com/labstack/echo/v4"
     "golang.org/x/text/cases"
     "golang.org/x/text/language"
 )
+
+type Template struct {
+    templates *template.Template
+}
+
+func (t *Template) Render(w io.Writer, name string, data interface{}, c echo.Context) error {
+    return t.templates.ExecuteTemplate(w, name, data)
+}
+
+func TemplateRenderer(templatesDir string) *Template {
+    return &Template{
+        templates: template.Must(template.ParseGlob(filepath.Join(templatesDir, "*.html"))),
+    }
+}
 
 type NavItem struct {
     Name string
@@ -21,20 +38,20 @@ type NavItem struct {
 
 func GetNavItems() []NavItem {
     var pages []NavItem
-    files, _ := filepath.Glob("templates/*.html")
+    files, _ := filepath.Glob(filepath.Join("web", "templates", "*.html"))
 
     for _, file := range files {
         base := filepath.Base(file)
         name := strings.TrimSuffix(base, ".html")
 
         // Exclude the base template
-        if name == "base" {
+        if name == "header" || name == "footer" {
             continue
         }
 
         // Default values
-        include := true
-        weight := 100
+        var include bool = true
+        var weight int = 100
 
         // Read comment on first line
         f, err := os.Open(file)
