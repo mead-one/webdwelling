@@ -2,6 +2,7 @@
 package routes
 
 import (
+    "fmt"
     "io"
     "html/template"
     "bufio"
@@ -41,16 +42,22 @@ func GetNavItems() []NavItem {
     files, _ := filepath.Glob(filepath.Join("web", "templates", "*.html"))
 
     for _, file := range files {
-        base := filepath.Base(file)
-        name := strings.TrimSuffix(base, ".html")
+        var base string = filepath.Base(file)
+        var name string = strings.TrimSuffix(base, ".html")
+        var url string 
+        if name == "home" {
+            url = "/"
+        } else {
+            url = "/" + name
+        }
 
-        // Exclude the base template
+        // Exclude the partial templates and login page
         if name == "header" || name == "footer" || name == "login" {
             continue
         }
 
         // Default values
-        var include bool = true
+        var include bool = false
         var weight int = 100
 
         // Read comment on first line
@@ -70,6 +77,8 @@ func GetNavItems() []NavItem {
                 for len(line) > 0 {
                     var part string
                     part, line, _ = strings.Cut(line, ",")
+                    part = strings.TrimSpace(part)
+
                     if strings.HasPrefix(part, "nav:") {
                         include = strings.TrimSpace(strings.TrimPrefix(part, "nav:")) == "include"
                     } else if strings.HasPrefix(part, "weight:") {
@@ -86,15 +95,17 @@ func GetNavItems() []NavItem {
         // Set up language caser for casing titles
         caser := cases.Title(language.BritishEnglish)
 
-        pages = append(pages, NavItem{Name: caser.String(name), URL: "/" + name, Weight: weight})
+        fmt.Println("Adding nav item: " + caser.String(name) + " with URL: " + "/" + name + " and weight: " + strconv.Itoa(weight))
 
-        sort.Slice(pages, func(i, j int) bool {
-            if pages[i].Weight == pages[j].Weight {
-                return pages[i].Name < pages [j].Name
-            }
-            return pages[i].Weight < pages[j].Weight
-        })
+        pages = append(pages, NavItem{Name: caser.String(name), URL: url, Weight: weight})
     }
+
+    sort.Slice(pages, func(i, j int) bool {
+        if pages[i].Weight == pages[j].Weight {
+            return pages[i].Name < pages [j].Name
+        }
+        return pages[i].Weight < pages[j].Weight
+    })
 
     return pages
 }

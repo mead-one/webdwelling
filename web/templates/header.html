@@ -9,6 +9,9 @@
         <header>
             <nav>
                 <ul>
+                    {{ range .NavItems }}
+                    <li><a href="{{ .URL }}">{{ .Name }}</a></li>
+                    {{ end }}
                 </ul>
             </nav>
         </header>
