@@ -96,6 +96,7 @@ type User struct {
     Subdirectory *string
     Admin bool
     CreatedAt string
+    LastLogin *string
 }
 
 func CreateUser(username string, password string, email *string, subdirectory *string, admin bool) (*User, error) {
@@ -128,7 +129,7 @@ func CreateUser(username string, password string, email *string, subdirectory *s
 func GetUserByUsername(username string) (*User, error) {
     user := &User{}
     err := DB.QueryRow("SELECT * FROM users WHERE username = ?", username).Scan(
-        &user.ID, &user.Username, &user.Password, &user.Email, &user.Subdirectory, &user.Admin, &user.CreatedAt,
+        &user.ID, &user.Username, &user.Password, &user.Email, &user.Subdirectory, &user.Admin, &user.CreatedAt, &user.LastLogin,
     )
     if err != nil {
         return nil, fmt.Errorf("Failed to get user by username: %v", err)
@@ -138,7 +139,9 @@ func GetUserByUsername(username string) (*User, error) {
 }
 
 func AuthenticateUser(username string, password string) (*User, error) {
+    fmt.Println("Authenticating user: " + username + " with password: " + password)
     user, err := GetUserByUsername(username)
+    // fmt.Println("Authenticating user: " + string(user.Username))
     if err != nil {
         return nil, err
     }
