@@ -34,6 +34,15 @@ func RegisterRoutes(e *echo.Echo, templatesDir string) {
 
     e.POST("/login", auth.Login)
 
+    e.GET("/logout", auth.Logout)
+
+    e.GET("/bookmarks", auth.RequireAuth(func(c echo.Context) error {
+        return c.Render(http.StatusOK, "bookmarks.html", map[string]interface{}{
+            "title": "Bookmarks",
+            "NavItems": navItems,
+        })
+    }))
+
     // Route all nav items to rendered nav item
     // for _, navItem := range navItems {
     //     e.GET(navItem.URL, func(c echo.Context) error {
