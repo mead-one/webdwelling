@@ -85,6 +85,18 @@ func RequireAuth(next echo.HandlerFunc) echo.HandlerFunc {
     }
 }
 
+// Check if a user is not logged in
+func RequireNoAuth(next echo.HandlerFunc) echo.HandlerFunc {
+    return func(c echo.Context) error {
+        err := checkCookie(c)
+        if err == nil {
+            return c.Redirect(http.StatusSeeOther, "/")
+        }
+
+        return next(c)
+    }
+}
+
 func checkCookie(c echo.Context) error {
     cookie, err := c.Cookie("jwt")
     if err != nil {
