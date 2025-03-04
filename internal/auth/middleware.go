@@ -61,7 +61,7 @@ func Login(c echo.Context) error {
     cookie.HttpOnly = true
     c.SetCookie(cookie)
 
-    return c.Redirect(http.StatusSeeOther, "/bookmarks")
+    return c.Redirect(http.StatusSeeOther, "/")
 }
 
 func IsUserAuthenticated(c echo.Context) bool {
