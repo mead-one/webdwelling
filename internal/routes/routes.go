@@ -7,6 +7,9 @@ import (
     "strings"
     "path/filepath"
 
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
+
     "github.com/cjm-1/webdwelling/internal/auth"
 )
 
@@ -21,6 +24,9 @@ func RegisterRoutes(e *echo.Echo, templatesDir string) {
     e.Renderer = renderer
     files, _ := filepath.Glob(filepath.Join(templatesDir, "*.html"))
 
+    // Set up language caser for casing titles
+    caser := cases.Title(language.BritishEnglish)
+
     // Route / to rendered homepage
     e.GET("/", func(c echo.Context) error {
         var isAuthenticated bool = auth.IsUserAuthenticated(c)
@@ -34,28 +40,6 @@ func RegisterRoutes(e *echo.Echo, templatesDir string) {
             "Username": username,
         })
     })
-
-
-
-    // e.GET("/login", func(c echo.Context) error {
-    //     var isAuthenticated bool = auth.IsUserAuthenticated(c)
-    //     navItems := GetNavItems(templatesDir, isAuthenticated)
-    //
-    //     return c.Render(http.StatusOK, "login.html", map[string]interface{}{
-    //         "title": "Login",
-    //         "NavItems": navItems,
-    //     })
-    // })
-
-    // e.GET("/bookmarks", auth.RequireAuth(func(c echo.Context) error {
-    //     var isAuthenticated bool = auth.IsUserAuthenticated(c)
-    //     navItems := GetNavItems(templatesDir, isAuthenticated)
-    //
-    //     return c.Render(http.StatusOK, "bookmarks.html", map[string]interface{}{
-    //         "title": "Bookmarks",
-    //         "NavItems": navItems,
-    //     })
-    // }))
 
     e.POST("/login", auth.Login)
 
@@ -88,25 +72,28 @@ func RegisterRoutes(e *echo.Echo, templatesDir string) {
 
         if requireAuth {
             e.GET(url, auth.RequireAuth(func(c echo.Context) error {
-                navItems := GetNavItems(templatesDir, true)
+                var isAuthenticated bool = auth.IsUserAuthenticated(c)
+                navItems := GetNavItems(templatesDir, isAuthenticated)
                 return c.Render(http.StatusOK, name + ".html", map[string]interface{}{
-                    "title": name,
+                    "title": caser.String(name),
                     "NavItems": navItems,
                 })
             }))
         } else if hideIfAuth {
-            navItems := GetNavItems(templatesDir, false)
             e.GET(url, auth.RequireNoAuth(func(c echo.Context) error {
+                var isAuthenticated bool = auth.IsUserAuthenticated(c)
+                navItems := GetNavItems(templatesDir, isAuthenticated)
                 return c.Render(http.StatusOK, name + ".html", map[string]interface{}{
-                    "title": name,
+                    "title": caser.String(name),
                     "NavItems": navItems,
                 })
             }))
         } else {
             e.GET(url, func(c echo.Context) error {
-                navItems := GetNavItems(templatesDir, false)
+                var isAuthenticated bool = auth.IsUserAuthenticated(c)
+                navItems := GetNavItems(templatesDir, isAuthenticated)
                 return c.Render(http.StatusOK, name + ".html", map[string]interface{}{
-                    "title": name,
+                    "title": caser.String(name),
                     "NavItems": navItems,
                 })
             })
