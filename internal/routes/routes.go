@@ -11,6 +11,7 @@ import (
 	"golang.org/x/text/language"
 
     "github.com/cjm-1/webdwelling/internal/auth"
+    "github.com/cjm-1/webdwelling/internal/database"
 )
 
 import (
@@ -41,11 +42,35 @@ func RegisterRoutes(e *echo.Echo, templatesDir string, staticDir string) {
         })
     })
 
+    // Bookmarks route
+    e.GET("/bookmarks", auth.RequireAuth(func(c echo.Context) error {
+        navItems := GetNavItems(templatesDir, true)
+        userID := c.Get("user_id").(int)
+        bookmarks, err := database.GetBookmarksByUserID(userID, true)
+        if err != nil {
+            return c.Render(http.StatusInternalServerError, "error.html", map[string]interface{}{
+                "title": "Error",
+                "NavItems": navItems,
+                "ErrorCode": http.StatusInternalServerError,
+                "ErrorMessage": err.Error(),
+            })
+        }
+
+        return c.Render(http.StatusOK, "bookmarks.html", map[string]interface{}{
+            "title": "Bookmarks",
+            "NavItems": navItems,
+            "Bookmarks": bookmarks,
+        })
+    }))
+
     e.Static("/", staticDir)
 
     e.POST("/login", auth.Login)
 
     e.GET("/logout", auth.Logout)
+
+    // Blacklisted template names
+    var blacklist []string = []string{"header", "footer", "error", "home", "bookmarks"}
 
     // Route all other templates
     for _, file := range files {
@@ -53,8 +78,10 @@ func RegisterRoutes(e *echo.Echo, templatesDir string, staticDir string) {
         var name string = strings.TrimSuffix(base, ".html")
         var url string = "/" + name
 
-        if name == "home" || name == "header" || name == "footer" {
-            continue
+        for _, b := range blacklist {
+            if name == b {
+                continue
+            }
         }
 
         // Open file

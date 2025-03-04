@@ -53,11 +53,23 @@ func createTables() {
         admin BOOLEAN NOT NULL DEFAULT FALSE,
         created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
         last_login TEXT,
-        UNIQUE(username),
-        UNIQUE(email),
-        UNIQUE(subdirectory)
+        UNIQUE(username, email, subdirectory)
     )`); err != nil {
         log.Fatalf("Failed to create users table: %v", err)
+    }
+
+    if _, err := DB.Exec(`CREATE TABLE IF NOT EXISTS bookmark_folders (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        name TEXT NOT NULL,
+        parent_folder_id INTEGER,
+        public INTEGER NOT NULL DEFAULT 1,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY(user_id) REFERENCES users(id),
+        FOREIGN KEY(parent_folder_id) REFERENCES folders(id),
+        UNIQUE(user_id, name)
+    )`); err != nil {
+        log.Fatalf("Failed to create folders table: %v", err)
     }
 
     if _, err := DB.Exec(`CREATE TABLE IF NOT EXISTS bookmarks (
@@ -65,9 +77,11 @@ func createTables() {
         user_id INTEGER NOT NULL,
         title TEXT,
         url TEXT NOT NULL,
-        path TEXT,
-        public INTEGER NOT NULL DEFAULT 0,
-        FOREIGN KEY(user_id) REFERENCES users(id)
+        tags TEXT,
+        folder_id INTEGER,
+        public INTEGER NOT NULL DEFAULT 1,
+        FOREIGN KEY(user_id) REFERENCES users(id),
+        FOREIGN KEY(folder_id) REFERENCES folders(id)
     )`); err != nil {
         log.Fatalf("Failed to create bookmarks table: %v", err)
     }
@@ -97,6 +111,110 @@ type User struct {
     Admin bool
     CreatedAt string
     LastLogin *string
+}
+
+type BookmarkFolder struct {
+    ID int
+    Name string
+    ParentFolderID int
+    CreatedAt string
+    ChildFolders []BookmarkFolder
+    ChildBookmarks []Bookmark
+}
+
+type Bookmark struct {
+    ID int
+    Title string
+    URL string
+    Tags string
+    FolderID int
+    Public bool
+}
+
+func GetBookmarksByUserID(userID int, includePrivate bool) (BookmarkFolder, error) {
+    bookmarks := BookmarkFolder{}
+
+    // Get bookmark folders
+    rows, err := DB.Query("SELECT id,name,parent_folder_id,created_at FROM bookmark_folders WHERE user_id = ?", userID)
+    if err != nil {
+        return bookmarks, fmt.Errorf("Failed to get bookmark folders: %v", err)
+    }
+
+    // Iterate over rows
+    for rows.Next() {
+        folder := BookmarkFolder{}
+
+        if err := rows.Scan(
+            &folder.ID, &folder.Name, &folder.ParentFolderID, &folder.CreatedAt,
+        ); err != nil {
+            return bookmarks, fmt.Errorf("Failed to scan bookmark folder: %v", err)
+        }
+
+        if folder.ParentFolderID == 0 {
+            bookmarks.ChildFolders = append(bookmarks.ChildFolders, folder)
+        } else {
+            // Recursive function to search bookmarks.ChildFolders array for parent folder and append child folder
+            recursiveSearchAndAppendFolder(bookmarks.ChildFolders, &folder, 0)
+        }
+    }
+    rows.Close()
+
+    // Get bookmarks
+    rows, err = DB.Query("SELECT id,title,url,tags,folder_id,public FROM bookmarks WHERE user_id = ?", userID)
+    if err != nil {
+        return bookmarks, fmt.Errorf("Failed to get bookmarks: %v", err)
+    }
+
+    // Iterate over rows
+    for rows.Next() {
+        bookmark := Bookmark{}
+        var folderID int
+
+        if err := rows.Scan(
+            &bookmark.ID, &bookmark.Title, &bookmark.URL, &bookmark.Tags, &folderID, &bookmark.Public,
+        ); err != nil {
+            return bookmarks, fmt.Errorf("Failed to scan bookmark: %v", err)
+        }
+
+        if !bookmark.Public && !includePrivate {
+            continue
+        } else if folderID == 0 {
+            bookmarks.ChildBookmarks = append(bookmarks.ChildBookmarks, bookmark)
+        } else {
+            // Recursive function to search bookmarks.ChildFolders array for parent folder and append child bookmark
+            recursiveSearchAndAppendBookmark(bookmarks.ChildFolders, &bookmark, 0)
+        }
+    }
+    
+    return bookmarks, nil
+}
+
+func recursiveSearchAndAppendFolder(folders []BookmarkFolder, folder *BookmarkFolder, depth int) {
+    if depth > 12 {
+        fmt.Println("Maximum depth reached - failed to find parent folder of " + folder.Name)
+        return
+    }
+    for _, f := range folders {
+        if f.ID == folder.ParentFolderID {
+            f.ChildFolders = append(f.ChildFolders, *folder)
+            return
+        }
+        recursiveSearchAndAppendFolder(f.ChildFolders, folder, depth + 1)
+    }
+}
+
+func recursiveSearchAndAppendBookmark(folders []BookmarkFolder, bookmark *Bookmark, depth int) {
+    if depth > 12 {
+        fmt.Println("Maximum depth reached - failed to find parent folder of " + bookmark.Title)
+        return
+    }
+    for _, f := range folders {
+        if f.ID == bookmark.FolderID {
+            f.ChildBookmarks = append(f.ChildBookmarks, *bookmark)
+            return
+        }
+        recursiveSearchAndAppendBookmark(f.ChildFolders, bookmark, depth + 1)
+    }
 }
 
 func CreateUser(username string, password string, email *string, subdirectory *string, admin bool) (*User, error) {
