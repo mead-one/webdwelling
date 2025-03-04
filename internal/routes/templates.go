@@ -58,7 +58,7 @@ func buildNavItems(files []string, isAuthenticated bool) []NavItem {
         }
 
         // Exclude the partial templates and login page
-        if name == "header" || name == "footer" || name == "login" {
+        if name == "header" || name == "footer" {
             continue
         }
 
@@ -91,6 +91,15 @@ func buildNavItems(files []string, isAuthenticated bool) []NavItem {
                 Weight: weight,
             })
         }
+    }
+
+    // Include logout link if user is authenticated
+    if isAuthenticated {
+        navItems = append(navItems, NavItem{
+            Name: "Logout",
+            URL: "/logout",
+            Weight: 100,
+        })
     }
 
     sort.Slice(navItems, func(i, j int) bool {
