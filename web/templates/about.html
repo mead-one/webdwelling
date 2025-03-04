@@ -1,0 +1,18 @@
+<!-- nav: include, weight: 75 -->
+{{ template "header.html" . }}
+<h1>About</h1>
+<section>
+    <p>Webdwelling is a small project I have undertaken both as an exercise in becoming more familiar with Go, and to
+        create a digital home on the web, independent of browser and device.</p>
+    <p>One reason I chose Go was that it is a compiled language, which means that Webdwelling should be able to run on
+        a wide range of servers, including cheap VPSs and even Raspberry Pis with minimal slowdown.</p>
+    <p> I aim to include several features in Webdwelling, including:</p>
+    <ul>
+        <li>A bookmark manager and viewer</li>
+        <li>A calendar capable of sourcing events from CalDAV servers</li>
+        <li>A customisable RSS feed</li>
+        <li>A customisable homepage, integrating the above features to create a personal point of entry to the web</li>
+    </ul>
+    <p>I hope you enjoy using Webdwelling!</p>
+</section>
+{{ template "footer.html" . }}
