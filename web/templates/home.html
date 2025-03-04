@@ -1,8 +1,14 @@
 <!-- nav: include, weight: 0 -->
 {{ template "header.html" . }}
 <section>
-    <h1>Your homepage elements go here</h1>
+    {{ if .IsAuthenticated }}
+    <h1>Welcome back, {{ .Username }}!</h1>
     <div id="home-elements">
     </div>
+    {{ else }}
+    <h1>Welcome to Webdwelling!</h1>
+    <p>Your digital home is waiting for you.</p>
+    <p>To get started, please <a href="/login">login</a>.</p>
+    {{ end }}
 </section>
 {{ template "footer.html" . }}
