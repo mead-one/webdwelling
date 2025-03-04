@@ -3,6 +3,7 @@ package auth
 import (
     "net/http"
     "time"
+    "errors"
 
     "github.com/golang-jwt/jwt/v4"
     "github.com/labstack/echo/v4"
@@ -63,44 +64,66 @@ func Login(c echo.Context) error {
     return c.Redirect(http.StatusSeeOther, "/bookmarks")
 }
 
+func IsUserAuthenticated(c echo.Context) bool {
+    err := checkCookie(c)
+    if err != nil {
+        return false
+    }
+
+    return true
+}
+
 // Check if a user is logged in
 func RequireAuth(next echo.HandlerFunc) echo.HandlerFunc {
     return func(c echo.Context) error {
-        cookie, err := c.Cookie("jwt")
+        err := checkCookie(c)
         if err != nil {
             return c.Redirect(http.StatusSeeOther, "/login")
         }
 
-        // Parse JWT token
-        token, err:= jwt.ParseWithClaims(cookie.Value, &JWTCustomClaims{}, func(token *jwt.Token) (interface{}, error) {
-            return JWTSecret, nil
-        })
-
-        if err != nil || !token.Valid {
-            // Clear invalid cookie
-            cookie := new(http.Cookie)
-            cookie.Name = "jwt"
-            cookie.Value = ""
-            cookie.Expires = time.Now().Add(-time.Hour)
-            cookie.Path = "/"
-            cookie.HttpOnly = true
-            c.SetCookie(cookie)
-
-            return c.Redirect(http.StatusSeeOther, "/login")
-        }
-
-        // Get claims
-        claims, ok := token.Claims.(*JWTCustomClaims)
-        if !ok {
-            return c.Redirect(http.StatusSeeOther, "/login")
-        }
-
-        // Set user info in context
-        c.Set("user_id", claims.UserID)
-        c.Set("username", claims.Username)
-
         return next(c)
     }
+}
+
+func checkCookie(c echo.Context) error {
+    cookie, err := c.Cookie("jwt")
+    if err != nil {
+        return err
+    }
+
+    // Parse JWT token
+    token, err:= jwt.ParseWithClaims(cookie.Value, &JWTCustomClaims{}, func(token *jwt.Token) (interface{}, error) {
+        return JWTSecret, nil
+    })
+
+    if err != nil {
+        return err
+    }
+
+    if !token.Valid {
+        // Clear invalid cookie
+        cookie := new(http.Cookie)
+        cookie.Name = "jwt"
+        cookie.Value = ""
+        cookie.Expires = time.Now().Add(-time.Hour)
+        cookie.Path = "/"
+        cookie.HttpOnly = true
+        c.SetCookie(cookie)
+
+        return errors.New("Invalid JWT token")
+    }
+    
+    // Get claims
+    claims, ok := token.Claims.(*JWTCustomClaims)
+    if !ok {
+        return errors.New("Invalid JWT claims")
+    }
+
+    // Set user info in context
+    c.Set("user_id", claims.UserID)
+    c.Set("username", claims.Username)
+
+    return nil
 }
 
 func Logout(c echo.Context) error {
