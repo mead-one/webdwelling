@@ -19,7 +19,7 @@ func main() {
     e.Use(middleware.Recover())
 
     // Register routes
-    routes.RegisterRoutes(e, filepath.Join("web", "templates"))
+    routes.RegisterRoutes(e, filepath.Join("web", "templates"), filepath.Join("web", "static"))
 
     e.Logger.Fatal(e.Start(":1323"))
 }

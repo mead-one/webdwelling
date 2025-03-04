@@ -19,7 +19,7 @@ import (
     "github.com/labstack/echo/v4"
 )
 
-func RegisterRoutes(e *echo.Echo, templatesDir string) {
+func RegisterRoutes(e *echo.Echo, templatesDir string, staticDir string) {
     renderer := TemplateRenderer(templatesDir)
     e.Renderer = renderer
     files, _ := filepath.Glob(filepath.Join(templatesDir, "*.html"))
@@ -40,6 +40,8 @@ func RegisterRoutes(e *echo.Echo, templatesDir string) {
             "Username": username,
         })
     })
+
+    e.Static("/", staticDir)
 
     e.POST("/login", auth.Login)
 
