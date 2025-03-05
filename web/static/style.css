@@ -5,11 +5,12 @@ body {
 
 main {
     margin-left: auto;
+    margin-right: auto;
     max-width: 800px;
     min-width: 10em;
 }
 
-nav ul {
+nav ul, footer p {
     display: flex;
     flex-direction: row;
     justify-content: space-between;
@@ -22,21 +23,29 @@ nav ul {
     border-radius: 0.5em;
 }
 
-nav ul li {
+nav ul li, footer p a {
     flex: 1;
     /*display: inline-block;*/
     margin: .3em;
-    padding: 0.8 0.5;
+    padding: 0 0.5em;
     border-radius: 0.5em;
     background-color: skyblue;
     text-align: center;
 }
 
-/*nav ul li:first-child {*/
-/*    margin-left: .3em;*/
-/*}*/
-
 nav ul li a {
     text-decoration: none;
     color: black;
+}
+
+footer {
+    position: static;
+    bottom: 0;
+    left: 0;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    background-color: rgba(255, 255, 255, 0.75);
+    border-radius: 0.5em;
+    text-align: center;
 }
