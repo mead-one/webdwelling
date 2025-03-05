@@ -1,48 +1,70 @@
 <!-- nav: include, weight: 5, auth: require -->
+{{define "folder-tree"}}
+<ul class="foldertree">
+    <li class="folder">
+        <details>
+            <summary>
+                <span class="folder-name">{{.Name}}</span>
+                <span class="folder-actions">
+                    <button class="add-bookmark">+ Bookmark</button>
+                    <button class="add-folder">+ Folder</button>
+                </span>
+            </summary>
+            {{ if .ChildFolders }}
+                {{ range .ChildFolders }}
+                    {{ template "folder-tree" . }}
+                {{ end }}
+            {{ end }}
+
+            {{- /* Bookmarks within this folder */ -}}
+            {{if .ChildBookmarks}}
+            <ul class="bookmarks">
+                {{range .ChildBookmarks}}
+                <li class="bookmark">
+                    <a href="{{.URL}}" target="_blank">
+                        <span class="bookmark-title">{{.Title}}</span>
+                        {{if .Tags}}
+                        <span class="bookmark-tags">{{.Tags}}</span>
+                        {{end}}
+                    </a>
+                    <div class="bookmark-actions">
+                        <button class="edit-bookmark">Edit</button>
+                        <button class="delete-bookmark">Delete</button>
+                    </div>
+                </li>
+                {{end}}
+            </ul>
+            {{end}}
+        </details>
+    </li>
+</ul>
+{{end}}
+
 {{ template "header.html" . }}
 <section>
     <h1>Your bookmarks</h1>
     <div id="bookmarks-elements">
-        {{define "folder-tree"}}
-        <ul class="foldertree">
-            <li class="folder">
-                <details>
-                    <summary>
-                        <span class="folder-name">{{.Name}}</span>
-                        <span class="folder-actions">
-                            <button class="add-bookmark">+ Bookmark</button>
-                            <button class="add-folder">+ Folder</button>
-                    </summary>
-                    {{ if .ChildFolders }}
-                        {{ range .ChildFolders }}
-                            {{ template "folder-tree" . }}
-                        {{ end }}
-                    {{ end }}
-
-                    {{- /* Bookmarks within this folder */ -}}
-                    {{if .ChildBookmarks}}
-                    <ul class="bookmarks">
-                        {{range .ChildBookmarks}}
-                        <li class="bookmark">
-                            <a href="{{.URL}}" target="_blank">
-                                <span class="bookmark-title">{{.Title}}</span>
-                                {{if .Tags}}
-                                <span class="bookmark-tags">{{.Tags}}</span>
-                                {{end}}
-                            </a>
-                            <div class="bookmark-actions">
-                                <button class="edit-bookmark">Edit</button>
-                                <button class="delete-bookmark">Delete</button>
-                            </div>
-                        </li>
-                        {{end}}
-                    </ul>
-                    {{end}}
-                </details>
-            </li>
-        </ul>
+        <span class="folder-actions">
+            <button class="add-bookmark">+ Bookmark</button>
+            <button class="add-folder">+ Folder</button>
+        </span>
+        {{ range .Bookmarks.ChildFolders }}
+            {{ template "folder-tree" .}}
+        {{ end }}
+        {{range .Bookmarks.ChildBookmarks}}
+        <li class="bookmark">
+            <a href="{{.URL}}" target="_blank">
+                <span class="bookmark-title">{{.Title}}</span>
+                {{if .Tags}}
+                <span class="bookmark-tags">{{.Tags}}</span>
+                {{end}}
+            </a>
+            <div class="bookmark-actions">
+                <button class="edit-bookmark">Edit</button>
+                <button class="delete-bookmark">Delete</button>
+            </div>
+        </li>
         {{end}}
-        {{ template "folder-tree" .Bookmarks }}
     </div>
 </section>
 {{ template "footer.html" . }}
