@@ -5,6 +5,7 @@ import (
     "fmt"
     "os"
     "strings"
+    "strconv"
     "path/filepath"
 
 	"golang.org/x/text/cases"
@@ -47,6 +48,7 @@ func RegisterRoutes(e *echo.Echo, templatesDir string, staticDir string) {
         navItems := GetNavItems(templatesDir, true)
         userID := c.Get("user_id").(int)
         bookmarks, err := database.GetBookmarksByUserID(userID, true)
+
         if err != nil {
             return c.Render(http.StatusInternalServerError, "error.html", map[string]interface{}{
                 "title": "Error",
@@ -55,6 +57,10 @@ func RegisterRoutes(e *echo.Echo, templatesDir string, staticDir string) {
                 "ErrorMessage": err.Error(),
             })
         }
+
+        folderCount := len(bookmarks.ChildFolders)
+        bookmarkCount := len(bookmarks.ChildBookmarks)
+        fmt.Println("Folder count: " + strconv.Itoa(folderCount) + ", bookmark count: " + strconv.Itoa(bookmarkCount))
 
         return c.Render(http.StatusOK, "bookmarks.html", map[string]interface{}{
             "title": "Bookmarks",
@@ -77,11 +83,18 @@ func RegisterRoutes(e *echo.Echo, templatesDir string, staticDir string) {
         var base string = filepath.Base(file)
         var name string = strings.TrimSuffix(base, ".html")
         var url string = "/" + name
+        var blacklisted bool = false
 
         for _, b := range blacklist {
             if name == b {
-                continue
+                fmt.Println(name + " vs " + b)
+                blacklisted = true
+                break
             }
+        }
+
+        if blacklisted {
+            continue
         }
 
         // Open file

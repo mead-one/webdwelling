@@ -57,11 +57,6 @@ func buildNavItems(files []string, isAuthenticated bool) []NavItem {
             url = "/" + name
         }
 
-        // Exclude the partial templates and login page
-        if name == "header" || name == "footer" {
-            continue
-        }
-
         // Read comment on first line
         f, err := os.Open(file)
         if err != nil {

@@ -116,7 +116,7 @@ type User struct {
 type BookmarkFolder struct {
     ID int
     Name string
-    ParentFolderID int
+    ParentFolderID *int
     CreatedAt string
     ChildFolders []BookmarkFolder
     ChildBookmarks []Bookmark
@@ -127,7 +127,7 @@ type Bookmark struct {
     Title string
     URL string
     Tags string
-    FolderID int
+    FolderID *int
     Public bool
 }
 
@@ -143,14 +143,17 @@ func GetBookmarksByUserID(userID int, includePrivate bool) (BookmarkFolder, erro
     // Iterate over rows
     for rows.Next() {
         folder := BookmarkFolder{}
+        var parentFolderID *int
 
         if err := rows.Scan(
-            &folder.ID, &folder.Name, &folder.ParentFolderID, &folder.CreatedAt,
+            &folder.ID, &folder.Name, &parentFolderID, &folder.CreatedAt,
         ); err != nil {
             return bookmarks, fmt.Errorf("Failed to scan bookmark folder: %v", err)
         }
 
-        if folder.ParentFolderID == 0 {
+        folder.ParentFolderID = parentFolderID
+
+        if folder.ParentFolderID == nil {
             bookmarks.ChildFolders = append(bookmarks.ChildFolders, folder)
         } else {
             // Recursive function to search bookmarks.ChildFolders array for parent folder and append child folder
@@ -168,7 +171,7 @@ func GetBookmarksByUserID(userID int, includePrivate bool) (BookmarkFolder, erro
     // Iterate over rows
     for rows.Next() {
         bookmark := Bookmark{}
-        var folderID int
+        var folderID *int
 
         if err := rows.Scan(
             &bookmark.ID, &bookmark.Title, &bookmark.URL, &bookmark.Tags, &folderID, &bookmark.Public,
@@ -176,15 +179,19 @@ func GetBookmarksByUserID(userID int, includePrivate bool) (BookmarkFolder, erro
             return bookmarks, fmt.Errorf("Failed to scan bookmark: %v", err)
         }
 
+        bookmark.FolderID = folderID
+
         if !bookmark.Public && !includePrivate {
             continue
-        } else if folderID == 0 {
+        } else if bookmark.FolderID == nil {
             bookmarks.ChildBookmarks = append(bookmarks.ChildBookmarks, bookmark)
         } else {
             // Recursive function to search bookmarks.ChildFolders array for parent folder and append child bookmark
             recursiveSearchAndAppendBookmark(bookmarks.ChildFolders, &bookmark, 0)
         }
     }
+
+    fmt.Printf("Bookmark tree: %+v\n", bookmarks)
     
     return bookmarks, nil
 }
@@ -195,8 +202,9 @@ func recursiveSearchAndAppendFolder(folders []BookmarkFolder, folder *BookmarkFo
         return
     }
     for _, f := range folders {
-        if f.ID == folder.ParentFolderID {
+        if f.ID == *folder.ParentFolderID {
             f.ChildFolders = append(f.ChildFolders, *folder)
+            fmt.Println("Appended folder " + folder.Name + " to " + f.Name)
             return
         }
         recursiveSearchAndAppendFolder(f.ChildFolders, folder, depth + 1)
@@ -209,8 +217,9 @@ func recursiveSearchAndAppendBookmark(folders []BookmarkFolder, bookmark *Bookma
         return
     }
     for _, f := range folders {
-        if f.ID == bookmark.FolderID {
+        if f.ID == *bookmark.FolderID {
             f.ChildBookmarks = append(f.ChildBookmarks, *bookmark)
+            fmt.Println("Appended bookmark " + bookmark.Title + " to " + f.Name)
             return
         }
         recursiveSearchAndAppendBookmark(f.ChildFolders, bookmark, depth + 1)
