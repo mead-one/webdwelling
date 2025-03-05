@@ -118,7 +118,7 @@ type BookmarkFolder struct {
     Name string
     ParentFolderID *int
     CreatedAt string
-    ChildFolders []BookmarkFolder
+    ChildFolders []*BookmarkFolder
     ChildBookmarks []Bookmark
 }
 
@@ -154,7 +154,7 @@ func GetBookmarksByUserID(userID int, includePrivate bool) (BookmarkFolder, erro
         folder.ParentFolderID = parentFolderID
 
         if folder.ParentFolderID == nil {
-            bookmarks.ChildFolders = append(bookmarks.ChildFolders, folder)
+            bookmarks.ChildFolders = append(bookmarks.ChildFolders, &folder)
         } else {
             // Recursive function to search bookmarks.ChildFolders array for parent folder and append child folder
             recursiveSearchAndAppendFolder(bookmarks.ChildFolders, &folder, 0)
@@ -196,14 +196,14 @@ func GetBookmarksByUserID(userID int, includePrivate bool) (BookmarkFolder, erro
     return bookmarks, nil
 }
 
-func recursiveSearchAndAppendFolder(folders []BookmarkFolder, folder *BookmarkFolder, depth int) {
+func recursiveSearchAndAppendFolder(folders []*BookmarkFolder, folder *BookmarkFolder, depth int) {
     if depth > 12 {
         fmt.Println("Maximum depth reached - failed to find parent folder of " + folder.Name)
         return
     }
     for _, f := range folders {
         if f.ID == *folder.ParentFolderID {
-            f.ChildFolders = append(f.ChildFolders, *folder)
+            f.ChildFolders = append(f.ChildFolders, folder)
             fmt.Println("Appended folder " + folder.Name + " to " + f.Name)
             return
         }
@@ -211,7 +211,7 @@ func recursiveSearchAndAppendFolder(folders []BookmarkFolder, folder *BookmarkFo
     }
 }
 
-func recursiveSearchAndAppendBookmark(folders []BookmarkFolder, bookmark *Bookmark, depth int) {
+func recursiveSearchAndAppendBookmark(folders []*BookmarkFolder, bookmark *Bookmark, depth int) {
     if depth > 12 {
         fmt.Println("Maximum depth reached - failed to find parent folder of " + bookmark.Title)
         return
