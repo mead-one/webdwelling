@@ -49,3 +49,73 @@ footer {
     border-radius: 0.5em;
     text-align: center;
 }
+
+/* --- Bookmarks --- */
+div#bookmarks-elements {
+    border: 1px solid black;
+    border-radius: 0.5em;
+    background-color: white;
+    padding: 0.5em;
+}
+
+ul.foldertree {
+    padding-left: 1em;
+    margin: 0.5em 0 0 0;
+}
+
+li.folder summary {
+    display: flex;
+    cursor: pointer;
+    background-color: #E1AD01;
+    border-radius: 0.5em 0 0 .5em;
+    padding: 0 0.5em;
+}
+
+span.folder-name {
+    flex: 1;
+    user-select: none;
+}
+
+li.folder details {
+    background-color: white;
+    padding: 0;
+    border: 1px solid #E1AD01;
+    border-radius: 0.5em;
+}
+
+li {
+    list-style-type: none;
+}
+
+div#bookmarks-elements li.bookmark {
+    padding-left: 1em;
+}
+
+ul.bookmarks {
+    padding-left: 0em;
+}
+
+li.bookmark {
+    display: flex;
+    padding: 0.1em 0;
+}
+
+li.bookmark:nth-child(odd) {
+    background-color: #E9E9E9;
+}
+
+li.bookmark:last-child {
+    border-radius: 0 0 0.5em 0.5em;
+}
+
+.bookmark-title {
+    flex: 1;
+    text-decoration: none;
+    color: black;
+}
+
+.bookmark-tags {
+    width: 8em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
