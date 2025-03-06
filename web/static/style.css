@@ -55,12 +55,23 @@ div#bookmarks-elements {
     border: 1px solid black;
     border-radius: 0.5em;
     background-color: white;
-    padding: 0.5em;
+}
+
+div#bookmarks-elements span.folder-actions {
+    display: flex;
+    justify-content: flex-end;
 }
 
 ul.foldertree {
-    padding-left: 1em;
-    margin: 0.5em 0 0 0;
+    padding-left: 0.3em;
+    margin: 0.3em 0 0.3em 0;
+}
+
+li.folder details {
+    background-color: white;
+    padding: 0;
+    border: 1px solid #E1AD01;
+    border-radius: 0.5em 0 0 0.5em;
 }
 
 li.folder summary {
@@ -73,14 +84,8 @@ li.folder summary {
 
 span.folder-name {
     flex: 1;
+    margin-left: 1em;
     user-select: none;
-}
-
-li.folder details {
-    background-color: white;
-    padding: 0;
-    border: 1px solid #E1AD01;
-    border-radius: 0.5em;
 }
 
 li {
@@ -92,6 +97,7 @@ div#bookmarks-elements li.bookmark {
 }
 
 ul.bookmarks {
+    min-height: 1em;
     padding-left: 0em;
 }
 
