@@ -55,11 +55,13 @@ div#bookmarks-elements {
     border: 1px solid black;
     border-radius: 0.5em;
     background-color: white;
+    margin-bottom: 1em;
 }
 
-div#bookmarks-elements span.folder-actions {
+div#bookmarks-elements > span.folder-actions {
     display: flex;
     justify-content: flex-end;
+    padding: 0.3em 0.3em 0 0;
 }
 
 ul.foldertree {
