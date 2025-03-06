@@ -21,16 +21,14 @@
             <ul class="bookmarks">
                 {{range .ChildBookmarks}}
                 <li class="bookmark">
-                    <a href="{{.URL}}" target="_blank">
-                        <span class="bookmark-title">{{.Title}}</span>
-                        {{if .Tags}}
-                        <span class="bookmark-tags">{{.Tags}}</span>
-                        {{end}}
-                    </a>
-                    <div class="bookmark-actions">
+                    <a href="{{.URL}}" target="_blank" class="bookmark-title">{{.Title}}</a>
+                    {{if .Tags}}
+                    <span class="bookmark-tags">{{.Tags}}</span>
+                    {{end}}
+                    <span class="bookmark-actions">
                         <button class="edit-bookmark">Edit</button>
                         <button class="delete-bookmark">Delete</button>
-                    </div>
+                    </span>
                 </li>
                 {{end}}
             </ul>
@@ -55,16 +53,14 @@
         {{ end }}
         {{range .Bookmarks.ChildBookmarks}}
         <li class="bookmark">
-            <a href="{{.URL}}" target="_blank">
-                <span class="bookmark-title">{{.Title}}</span>
-                {{if .Tags}}
-                <span class="bookmark-tags">{{.Tags}}</span>
-                {{end}}
-            </a>
-            <div class="bookmark-actions">
+            <a href="{{.URL}}" target="_blank" class="bookmark-title">{{.Title}}</a>
+            {{if .Tags}}
+            <span class="bookmark-tags">{{.Tags}}</span>
+            {{end}}
+            <span class="bookmark-actions">
                 <button class="edit-bookmark">Edit</button>
                 <button class="delete-bookmark">Delete</button>
-            </div>
+            </span>
         </li>
         {{end}}
     </div>
