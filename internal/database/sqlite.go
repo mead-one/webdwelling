@@ -209,6 +209,7 @@ func AuthenticateUser(username string, password string) (*User, error) {
 }
 
 // ### Bookmark functions ###
+// Get all bookmarks for a user, returns a nested tree of bookmark folders and bookmarks
 func GetBookmarksByUserID(userID int, includePrivate bool) (BookmarkFolder, error) {
     bookmarks := BookmarkFolder{}
     folderMap := make(map[int]*BookmarkFolder)
@@ -271,6 +272,7 @@ func GetBookmarksByUserID(userID int, includePrivate bool) (BookmarkFolder, erro
             folderMap[*bookmark.FolderID].ChildBookmarks = append(folderMap[*bookmark.FolderID].ChildBookmarks, &bookmark)
         }
     }
+    rows.Close()
     
     return bookmarks, nil
 }
