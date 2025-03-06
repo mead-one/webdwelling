@@ -48,8 +48,10 @@
             <button class="add-bookmark">+ Bookmark</button>
             <button class="add-folder">+ Folder</button>
         </span>
-        {{ range .Bookmarks.ChildFolders }}
-            {{ template "folder-tree" .}}
+        {{ if .Bookmarks.ChildFolders }}
+            {{ range .Bookmarks.ChildFolders }}
+                {{ template "folder-tree" .}}
+            {{ end }}
         {{ end }}
         {{range .Bookmarks.ChildBookmarks}}
         <li class="bookmark">
