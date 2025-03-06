@@ -211,7 +211,7 @@ func AuthenticateUser(username string, password string) (*User, error) {
 // ### Bookmark functions ###
 func GetBookmarksByUserID(userID int, includePrivate bool) (BookmarkFolder, error) {
     bookmarks := BookmarkFolder{}
-    var folderList, folderListDict []*BookmarkFolder
+    folderMap := make(map[int]*BookmarkFolder)
 
     // Get bookmark folders
     rows, err := DB.Query("SELECT id,name,parent_folder_id,created_at FROM bookmark_folders WHERE user_id = ?", userID)
@@ -232,31 +232,17 @@ func GetBookmarksByUserID(userID int, includePrivate bool) (BookmarkFolder, erro
 
         folder.ParentFolderID = parentFolderID
 
-        folderList = append(folderList, &folder)
+        folderMap[folder.ID] = &folder
     }
     rows.Close()
 
-    // Flat array of pointer addresses that will be nested in bookmarks.ChildFolders
-    folderListDict = folderList
-    // folderListDict = make([]*BookmarkFolder, len(folderList))
-    // copy(folderListDict, folderList)
-    fmt.Printf("%+v\n vs %+v\n", folderList, folderListDict)
-
-    for i := 0; len(folderList) > 0 && i <= 12; i++ {
-        for j := len(folderList) - 1; j >= 0; j-- {
-            if folderList[j].ParentFolderID == nil {
-                bookmarks.ChildFolders = append(bookmarks.ChildFolders, folderList[j])
-                folderList = removeFolder(folderList, j)
-            } else {
-                // Recursive function to search bookmarks.ChildFolders array for parent folder and append child folder
-                if recursiveSearchAndAppendFolder(bookmarks.ChildFolders, folderList[j], 0) == true {
-                    folderList = removeFolder(folderList, j)
-                }
-            }
+    for _, folder := range folderMap {
+        if folder.ParentFolderID == nil {
+            bookmarks.ChildFolders = append(bookmarks.ChildFolders, folder)
+        } else {
+            folderMap[*folder.ParentFolderID].ChildFolders = append(folderMap[*folder.ParentFolderID].ChildFolders, folder)
         }
     }
-
-    fmt.Printf("%+v\n vs %+v\n", folderList, folderListDict)
 
     // Get bookmarks
     rows, err = DB.Query("SELECT id,title,url,tags,folder_id,public FROM bookmarks WHERE user_id = ?", userID)
@@ -282,59 +268,11 @@ func GetBookmarksByUserID(userID int, includePrivate bool) (BookmarkFolder, erro
         } else if bookmark.FolderID == nil {
             bookmarks.ChildBookmarks = append(bookmarks.ChildBookmarks, &bookmark)
         } else {
-            // Recursive function to search bookmarks.ChildFolders array for parent folder and append child bookmark
-            for _, folder := range folderListDict {
-                if *bookmark.FolderID == folder.ID {
-                    fmt.Println("Appending bookmark ", bookmark.Title, " to ", folder.Name)
-                    folder.ChildBookmarks = append(folder.ChildBookmarks, &bookmark)
-                    break
-                }
-            }
-            // recursiveSearchAndAppendBookmark(bookmarks.ChildFolders, &bookmark, 0)
+            folderMap[*bookmark.FolderID].ChildBookmarks = append(folderMap[*bookmark.FolderID].ChildBookmarks, &bookmark)
         }
     }
-
-    fmt.Printf("Bookmark tree: %+v\n", bookmarks)
     
     return bookmarks, nil
-}
-
-func removeFolder(s []*BookmarkFolder, i int) []*BookmarkFolder {
-    if i < len(s) - 1 {
-        s[i] = s[len(s)-1]
-    }
-    return s[:len(s)-1]
-}
-
-func recursiveSearchAndAppendFolder(folders []*BookmarkFolder, folder *BookmarkFolder, depth int) bool {
-    if depth > 12 {
-        fmt.Println("Maximum depth reached - failed to find parent folder of " + folder.Name)
-        return false
-    }
-    for _, f := range folders {
-        if f.ID == *folder.ParentFolderID {
-            f.ChildFolders = append(f.ChildFolders, folder)
-            fmt.Println("Appended folder " + folder.Name + " to " + f.Name)
-            return true
-        }
-        recursiveSearchAndAppendFolder(f.ChildFolders, folder, depth + 1)
-    }
-    return false
-}
-
-func recursiveSearchAndAppendBookmark(folders []*BookmarkFolder, bookmark *Bookmark, depth int) {
-    if depth > 12 {
-        fmt.Println("Maximum depth reached - failed to find parent folder of " + bookmark.Title)
-        return
-    }
-    for _, f := range folders {
-        if f.ID == *bookmark.FolderID {
-            f.ChildBookmarks = append(f.ChildBookmarks, bookmark)
-            fmt.Println("Appended bookmark " + bookmark.Title + " to " + f.Name)
-            return
-        }
-        recursiveSearchAndAppendBookmark(f.ChildFolders, bookmark, depth + 1)
-    }
 }
 
 // // Add a new bookmark folder
