@@ -277,45 +277,49 @@ func GetBookmarksByUserID(userID int, includePrivate bool) (BookmarkFolder, erro
     return bookmarks, nil
 }
 
-// // Add a new bookmark folder
-// func AddBookmarkFolder(userID int, name string, parentFolderID *int, public bool) (*BookmarkFolder, error) {
-//     // Check if folder name already exists
-//     folder, err := GetBookmarkFolderByName(userID, name)
-//     if err != nil {
-//         return nil, err
-//     }
-//     if folder != nil {
-//         return nil, fmt.Errorf("Folder name already exists")
-//     }
-//
-//     // Create folder
-//     _, err = DB.Exec(
-//         "INSERT INTO bookmark_folders (user_id,name,parent_folder_id,public) VALUES (?,?,?,?)",
-//         userID, name, parentFolderID, public,
-//     )
-//     if err != nil {
-//         return nil, fmt.Errorf("Failed to create bookmark folder: %v", err)
-//     }
-//
-//     // Create folder struct
-//     folder := BookmarkFolder{
-//         Name: name,
-//         ParentFolderID: parentFolderID,
-//         CreatedAt: time.Now().Format("2006-01-02 15:04:05"),
-//     }
-//     return &folder, nil
-// }
-//
-// // Get a bookmark folder by name
-// func GetBookmarkFolderByName(userID int, name string) (*BookmarkFolder, error) {
-//     folder := &BookmarkFolder{}
-//     err := DB.QueryRow("SELECT * FROM bookmark_folders WHERE user_id = ? AND name = ?", userID, name).Scan(
-//         &folder.ID, &folder.Name, &folder.ParentFolderID, &folder.CreatedAt,
-//     )
-//     if err != nil {
-//         return nil, fmt.Errorf("Failed to get bookmark folder by name: %v", err)
-//     }
-//
-//     return folder, nil
-// }
-//
+// Add a new bookmark folder
+func AddBookmarkFolder(userID int, name string, parentFolderID *int, public bool) (*BookmarkFolder, error) {
+    // Write folder to database
+    // _, err := DB.Exec(
+    //     "INSERT INTO bookmark_folders (user_id,name,parent_folder_id,public) VALUES (?,?,?,?)",
+    //     userID, name, parentFolderID, public,
+    // )
+    // if err != nil {
+    //     return fmt.Errorf("Failed to create bookmark folder: %v", err)
+    // }
+
+    lastID := 0
+    // Create folder
+    err := DB.QueryRow(
+        "INSERT INTO bookmark_folders (user_id,name,parent_folder_id,public) VALUES (?,?,?,?) RETURNING id",
+        userID, name, parentFolderID, public,
+    ).Scan(&lastID)
+    if err != nil {
+        return nil, fmt.Errorf("Failed to create bookmark folder: %v", err)
+    }
+
+    // // Create folder struct
+    folder := BookmarkFolder{
+        ID: lastID,
+        Name: name,
+        ParentFolderID: parentFolderID,
+        CreatedAt: time.Now().Format("2006-01-02 15:04:05"),
+        ChildBookmarks: make([]*Bookmark, 0),
+        ChildFolders: make([]*BookmarkFolder, 0),
+    }
+    return &folder, nil
+}
+
+// Get a bookmark folder by name
+func GetBookmarkFolderByID(folderID int) (*BookmarkFolder, error) {
+    folder := &BookmarkFolder{}
+    err := DB.QueryRow("SELECT * FROM bookmark_folders WHERE id = ?", folderID).Scan(
+        &folder.ID, &folder.Name, &folder.ParentFolderID, &folder.CreatedAt,
+    )
+    if err != nil {
+        return nil, fmt.Errorf("Failed to get bookmark folder by name: %v", err)
+    }
+
+    return folder, nil
+}
+

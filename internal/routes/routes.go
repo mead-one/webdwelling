@@ -69,6 +69,62 @@ func RegisterRoutes(e *echo.Echo, templatesDir string, staticDir string) {
         })
     }))
 
+    e.POST("/bookmarks/add-folder", auth.RequireAuth(func(c echo.Context) error {
+        navItems := GetNavItems(templatesDir, true)
+        userID := c.Get("user_id").(int)
+        name := c.FormValue("name")
+        parentFolderID, err := strconv.Atoi(c.FormValue("parent_folder_id"))
+        if err != nil {
+            return err
+        }
+        // public := c.FormValue("public") == "on"
+        var public bool = true
+
+        // Ensure new folder belongs to current user
+        if userID != c.Get("user_id").(int) {
+            return c.Render(http.StatusUnauthorized, "error.html", map[string]interface{}{
+                "title": "Error",
+                "NavItems": navItems,
+                "ErrorCode": http.StatusUnauthorized,
+                "ErrorMessage": "You are not authorized to add a folder",
+            })
+        }
+
+        newFolder, err := database.AddBookmarkFolder(userID, name, &parentFolderID, public)
+        if err != nil {
+            return c.Render(http.StatusInternalServerError, "error.html", map[string]interface{}{
+                "title": "Error",
+                "NavItems": navItems,
+                "ErrorCode": http.StatusInternalServerError,
+                "ErrorMessage": err.Error(),
+            })
+        }
+
+        // Bookmark folder response type
+        type BookmarkFolderResponse struct {
+            ID int `json:"id"`
+            Name string `json:"name"`
+            ParentFolderID int `json:"parent_folder_id,omitempty"`
+            CreatedAt string `json:"created_at"`
+        }
+
+        response := BookmarkFolderResponse{
+            ID: newFolder.ID,
+            Name: newFolder.Name,
+            ParentFolderID: *newFolder.ParentFolderID,
+            CreatedAt: newFolder.CreatedAt,
+        }
+
+        // Return the new folder details from newFolder but dereference pointers
+        return c.JSON(http.StatusOK, response)
+        // bookmarks, err := database.GetBookmarksByUserID(userID, true)
+        // return c.Render(http.StatusOK, "bookmarks.html", map[string]interface{}{
+        //     "title": "Bookmarks",
+        //     "NavItems": navItems,
+        //     "Bookmarks": bookmarks,
+        // })
+    }))
+
     e.Static("/", staticDir)
 
     e.POST("/login", auth.Login)
