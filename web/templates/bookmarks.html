@@ -1,11 +1,11 @@
 <!-- nav: include, weight: 5, auth: require -->
 {{define "folder-tree"}}
 <ul class="foldertree">
-    <li class="folder">
+    <li class="folder" id="folder-{{.ID}}">
         <details>
             <summary>
                 <span class="folder-name">📁 {{.Name}}</span>
-                <span class="folder-actions">
+                <span class="folder-actions" data-id="{{.ID}}">
                     <button class="add-bookmark">+ Bookmark</button>
                     <button class="add-folder">+ Folder</button>
                 </span>
@@ -41,8 +41,8 @@
 {{ template "header.html" . }}
 <section>
     <h1>Your bookmarks</h1>
-    <div id="bookmarks-elements">
-        <span class="folder-actions">
+    <div id="bookmarks-elements" class="foldertree">
+        <span class="folder-actions" data-id="{{.Bookmarks.ID}}">
             <button class="add-bookmark">+ Bookmark</button>
             <button class="add-folder">+ Folder</button>
         </span>
@@ -66,3 +66,4 @@
     </div>
 </section>
 {{ template "footer.html" . }}
+<script src="/bookmarks.js"></script>
