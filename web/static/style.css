@@ -101,8 +101,11 @@ span.folder-name {
 }
 
 ul.bookmarks {
-    min-height: 1em;
     padding-left: 0em;
+}
+
+ul.bookmarks:not(ul.foldertree+ul.bookmarks) {
+    min-height: 1em;
 }
 
 div#bookmarks-elements li.bookmark {
