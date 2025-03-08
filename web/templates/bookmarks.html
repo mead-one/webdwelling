@@ -38,6 +38,20 @@
 </ul>
 {{end}}
 
+{{define "folder-select-tree"}}
+    <li class="folder-select">
+        <input type="radio" name="folder-select" id="folder-select-{{.ID}}" value="{{.ID}}">
+        <label for="folder-select-{{.ID}}">📁 {{.Name}}</label>
+    </li>
+    {{ if .ChildFolders }}
+    <ul class="folder-select-tree">
+        {{ range .ChildFolders }}
+            {{ template "folder-select-tree" . }}
+        {{ end }}
+    </ul>
+    {{ end }}
+{{ end }}
+
 {{ template "header.html" . }}
 <section>
     <h1>Your bookmarks</h1>
@@ -65,5 +79,26 @@
         {{end}}
     </div>
 </section>
+
+<div id="modal-container">
+    <form id="add-folder-form" class="modal-form" method="POST" action="/bookmarks/add-folder">
+        <h2>Add a folder</h2>
+        <input type="text" name="name" placeholder="Folder name" required>
+        <h3>Parent folder:</h3>
+        <div id="folder-select-wrapper"></div>
+        <button type="submit">Add folder</button>
+        <button type="button" id="cancel-add-folder">Cancel</button>
+    </form>
+    <div id="folder-select">
+        <ul class="folder-select-tree">
+            {{ if .Bookmarks.ChildFolders }}
+                {{ range .Bookmarks.ChildFolders }}
+                    {{ template "folder-select-tree" . }}
+                {{ end }}
+            {{ end }}
+        </ul>
+    </div>
+</div>
+
 {{ template "footer.html" . }}
 <script src="/bookmarks.js"></script>

@@ -1,41 +1,69 @@
 document.addEventListener("DOMContentLoaded", function() {
     // Add folder buttons
     const folderButtons = document.querySelectorAll("button.add-folder");
-    folderButtons.forEach(function(button) {
-        button.addEventListener("click", function(event) {
-            event.preventDefault();
-            const parentFolderID = event.target.parentElement.dataset.id;
-            const name = prompt("Enter the name of the new folder");
-            if (name === null) {
+    folderButtons.forEach(button => {
+        button.addEventListener("click", openAddFolderModal);
+    });
+
+    const addFolderForm = document.getElementById("add-folder-form");
+    addFolderForm.addEventListener("submit", function(event) {
+        event.preventDefault();
+        const parentFolderID = event.target.parentElement.dataset.id;
+        const name = prompt("Enter the name of the new folder");
+        if (name === null) {
+            return;
+        }
+
+        fetch("/bookmarks/add-folder", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded"
+            },
+            body: "parent_folder_id=" + parentFolderID + "&name=" + name
+        }).then(function(response) {
+            // Check the response status
+            if (response.status !== 200) {
+                alert(`Failed to add folder: ${response.statusText}`);
                 return;
             }
+            alert(response.status);
+            alert(response.headers.get("Content-Type"));
+            alert(response.json());
+            alert(response.text());
+            
+            //window.location.reload();
 
-            fetch("/bookmarks/add-folder", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/x-www-form-urlencoded"
-                },
-                body: "parent_folder_id=" + parentFolderID + "&name=" + name
-            }).then(function(response) {
-                // Check the response status
-                if (response.status !== 200) {
-                    alert(`Failed to add folder: ${response.statusText}`);
-                    return;
-                }
-                alert(response.status);
-                alert(response.headers.get("Content-Type"));
-                alert(response.json());
-                alert(response.text());
-                
-                //window.location.reload();
-
-                // Parse the JSON response
-                //const folder = response.json();
-                //addFolderFromObject(folder);
-            });
+            // Parse the JSON response
+            //const folder = response.json();
+            //addFolderFromObject(folder);
         });
     });
 });
+
+// Open the add folder modal
+function openAddFolderModal(event) {
+    const parentFolderID = event.target.parentElement.dataset.id;
+
+    const modalContainer = document.getElementById("modal-container");
+    const addFolderForm = document.getElementById("add-folder-form");
+    const folderSelectWrapper = document.getElementById("folder-select-wrapper");
+    const folderSelect = document.getElementById("folder-select");
+
+    folderSelectWrapper.appendChild(folderSelect);
+    addFolderForm.reset();
+    addFolderForm.elements["folder-select"].value = parentFolderID;
+    modalContainer.style.display = "block";
+    addFolderForm.style.display = "block";
+}
+
+// Close the add folder modal
+function cancelAddFolderModal() {
+    const modalContainer = document.getElementById("modal-container");
+    const addFolderForm = document.getElementById("add-folder-form");
+
+    modalContainer.style.display = "none";
+    addFolderForm.style.display = "none";
+}
 
 // Add a folder from Object
 function addFolderFromObject(folder) {

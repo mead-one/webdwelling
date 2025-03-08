@@ -132,3 +132,64 @@ li.bookmark:last-child {
     overflow: hidden;
     text-overflow: ellipsis;
 }
+
+/* --- Modal --- */
+#modal-container {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 10;
+}
+
+.modal-form {
+    display: none;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 30em;
+    padding: 1em;
+    background-color: white;
+    border-radius: 0.5em;
+}
+
+.modal-form input[type="text"] {
+    width: 100%;
+    padding: 0.1em;
+}
+
+.modal-form button {
+    margin: 0.5em 0;
+}
+
+/* --- Folder select --- */
+#folder-select {
+    border: 1px solid black;
+    background-color: white;
+    user-select: none;
+}
+
+#folder-select ul.folder-select-tree {
+    padding-left: 1em;
+    margin: 0.4em 0 0.4em 0;
+}
+
+#folder-select ul.folder-select-tree li.folder-select {
+    list-style-type: none;
+}
+
+ul.folder-select-tree li.folder-select input[type="radio"] {
+    display: none;
+}
+
+#folder-select ul.folder-select-tree li.folder-select input[type="radio"]:checked+label {
+    background-color: #E1AD01;
+    color: white;
+    border: 1px solid black;
+    border-radius: 0.5em;
+    padding: 0.1em 0.75em;
+}
