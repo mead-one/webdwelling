@@ -1,11 +1,13 @@
 document.addEventListener("DOMContentLoaded", function() {
-    // Add folder buttons
     const folderButtons = document.querySelectorAll("button.add-folder");
+    const addFolderForm = document.getElementById("add-folder-form");
+    const cancelAddFolderButton = document.getElementById("cancel-add-folder");
+
+    // Add folder buttons
     folderButtons.forEach(button => {
         button.addEventListener("click", openAddFolderModal);
     });
 
-    const addFolderForm = document.getElementById("add-folder-form");
     addFolderForm.addEventListener("submit", function(event) {
         event.preventDefault();
         const parentFolderID = event.target.parentElement.dataset.id;
@@ -38,6 +40,7 @@ document.addEventListener("DOMContentLoaded", function() {
             //addFolderFromObject(folder);
         });
     });
+    cancelAddFolderButton.addEventListener("click", cancelAddFolderModal);
 });
 
 // Open the add folder modal
