@@ -43,13 +43,13 @@
         <input type="radio" name="folder-select" id="folder-select-{{.ID}}" value="{{.ID}}">
         <label for="folder-select-{{.ID}}">📁 {{.Name}}</label>
     </li>
+    <ul id="folder-select-tree-{{.ID}}" class="folder-select-tree">
     {{ if .ChildFolders }}
-    <ul class="folder-select-tree">
         {{ range .ChildFolders }}
             {{ template "folder-select-tree" . }}
         {{ end }}
-    </ul>
     {{ end }}
+    </ul>
 {{ end }}
 
 {{ template "header.html" . }}
@@ -84,6 +84,8 @@
     <form id="add-folder-form" class="modal-form" method="POST" action="/bookmarks/add-folder">
         <h2>Add a folder</h2>
         <input type="text" name="name" placeholder="Folder name" required>
+        <input type="checkbox" name="public" id="new-folder-public-checkbox">
+        <label for="new-folder-public-checkbox">Public</label>
         <h3>Parent folder:</h3>
         <div id="folder-select-wrapper"></div>
         <button type="submit">Add folder</button>
