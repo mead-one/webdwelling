@@ -75,17 +75,24 @@ func RegisterRoutes(e *echo.Echo, templatesDir string, staticDir string) {
         title := c.FormValue("title")
         url := c.FormValue("url")
         tags := c.FormValue("tags")
-        folderID, err := strconv.Atoi(c.FormValue("folder_id"))
-        if err != nil {
-            return c.JSON(http.StatusBadRequest, map[string]interface{}{
-                "error": "Invalid folder ID",
-                "error_code": http.StatusBadRequest,
-            })
+        var folderID *int
+        var err error
+        if (c.FormValue("folder_id") == "null" || c.FormValue("folder_id") == "") {
+            folderID = nil
+        } else {
+            folderID = new(int)
+            *folderID, err = strconv.Atoi(c.FormValue("folder_id"))
+            if err != nil {
+                return c.JSON(http.StatusBadRequest, map[string]interface{}{
+                    "error": "Invalid folder ID",
+                    "error_code": http.StatusBadRequest,
+                })
+            }
         }
-        // public := c.FormValue("public") == "on"
+
         var public bool = c.FormValue("public") == "true"
 
-        newBookmark, err := database.AddBookmark(userID, title, url, tags, &folderID, public)
+        newBookmark, err := database.AddBookmark(userID, title, url, tags, folderID, public)
         if err != nil {
             // Serve JSON error response
             return c.JSON(http.StatusInternalServerError, map[string]interface{}{
@@ -100,7 +107,7 @@ func RegisterRoutes(e *echo.Echo, templatesDir string, staticDir string) {
             Title string `json:"title"`
             URL string `json:"url"`
             Tags string `json:"tags"`
-            FolderID int `json:"folder_id,omitempty"`
+            FolderID *int `json:"folder_id,omitempty"`
             Public bool `json:"public"`
             CreatedAt string `json:"created_at"`
         }
@@ -110,7 +117,7 @@ func RegisterRoutes(e *echo.Echo, templatesDir string, staticDir string) {
             Title: newBookmark.Title,
             URL: newBookmark.URL,
             Tags: newBookmark.Tags,
-            FolderID: *newBookmark.FolderID,
+            FolderID: newBookmark.FolderID,
             Public: newBookmark.Public,
             CreatedAt: newBookmark.CreatedAt,
         }
@@ -139,14 +146,21 @@ func RegisterRoutes(e *echo.Echo, templatesDir string, staticDir string) {
     e.POST("/bookmarks/add-folder", auth.RequireAuth(func(c echo.Context) error {
         userID := c.Get("user_id").(int)
         name := c.FormValue("name")
-        parentFolderID, err := strconv.Atoi(c.FormValue("parent_folder_id"))
-        if err != nil {
-            return err
+        var parentFolderID *int
+        var err error
+        if (c.FormValue("parent_folder_id") == "null" || c.FormValue("parent_folder_id") == "") {
+            parentFolderID = nil
+        } else {
+            parentFolderID = new(int)
+            *parentFolderID, err = strconv.Atoi(c.FormValue("parent_folder_id"))
+            if err != nil {
+                return err
+            }
         }
-        // public := c.FormValue("public") == "on"
+
         var public bool = c.FormValue("public") == "true"
 
-        newFolder, err := database.AddBookmarkFolder(userID, name, &parentFolderID, public)
+        newFolder, err := database.AddBookmarkFolder(userID, name, parentFolderID, public)
         if err != nil {
             // Serve JSON error response
             return c.JSON(http.StatusInternalServerError, map[string]interface{}{
@@ -159,7 +173,7 @@ func RegisterRoutes(e *echo.Echo, templatesDir string, staticDir string) {
         type BookmarkFolderResponse struct {
             ID int `json:"id"`
             Name string `json:"name"`
-            ParentFolderID int `json:"parent_folder_id,omitempty"`
+            ParentFolderID *int `json:"parent_folder_id,omitempty"`
             Public bool `json:"public"`
             CreatedAt string `json:"created_at"`
         }
@@ -167,7 +181,7 @@ func RegisterRoutes(e *echo.Echo, templatesDir string, staticDir string) {
         response := BookmarkFolderResponse{
             ID: newFolder.ID,
             Name: newFolder.Name,
-            ParentFolderID: *newFolder.ParentFolderID,
+            ParentFolderID: newFolder.ParentFolderID,
             Public: newFolder.Public,
             CreatedAt: newFolder.CreatedAt,
         }

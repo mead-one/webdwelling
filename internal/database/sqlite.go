@@ -7,6 +7,7 @@ import (
     "os"
     "time"
     "path/filepath"
+    "strconv"
 
     _ "github.com/mattn/go-sqlite3"
     "golang.org/x/crypto/bcrypt"
@@ -286,7 +287,7 @@ func AddBookmark(userID int, title string, url string, tags string, folderID *in
     // Write bookmark to database
     err := DB.QueryRow(
         "INSERT INTO bookmarks (user_id,title,url,tags,folder_id,public) VALUES (?,?,?,?,?,?) RETURNING id",
-        userID, title, url, tags, *folderID, public,
+        userID, title, url, tags, folderID, public,
     ).Scan(&lastID)
     if err != nil {
         return nil, fmt.Errorf("Failed to create bookmark: %v", err)
@@ -360,6 +361,42 @@ func DeleteBookmarkFolder(userID int, folderID int) error {
         return fmt.Errorf("You are not authorized to delete this folder")
     }
 
+    // Recursively delete all descendant folders
+    // Get all child folders
+    rows, err := DB.Query("SELECT id FROM bookmark_folders WHERE parent_folder_id = ?", folderID)
+    if err != nil {
+        return fmt.Errorf("Failed to get child folders: %v", err)
+    }
+
+    // Iterate over rows, storing child folder IDs
+    var childFolderIDs []int
+    for rows.Next() {
+        var childFolderID int
+        if err := rows.Scan(&childFolderID); err != nil {
+            return fmt.Errorf("Failed to scan child folder ID: %v", err)
+        }
+
+        childFolderIDs = append(childFolderIDs, childFolderID)
+    }
+    rows.Close()
+
+    for _, childFolderID := range childFolderIDs {
+        fmt.Println("Deleting child folder ID: " + strconv.Itoa(childFolderID))
+
+        // Delete child bookmarks
+        _, err = DB.Exec("DELETE FROM bookmarks WHERE folder_id = ?", childFolderID)
+        if err != nil {
+            return fmt.Errorf("Failed to delete child bookmarks: %v", err)
+        }
+
+        // Recursively delete child folders
+        err = DeleteBookmarkFolder(userID, childFolderID)
+        if err != nil {
+            return fmt.Errorf("Failed to delete child folder: %v", err)
+        }
+    }
+   
+    // Delete the folder
     _, err = DB.Exec("DELETE FROM bookmark_folders WHERE id = ?", folderID)
     if err != nil {
         return fmt.Errorf("Failed to delete bookmark folder: %v", err)
