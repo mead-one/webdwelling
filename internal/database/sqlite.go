@@ -361,6 +361,12 @@ func DeleteBookmarkFolder(userID int, folderID int) error {
         return fmt.Errorf("You are not authorized to delete this folder")
     }
 
+    // Delete all bookmarks in this folder
+    _, err = DB.Exec("DELETE FROM bookmarks WHERE folder_id = ?", folderID)
+    if err != nil {
+        return fmt.Errorf("Failed to delete bookmarks: %v", err)
+    }
+
     // Recursively delete all descendant folders
     // Get all child folders
     rows, err := DB.Query("SELECT id FROM bookmark_folders WHERE parent_folder_id = ?", folderID)

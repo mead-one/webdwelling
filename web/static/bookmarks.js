@@ -317,6 +317,8 @@ function submitDeleteFolder(event) {
 
         // Remove the folder details element from the folder tree
         document.getElementById(`folder-${folderID}`).remove();
+        // Remove the folder from the folder select tree
+        document.getElementById(`folder-select-tree-${folderID}`).remove();
     }).catch(function(error) {
         alert(`Failed to delete folder: ${error}`);
     });
