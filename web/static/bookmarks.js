@@ -2,6 +2,7 @@ document.addEventListener("DOMContentLoaded", function() {
     const bookmarkButtons = document.querySelectorAll("button.add-bookmark");
     const deleteBookmarkButtons = document.querySelectorAll("button.delete-bookmark");
     const folderButtons = document.querySelectorAll("button.add-folder");
+    const renameFolderButtons = document.querySelectorAll("button.rename-folder");
     const deleteFolderButtons = document.querySelectorAll("button.delete-folder");
     const addBookmarkForm = document.getElementById("add-bookmark-form");
     const addFolderForm = document.getElementById("add-folder-form");
@@ -21,6 +22,11 @@ document.addEventListener("DOMContentLoaded", function() {
     // Add folder buttons
     folderButtons.forEach(button => {
         button.addEventListener("click", openAddFolderModal);
+    });
+
+    // Rename folder buttons
+    renameFolderButtons.forEach(button => {
+        button.addEventListener("click", openRenameFolderForm);
     });
 
     // Delete folder buttons
@@ -53,6 +59,7 @@ function openAddBookmarkModal(event) {
     addBookmarkForm.elements["folder-select"].value = parentFolderID;
     modalContainer.style.display = "block";
     addBookmarkForm.style.display = "block";
+    addBookmarkForm.elements["title"].focus();
 }
 
 function submitAddBookmarkForm(event) {
@@ -155,6 +162,7 @@ function openAddFolderModal(event) {
     addFolderForm.elements["folder-select"].value = parentFolderID;
     modalContainer.style.display = "block";
     addFolderForm.style.display = "block";
+    addFolderForm.elements["name"].focus();
 }
 
 function submitAddFolderForm(event) {
@@ -199,6 +207,84 @@ function closeAddFolderModal() {
     modalContainer.style.display = "none";
     addFolderForm.style.display = "none";
     addFolderForm.reset();
+}
+
+function openRenameFolderForm(event) {
+    console.log(`Renaming folder ${event.target.closest("details.folder").dataset.id}`);
+    const folderID = event.target.closest("details.folder").dataset.id;
+    const folderSummary = document.querySelector(`#folder-${folderID} > summary`);
+    const folderSpan = folderSummary.querySelector("span.folder-name");
+    const folderActions = folderSummary.querySelector("span.folder-actions");
+    const folderName = folderSpan.innerText.slice(3);
+    const renameFolderForm = document.createElement("form");
+    renameFolderForm.id = `rename-folder-form-${folderID}`;
+    renameFolderForm.classList.add("rename-folder-form");
+    renameFolderForm.innerHTML = `
+        <span class="folder-rename-span"><input type="text" name="name" placeholder="Folder name" value="${folderName}" required></span>
+        <span class="folder-actions">
+            <button type="submit">Rename folder</button>
+            <button type="button" id="cancel-rename-folder-${folderID}" class="cancel-rename-folder">Cancel</button>
+        </span>
+    `;
+
+    folderSpan.style.display = "none";
+    folderActions.style.display = "none";
+    folderSummary.appendChild(renameFolderForm);
+    renameFolderForm.addEventListener("submit", submitRenameFolderForm);
+    renameFolderForm.querySelector("button.cancel-rename-folder").addEventListener("click", closeRenameFolderForm);
+}
+
+function closeRenameFolderForm(event) {
+    const folderID = event.target.closest("details.folder").dataset.id;
+    const folderSummary = document.querySelector(`#folder-${folderID} > summary`);
+    const renameFolderForm = document.getElementById(`rename-folder-form-${folderID}`);
+    const folderSpan = folderSummary.querySelector("span.folder-name");
+    const folderActions = folderSummary.querySelector("span.folder-actions");
+
+    folderSpan.style.display = "inline";
+    folderActions.style.display = "inline";
+    renameFolderForm.remove();
+}
+
+function submitRenameFolderForm(event) {
+    event.preventDefault();
+    const folderID = event.target.closest("details.folder").dataset.id;
+    const folderName = event.target.elements["name"].value;
+    if (folderName === null) {
+        return;
+    }
+
+    console.log(`Renaming folder ${folderID} to ${folderName}`);
+
+    fetch("/bookmarks/rename-folder", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body: `folder_id=${folderID}&name=${folderName}`
+    }).then(function(response) {
+        if (!response.ok) {
+            throw new Error(response.statusText);
+        }
+        return response.json();
+    }).then(function(data) {
+        // Check the response status
+        console.log(data);
+
+        // Update the folder name in the folder tree
+        document.getElementById(`folder-${folderID}`).querySelector("span.folder-name").innerText = `📁 ${folderName}`;
+
+        // Update the folder name in the folder select tree
+        const folderSelectTree = document.getElementById(`folder-select-tree-${folderID}`);
+        const folderSelectLi = folderSelectTree.querySelector("li.folder-select");
+        folderSelectLi.querySelector("label").innerText = `📁 ${folderName}`;
+
+        // Update the folder name in the modal
+        const modalFolderName = document.getElementById(`folder-name-${folderID}`);
+        modalFolderName.innerText = `📁 ${folderName}`;
+    }).catch(function(error) {
+        alert(`Failed to rename folder: ${error}`);
+    });
 }
 
 function submitDeleteFolder(event) {

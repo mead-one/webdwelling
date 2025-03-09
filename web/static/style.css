@@ -154,6 +154,18 @@ li.bookmark:last-child {
     margin: 0.5em 0;
 }
 
+/* Folder rename */
+form.rename-folder-form {
+    display: flex;
+    flex: 1;
+    flex-direction: row;
+    margin-left: 0.4em;
+}
+
+form.rename-folder-form span.folder-rename-span {
+    flex: 1;
+}
+
 /* --- Folder select --- */
 #folder-select {
     border: 1px solid black;
@@ -181,3 +193,4 @@ ul.folder-select-tree li.folder-select input[type="radio"] {
     border-radius: 0.5em;
     padding: 0.1em 0.75em;
 }
+
