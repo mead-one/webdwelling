@@ -59,10 +59,6 @@ func RegisterRoutes(e *echo.Echo, templatesDir string, staticDir string) {
             })
         }
 
-        folderCount := len(bookmarks.ChildFolders)
-        bookmarkCount := len(bookmarks.ChildBookmarks)
-        fmt.Println("Folder count: " + strconv.Itoa(folderCount) + ", bookmark count: " + strconv.Itoa(bookmarkCount))
-
         return c.Render(http.StatusOK, "bookmarks.html", map[string]interface{}{
             "title": "Bookmarks",
             "NavItems": navItems,
@@ -185,8 +181,6 @@ func RegisterRoutes(e *echo.Echo, templatesDir string, staticDir string) {
             Public: newFolder.Public,
             CreatedAt: newFolder.CreatedAt,
         }
-
-        fmt.Printf("Response: %v\n", response)
 
         // Return the new folder details from newFolder but dereference pointers
         return c.JSON(http.StatusOK, response)

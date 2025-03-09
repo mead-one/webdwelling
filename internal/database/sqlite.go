@@ -7,7 +7,6 @@ import (
     "os"
     "time"
     "path/filepath"
-    "strconv"
 
     _ "github.com/mattn/go-sqlite3"
     "golang.org/x/crypto/bcrypt"
@@ -387,8 +386,6 @@ func DeleteBookmarkFolder(userID int, folderID int) error {
     rows.Close()
 
     for _, childFolderID := range childFolderIDs {
-        fmt.Println("Deleting child folder ID: " + strconv.Itoa(childFolderID))
-
         // Delete child bookmarks
         _, err = DB.Exec("DELETE FROM bookmarks WHERE folder_id = ?", childFolderID)
         if err != nil {
