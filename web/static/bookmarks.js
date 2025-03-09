@@ -87,9 +87,6 @@ function submitAddBookmarkForm(event) {
         }
         return response.json();
     }).then(function(data) {
-        // Check the response status
-        console.log(data);
-
         // Add the bookmark to the folder tree and folder-select-tree
         updateNewBookmark(data.title, data.url, data.tags, data.folder_id, data.id);
         closeAddBookmarkModal();
@@ -133,9 +130,6 @@ function submitDeleteBookmark(event) {
         }
         return response.json();
     }).then(function(data) {
-        // Check the response status
-        console.log(data);
-
         // Remove the boomark li element from the folder tree
         document.getElementById(`bookmark-${bookmarkID}`).remove();
     }).catch(function(error) {
@@ -188,9 +182,6 @@ function submitAddFolderForm(event) {
         }
         return response.json();
     }).then(function(data) {
-        // Check the response status
-        console.log(data);
-
         // Add the folder to the folder tree and folder-select-tree
         updateNewFolder(data.name, data.parent_folder_id, data.id);
         closeAddFolderModal();
@@ -210,7 +201,6 @@ function closeAddFolderModal() {
 }
 
 function openRenameFolderForm(event) {
-    console.log(`Renaming folder ${event.target.closest("details.folder").dataset.id}`);
     const folderID = event.target.closest("details.folder").dataset.id;
     const folderSummary = document.querySelector(`#folder-${folderID} > summary`);
     const folderSpan = folderSummary.querySelector("span.folder-name");
@@ -268,9 +258,6 @@ function submitRenameFolderForm(event) {
         }
         return response.json();
     }).then(function(data) {
-        // Check the response status
-        console.log(data);
-
         // Update the folder name in the folder tree
         document.getElementById(`folder-${folderID}`).querySelector("span.folder-name").innerText = `📁 ${folderName}`;
 
@@ -312,9 +299,6 @@ function submitDeleteFolder(event) {
         }
         return response.json();
     }).then(function(data) {
-        // Check the response status
-        console.log(data);
-
         // Remove the folder details element from the folder tree
         document.getElementById(`folder-${folderID}`).remove();
         // Remove the folder from the folder select tree
@@ -420,7 +404,6 @@ function addBookmarkToFolderTree(title, url, tags, folderID, newID) {
 
 // Update the folder tree and folder select tree after adding a new folder
 function updateNewFolder(name, parentFolderID, newID) {
-    console.log(`Params: name: ${name}, parentFolderID: ${parentFolderID}, newID: ${newID}`);
     addFolderToFolderTree(name, parentFolderID, newID);
     addFolderToFolderSelectTree(name, parentFolderID, newID);
 }
@@ -493,7 +476,6 @@ function addFolderToFolderTree(name, parentFolderID, newID) {
 }
 
 function addFolderToFolderSelectTree(name, parentFolderID, newID) {
-    console.log(`Params: name: ${name}, parentFolderID: ${parentFolderID}, newID: ${newID}`);
     let parentDiv;
     if (parentFolderID === null || parentFolderID === undefined || parentFolderID === "") {
         parentDiv= document.getElementById("folder-select").querySelector(":scope > ul.folder-select-tree");
@@ -510,8 +492,6 @@ function addFolderToFolderSelectTree(name, parentFolderID, newID) {
     const folderSelectLabel = document.createElement("label");
     folderSelectLabel.innerText = `📁 ${name}`;
     folderSelectLabel.htmlFor = folderSelect.id;
-
-    console.log(`Folder select ID: ${folderSelect.id}, folder select label for: ${folderSelectLabel.htmlFor}`);
 
     const folderSelectLi = document.createElement("li");
     folderSelectLi.classList.add("folder-select");
