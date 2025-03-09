@@ -93,6 +93,19 @@
         <button type="submit">Add bookmark</button>
         <button type="button" id="cancel-add-bookmark">Cancel</button>
     </form>
+    <form id="edit-bookmark-form" class="modal-form" method="POST" action="/bookmarks/edit-bookmark">
+        <h2>Edit a bookmark</h2>
+        <input type="hidden" name="bookmark_id" value="">
+        <input type="text" name="title" placeholder="Bookmark title" required>
+        <input type="text" name="url" placeholder="Bookmark URL" required>
+        <input type="text" name="tags" placeholder="Bookmark tags">
+        <input type="checkbox" name="public" id="edit-bookmark-public-checkbox" checked>
+        <label for="edit-bookmark-public-checkbox">Public</label>
+        <h3>Parent folder:</h3>
+        <div id="edit-bookmark-folder-select-wrapper"></div>
+        <button type="submit">Edit bookmark</button>
+        <button type="button" id="cancel-edit-bookmark">Cancel</button>
+    </form>
     <form id="add-folder-form" class="modal-form" method="POST" action="/bookmarks/add-folder">
         <h2>Add a folder</h2>
         <input type="text" name="name" placeholder="Folder name" required>

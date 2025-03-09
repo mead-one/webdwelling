@@ -1,10 +1,12 @@
 document.addEventListener("DOMContentLoaded", function() {
     const bookmarkButtons = document.querySelectorAll("button.add-bookmark");
+    const editBookmarkButtons = document.querySelectorAll("button.edit-bookmark");
     const deleteBookmarkButtons = document.querySelectorAll("button.delete-bookmark");
     const folderButtons = document.querySelectorAll("button.add-folder");
     const renameFolderButtons = document.querySelectorAll("button.rename-folder");
     const deleteFolderButtons = document.querySelectorAll("button.delete-folder");
     const addBookmarkForm = document.getElementById("add-bookmark-form");
+    const editBookmarkForm = document.getElementById("edit-bookmark-form");
     const addFolderForm = document.getElementById("add-folder-form");
     const cancelAddBookmarkButton = document.getElementById("cancel-add-bookmark");
     const cancelAddFolderButton = document.getElementById("cancel-add-folder");
@@ -12,6 +14,11 @@ document.addEventListener("DOMContentLoaded", function() {
     // Add bookmark buttons
     bookmarkButtons.forEach(button => {
         button.addEventListener("click", openAddBookmarkModal);
+    });
+
+    // Edit bookmark buttons
+    editBookmarkButtons.forEach(button => {
+        button.addEventListener("click", openEditBookmarkModal);
     });
 
     // Delete bookmark buttons
@@ -35,6 +42,7 @@ document.addEventListener("DOMContentLoaded", function() {
     });
 
     addBookmarkForm.addEventListener("submit", submitAddBookmarkForm);
+    editBookmarkForm.addEventListener("submit", submitEditBookmarkForm);
     addFolderForm.addEventListener("submit", submitAddFolderForm);
     cancelAddBookmarkButton.addEventListener("click", closeAddBookmarkModal);
     cancelAddFolderButton.addEventListener("click", closeAddFolderModal);
@@ -103,6 +111,80 @@ function closeAddBookmarkModal() {
     modalContainer.style.display = "none";
     addBookmarkForm.style.display = "none";
     addBookmarkForm.reset();
+}
+
+// Open the edit bookmark modal
+function openEditBookmarkModal(event) {
+    let parentFolderID;
+    if (event.target.parentElement.parentElement.id === "bookmarks-elements") {
+        parentFolderID = 0;
+    } else {
+        parentFolderID = event.target.parentElement.dataset.id;
+    }
+
+    const modalContainer = document.getElementById("modal-container");
+    const editBookmarkForm = document.getElementById("edit-bookmark-form");
+    const folderSelectWrapper = document.getElementById("edit-bookmark-folder-select-wrapper");
+    const folderSelect = document.getElementById("folder-select");
+
+    folderSelectWrapper.appendChild(folderSelect);
+    editBookmarkForm.reset();
+    editBookmarkForm.elements["bookmark_id"].value = event.target.closest("li.bookmark").dataset.id;
+    editBookmarkForm.elements["title"].value = event.target.closest("li.bookmark").querySelector("a.bookmark-title").innerText;
+    editBookmarkForm.elements["url"].value = event.target.closest("li.bookmark").querySelector("a.bookmark-title").href;
+    editBookmarkForm.elements["tags"].value = event.target.closest("li.bookmark").querySelector("span.bookmark-tags").innerText;
+    editBookmarkForm.elements["folder-select"].value = parentFolderID;
+    modalContainer.style.display = "block";
+    editBookmarkForm.style.display = "block";
+    editBookmarkForm.elements["title"].focus();
+}
+
+function submitEditBookmarkForm(event) {
+    event.preventDefault();
+    const title = event.target.elements["title"].value;
+    const url = event.target.elements["url"].value;
+    const tags = event.target.elements["tags"].value;
+    const public = event.target.elements["public"].checked;
+    const folderID = event.target.elements["folder-select"].value === "0" ? null : event.target.elements["folder-select"].value;
+    if (title === null) {
+        return;
+    }
+
+    console.log(`Editing bookmark ${title} to folder ${folderID}`);
+
+    fetch("/bookmarks/edit-bookmark", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body: `bookmark_id=${event.target.elements["bookmark_id"].value}&title=${title}&url=${url}&tags=${tags}&public=${public}&folder_id=${folderID}`
+    }).then(function(response) {
+        if (!response.ok) {
+            throw new Error(response.statusText);
+        }
+        return response.json();
+    }).then(function(data) {
+        // Update the bookmark li element from the editBookmarkForm
+        const bookmarkLi = document.getElementById(`bookmark-${data.id}`);
+        bookmarkLi.querySelector("a.bookmark-title").innerText = data.title;
+        bookmarkLi.querySelector("a.bookmark-title").href = data.url;
+        bookmarkLi.querySelector("span.bookmark-tags").innerText = data.tags;
+        // Update the folder tree and folder select tree
+        //updateNewBookmark(data.title, data.url, data.tags, data.folder_id, data.id);
+        closeEditBookmarkModal();
+    }).catch(function(error) {
+        alert(`Failed to edit bookmark: ${error}`);
+    });
+}
+
+// Close the edit bookmark modal
+function closeEditBookmarkModal() {
+    const modalContainer = document.getElementById("modal-container");
+    const editBookmarkForm = document.getElementById("edit-bookmark-form");
+
+    modalContainer.style.display = "none";
+    editBookmarkForm.style.display = "none";
+    editBookmarkForm.reset();
 }
 
 function submitDeleteBookmark(event) {
@@ -212,7 +294,7 @@ function openRenameFolderForm(event) {
     renameFolderForm.innerHTML = `
         <span class="folder-rename-span"><input type="text" name="name" placeholder="Folder name" value="${folderName}" required></span>
         <span class="folder-actions">
-            <button type="submit">Rename folder</button>
+            <button type="submit" onsubmit="submitRenameFolderForm(event)">Rename folder</button>
             <button type="button" id="cancel-rename-folder-${folderID}" class="cancel-rename-folder">Cancel</button>
         </span>
     `;
@@ -222,6 +304,47 @@ function openRenameFolderForm(event) {
     folderSummary.appendChild(renameFolderForm);
     renameFolderForm.addEventListener("submit", submitRenameFolderForm);
     renameFolderForm.querySelector("button.cancel-rename-folder").addEventListener("click", closeRenameFolderForm);
+}
+
+function submitRenameFolderForm(event) {
+    event.preventDefault();
+    const folderID = event.target.closest("details.folder").dataset.id;
+    const folderName = event.target.elements["name"].value;
+    if (folderName === null) {
+        return;
+    }
+
+    console.log(`Renaming folder ${folderID} to ${folderName}`);
+
+    fetch("/bookmarks/rename-folder", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body: `folder_id=${folderID}&name=${folderName}`
+    }).then(function(response) {
+        if (!response.ok) {
+            throw new Error(response.statusText);
+        }
+        return response.json();
+    }).then(function(data) {
+        // Check the response
+        console.log(data);
+
+        // Update the folder name in the folder tree
+        document.getElementById(`folder-${folderID}`).querySelector("span.folder-name").innerText = `📁 ${folderName}`;
+
+        // Update the folder name in the folder select tree
+        const folderSelectTree = document.getElementById(`folder-select-tree-${folderID}`);
+        const folderSelectLi = folderSelectTree.querySelector("li.folder-select");
+        folderSelectLi.querySelector("label").innerText = `📁 ${folderName}`;
+
+        // Update the folder name in the modal
+        const modalFolderName = document.getElementById(`folder-name-${folderID}`);
+        modalFolderName.innerText = `📁 ${folderName}`;
+    }).catch(function(error) {
+        alert(`Failed to rename folder: ${error}`);
+    });
 }
 
 function closeRenameFolderForm(event) {
