@@ -466,7 +466,7 @@ function addFolderToFolderTree(name, parentFolderID, newID) {
     
     renameFolderButton.classList.add("rename-folder");
     renameFolderButton.innerText = "Rename";
-    //renameFolderButton.addEventListener("click", openRenameFolderModal);
+    renameFolderButton.addEventListener("click", openRenameFolderForm);
     folderActions.appendChild(renameFolderButton);
 
     deleteFolderButton.classList.add("delete-folder");
