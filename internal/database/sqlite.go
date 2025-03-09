@@ -76,7 +76,7 @@ func createTables() {
         public INTEGER NOT NULL DEFAULT 1,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY(user_id) REFERENCES users(id),
-        FOREIGN KEY(parent_folder_id) REFERENCES folders(id),
+        FOREIGN KEY(parent_folder_id) REFERENCES folders(id) ON DELETE CASCADE,
         UNIQUE(user_id, name)
     )`); err != nil {
         log.Fatalf("Failed to create folders table: %v", err)
@@ -91,7 +91,7 @@ func createTables() {
         folder_id INTEGER,
         public INTEGER NOT NULL DEFAULT 1,
         FOREIGN KEY(user_id) REFERENCES users(id),
-        FOREIGN KEY(folder_id) REFERENCES folders(id)
+        FOREIGN KEY(folder_id) REFERENCES folders(id) ON DELETE CASCADE
     )`); err != nil {
         log.Fatalf("Failed to create bookmarks table: %v", err)
     }
@@ -128,6 +128,7 @@ type BookmarkFolder struct {
     ID int
     Name string
     ParentFolderID *int
+    Public bool
     CreatedAt string
     ChildFolders []*BookmarkFolder
     ChildBookmarks []*Bookmark
@@ -140,6 +141,7 @@ type Bookmark struct {
     Tags string
     FolderID *int
     Public bool
+    CreatedAt string
 }
 
 // ### User functions ###
@@ -277,17 +279,54 @@ func GetBookmarksByUserID(userID int, includePrivate bool) (BookmarkFolder, erro
     return bookmarks, nil
 }
 
+// Add a new bookmark
+func AddBookmark(userID int, title string, url string, tags string, folderID *int, public bool) (*Bookmark, error) {
+    lastID := 0
+
+    // Write bookmark to database
+    err := DB.QueryRow(
+        "INSERT INTO bookmarks (user_id,title,url,tags,folder_id,public) VALUES (?,?,?,?,?,?) RETURNING id",
+        userID, title, url, tags, *folderID, public,
+    ).Scan(&lastID)
+    if err != nil {
+        return nil, fmt.Errorf("Failed to create bookmark: %v", err)
+    }
+
+    // Create bookmark struct
+    bookmark := &Bookmark{
+        ID: lastID,
+        Title: title,
+        URL: url,
+        Tags: tags,
+        FolderID: folderID,
+        Public: public,
+        CreatedAt: time.Now().Format("2006-01-02 15:04:05"),
+    }
+
+    return bookmark, nil
+}
+
+// Delete a bookmark
+func DeleteBookmark(userID int, bookmarkID int) error {
+    bookmarkUserID := 0
+    err := DB.QueryRow("SELECT user_id FROM bookmarks WHERE id = ?", bookmarkID).Scan(&bookmarkUserID)
+    if err != nil {
+        return fmt.Errorf("Failed to get bookmark user ID: %v", err)
+    }
+    if bookmarkUserID != userID {
+        return fmt.Errorf("You are not authorized to delete this bookmark")
+    }
+
+    _, err = DB.Exec("DELETE FROM bookmarks WHERE id = ?", bookmarkID)
+    if err != nil {
+        return fmt.Errorf("Failed to delete bookmark: %v", err)
+    }
+
+    return nil
+}
+
 // Add a new bookmark folder
 func AddBookmarkFolder(userID int, name string, parentFolderID *int, public bool) (*BookmarkFolder, error) {
-    // Write folder to database
-    // _, err := DB.Exec(
-    //     "INSERT INTO bookmark_folders (user_id,name,parent_folder_id,public) VALUES (?,?,?,?)",
-    //     userID, name, parentFolderID, public,
-    // )
-    // if err != nil {
-    //     return fmt.Errorf("Failed to create bookmark folder: %v", err)
-    // }
-
     lastID := 0
     // Create folder
     err := DB.QueryRow(
@@ -299,15 +338,34 @@ func AddBookmarkFolder(userID int, name string, parentFolderID *int, public bool
     }
 
     // // Create folder struct
-    folder := BookmarkFolder{
+    folder := &BookmarkFolder{
         ID: lastID,
         Name: name,
         ParentFolderID: parentFolderID,
+        Public: public,
         CreatedAt: time.Now().Format("2006-01-02 15:04:05"),
         ChildBookmarks: make([]*Bookmark, 0),
         ChildFolders: make([]*BookmarkFolder, 0),
     }
-    return &folder, nil
+    return folder, nil
+}
+
+func DeleteBookmarkFolder(userID int, folderID int) error {
+    folderUserID := 0
+    err := DB.QueryRow("SELECT user_id FROM bookmark_folders WHERE id = ?", folderID).Scan(&folderUserID)
+    if err != nil {
+        return fmt.Errorf("Failed to get bookmark folder user ID: %v", err)
+    }
+    if folderUserID != userID {
+        return fmt.Errorf("You are not authorized to delete this folder")
+    }
+
+    _, err = DB.Exec("DELETE FROM bookmark_folders WHERE id = ?", folderID)
+    if err != nil {
+        return fmt.Errorf("Failed to delete bookmark folder: %v", err)
+    }
+
+    return nil
 }
 
 // Get a bookmark folder by name

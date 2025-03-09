@@ -8,6 +8,7 @@ import (
     "strconv"
     "path/filepath"
 
+    "golang.org/x/exp/slices"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 
@@ -69,6 +70,72 @@ func RegisterRoutes(e *echo.Echo, templatesDir string, staticDir string) {
         })
     }))
 
+    e.POST("/bookmarks/add-bookmark", auth.RequireAuth(func(c echo.Context) error {
+        userID := c.Get("user_id").(int)
+        title := c.FormValue("title")
+        url := c.FormValue("url")
+        tags := c.FormValue("tags")
+        folderID, err := strconv.Atoi(c.FormValue("folder_id"))
+        if err != nil {
+            return c.JSON(http.StatusBadRequest, map[string]interface{}{
+                "error": "Invalid folder ID",
+                "error_code": http.StatusBadRequest,
+            })
+        }
+        // public := c.FormValue("public") == "on"
+        var public bool = c.FormValue("public") == "true"
+
+        newBookmark, err := database.AddBookmark(userID, title, url, tags, &folderID, public)
+        if err != nil {
+            // Serve JSON error response
+            return c.JSON(http.StatusInternalServerError, map[string]interface{}{
+                "error": err.Error(),
+                "error_code": http.StatusInternalServerError,
+            })
+        }
+
+        // Bookmark response type
+        type BookmarkResponse struct {
+            ID int `json:"id"`
+            Title string `json:"title"`
+            URL string `json:"url"`
+            Tags string `json:"tags"`
+            FolderID int `json:"folder_id,omitempty"`
+            Public bool `json:"public"`
+            CreatedAt string `json:"created_at"`
+        }
+
+        response := BookmarkResponse{
+            ID: newBookmark.ID,
+            Title: newBookmark.Title,
+            URL: newBookmark.URL,
+            Tags: newBookmark.Tags,
+            FolderID: *newBookmark.FolderID,
+            Public: newBookmark.Public,
+            CreatedAt: newBookmark.CreatedAt,
+        }
+
+        // Return the new bookmark details from newBookmark but dereference pointers
+        return c.JSON(http.StatusOK, response)
+    }))
+
+    e.POST("/bookmarks/delete-bookmark", auth.RequireAuth(func(c echo.Context) error {
+        userID := c.Get("user_id").(int)
+        bookmarkID, err := strconv.Atoi(c.FormValue("bookmark_id"))
+        if err != nil {
+            return err
+        }
+
+        err = database.DeleteBookmark(userID, bookmarkID)
+        if err != nil {
+            return err
+        }
+
+        return c.JSON(http.StatusOK, map[string]interface{}{
+            "success": true,
+        })
+    }))
+
     e.POST("/bookmarks/add-folder", auth.RequireAuth(func(c echo.Context) error {
         userID := c.Get("user_id").(int)
         name := c.FormValue("name")
@@ -78,15 +145,6 @@ func RegisterRoutes(e *echo.Echo, templatesDir string, staticDir string) {
         }
         // public := c.FormValue("public") == "on"
         var public bool = c.FormValue("public") == "true"
-
-        // Ensure new folder belongs to current user
-        if userID != c.Get("user_id").(int) {
-            // Serve JSON error response
-            return c.JSON(http.StatusUnauthorized, map[string]interface{}{
-                "error": "You are not authorized to add a folder",
-                "error_code": http.StatusUnauthorized,
-            })
-        }
 
         newFolder, err := database.AddBookmarkFolder(userID, name, &parentFolderID, public)
         if err != nil {
@@ -102,6 +160,7 @@ func RegisterRoutes(e *echo.Echo, templatesDir string, staticDir string) {
             ID int `json:"id"`
             Name string `json:"name"`
             ParentFolderID int `json:"parent_folder_id,omitempty"`
+            Public bool `json:"public"`
             CreatedAt string `json:"created_at"`
         }
 
@@ -109,11 +168,31 @@ func RegisterRoutes(e *echo.Echo, templatesDir string, staticDir string) {
             ID: newFolder.ID,
             Name: newFolder.Name,
             ParentFolderID: *newFolder.ParentFolderID,
+            Public: newFolder.Public,
             CreatedAt: newFolder.CreatedAt,
         }
 
+        fmt.Printf("Response: %v\n", response)
+
         // Return the new folder details from newFolder but dereference pointers
         return c.JSON(http.StatusOK, response)
+    }))
+
+    e.POST("/bookmarks/delete-folder", auth.RequireAuth(func(c echo.Context) error {
+        userID := c.Get("user_id").(int)
+        folderID, err := strconv.Atoi(c.FormValue("folder_id"))
+        if err != nil {
+            return err
+        }
+
+        err = database.DeleteBookmarkFolder(userID, folderID)
+        if err != nil {
+            return err
+        }
+
+        return c.JSON(http.StatusOK, map[string]interface{}{
+            "success": true,
+        })
     }))
 
     e.Static("/", staticDir)
@@ -132,12 +211,8 @@ func RegisterRoutes(e *echo.Echo, templatesDir string, staticDir string) {
         var url string = "/" + name
         var blacklisted bool = false
 
-        for _, b := range blacklist {
-            if name == b {
-                fmt.Println(name + " vs " + b)
-                blacklisted = true
-                break
-            }
+        if slices.Contains(blacklist, name) {
+            blacklisted = true
         }
 
         if blacklisted {
