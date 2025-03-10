@@ -26,3 +26,5 @@ go.work.sum
 
 # webdwelling database
 data/webdwelling.db
+
+main
