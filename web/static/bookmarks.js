@@ -50,13 +50,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
 // Open the add bookmark modal
 function openAddBookmarkModal(event) {
-    let parentFolderID;
-    if (event.target.parentElement.parentElement.id === "bookmarks-elements") {
-        parentFolderID = 0;
-    } else {
-        parentFolderID = event.target.parentElement.dataset.id;
-    }
-
+    const parentFolderID = event.target.closest(".folder").dataset.id;
     const modalContainer = document.getElementById("modal-container");
     const addBookmarkForm = document.getElementById("add-bookmark-form");
     const folderSelectWrapper = document.getElementById("add-bookmark-folder-select-wrapper");
@@ -115,13 +109,7 @@ function closeAddBookmarkModal() {
 
 // Open the edit bookmark modal
 function openEditBookmarkModal(event) {
-    let parentFolderID;
-    if (event.target.parentElement.parentElement.id === "bookmarks-elements") {
-        parentFolderID = 0;
-    } else {
-        parentFolderID = event.target.parentElement.dataset.id;
-    }
-
+    const parentFolderID = event.target.closest(".folder").dataset.id;
     const modalContainer = document.getElementById("modal-container");
     const editBookmarkForm = document.getElementById("edit-bookmark-form");
     const folderSelectWrapper = document.getElementById("edit-bookmark-folder-select-wrapper");
@@ -129,10 +117,13 @@ function openEditBookmarkModal(event) {
 
     folderSelectWrapper.appendChild(folderSelect);
     editBookmarkForm.reset();
-    editBookmarkForm.elements["bookmark_id"].value = event.target.closest("li.bookmark").dataset.id;
-    editBookmarkForm.elements["title"].value = event.target.closest("li.bookmark").querySelector("a.bookmark-title").innerText;
-    editBookmarkForm.elements["url"].value = event.target.closest("li.bookmark").querySelector("a.bookmark-title").href;
-    editBookmarkForm.elements["tags"].value = event.target.closest("li.bookmark").querySelector("span.bookmark-tags").innerText;
+    const bookmarkLi = event.target.closest(".bookmark");
+    editBookmarkForm.elements["bookmark_id"].value = bookmarkLi.dataset.id;
+    editBookmarkForm.elements["title"].value = bookmarkLi.querySelector("a.bookmark-title").innerText;
+    editBookmarkForm.elements["url"].value = bookmarkLi.querySelector("a.bookmark-title").href;
+    if (bookmarkLi.querySelector("span.bookmark-tags") != null) {
+        editBookmarkForm.elements["tags"].value = bookmarkLi.querySelector("span.bookmark-tags").innerText;
+    }
     editBookmarkForm.elements["folder-select"].value = parentFolderID;
     modalContainer.style.display = "block";
     editBookmarkForm.style.display = "block";
@@ -164,13 +155,23 @@ function submitEditBookmarkForm(event) {
         }
         return response.json();
     }).then(function(data) {
+        console.log(data);
         // Update the bookmark li element from the editBookmarkForm
         const bookmarkLi = document.getElementById(`bookmark-${data.id}`);
+        let parentFolder, parentDiv;
+        if (data.folder_id === null || data.folder_id === undefined || data.folder_id === "") {
+            parentFolder = document.getElementById("bookmarks-elements");
+            parentDiv = parentFolder.querySelector(":scope > ul.bookmarks");
+        } else {
+            parentFolder = document.getElementById(`folder-${data.folder_id}`);
+            parentDiv = parentFolder.querySelector(":scope > details.folder-details > ul.bookmarks");
+        }
         bookmarkLi.querySelector("a.bookmark-title").innerText = data.title;
         bookmarkLi.querySelector("a.bookmark-title").href = data.url;
         bookmarkLi.querySelector("span.bookmark-tags").innerText = data.tags;
         // Update the folder tree and folder select tree
-        //updateNewBookmark(data.title, data.url, data.tags, data.folder_id, data.id);
+        parentDiv.appendChild(bookmarkLi);
+
         closeEditBookmarkModal();
     }).catch(function(error) {
         alert(`Failed to edit bookmark: ${error}`);
@@ -188,7 +189,7 @@ function closeEditBookmarkModal() {
 }
 
 function submitDeleteBookmark(event) {
-    const bookmarkID = event.target.closest("li.bookmark").dataset.id;
+    const bookmarkID = event.target.closest(".bookmark").dataset.id;
     if (bookmarkID === null) {
         return;
     }
@@ -221,13 +222,7 @@ function submitDeleteBookmark(event) {
 
 // Open the add folder modal
 function openAddFolderModal(event) {
-    let parentFolderID;
-    if (event.target.parentElement.parentElement.id === "bookmarks-elements") {
-        parentFolderID = 0;
-    } else {
-        parentFolderID = event.target.closest("details.folder").dataset.id;
-    }
-
+    let parentFolderID = event.target.closest(".folder").dataset.id;
     const modalContainer = document.getElementById("modal-container");
     const addFolderForm = document.getElementById("add-folder-form");
     const folderSelectWrapper = document.getElementById("add-folder-folder-select-wrapper");
@@ -283,8 +278,8 @@ function closeAddFolderModal() {
 }
 
 function openRenameFolderForm(event) {
-    const folderID = event.target.closest("details.folder").dataset.id;
-    const folderSummary = document.querySelector(`#folder-${folderID} > summary`);
+    const folderID = event.target.closest(".folder").dataset.id;
+    const folderSummary = document.querySelector(`#folder-${folderID} > details.folder-details > summary`);
     const folderSpan = folderSummary.querySelector("span.folder-name");
     const folderActions = folderSummary.querySelector("span.folder-actions");
     const folderName = folderSpan.innerText.slice(3);
@@ -295,7 +290,7 @@ function openRenameFolderForm(event) {
         <span class="folder-rename-span"><input type="text" name="name" placeholder="Folder name" value="${folderName}" required></span>
         <span class="folder-actions">
             <button type="submit" onsubmit="submitRenameFolderForm(event)">Rename folder</button>
-            <button type="button" id="cancel-rename-folder-${folderID}" class="cancel-rename-folder">Cancel</button>
+            <button type="button" id="cancel-rename-folder-${folderID}" class="cancel-rename-folder" onclick="closeRenameFolderForm(event)">Cancel</button>
         </span>
     `;
 
@@ -308,7 +303,7 @@ function openRenameFolderForm(event) {
 
 function submitRenameFolderForm(event) {
     event.preventDefault();
-    const folderID = event.target.closest("details.folder").dataset.id;
+    const folderID = event.target.closest(".folder").dataset.id;
     const folderName = event.target.elements["name"].value;
     if (folderName === null) {
         return;
@@ -328,28 +323,22 @@ function submitRenameFolderForm(event) {
         }
         return response.json();
     }).then(function(data) {
-        // Check the response
-        console.log(data);
-
         // Update the folder name in the folder tree
         document.getElementById(`folder-${folderID}`).querySelector("span.folder-name").innerText = `📁 ${folderName}`;
 
         // Update the folder name in the folder select tree
-        const folderSelectTree = document.getElementById(`folder-select-tree-${folderID}`);
-        const folderSelectLi = folderSelectTree.querySelector("li.folder-select");
-        folderSelectLi.querySelector("label").innerText = `📁 ${folderName}`;
+        const folderSelect = document.getElementById(`folder-select-${folderID}`);
+        folderSelect.parentElement.querySelector("label").innerText = `📁 ${folderName}`;
 
-        // Update the folder name in the modal
-        const modalFolderName = document.getElementById(`folder-name-${folderID}`);
-        modalFolderName.innerText = `📁 ${folderName}`;
+        event.target.querySelector("button.cancel-rename-folder").click();
     }).catch(function(error) {
         alert(`Failed to rename folder: ${error}`);
     });
 }
 
 function closeRenameFolderForm(event) {
-    const folderID = event.target.closest("details.folder").dataset.id;
-    const folderSummary = document.querySelector(`#folder-${folderID} > summary`);
+    const folderID = event.target.closest(".folder").dataset.id;
+    const folderSummary = document.querySelector(`#folder-${folderID} > details.folder-details > summary`);
     const renameFolderForm = document.getElementById(`rename-folder-form-${folderID}`);
     const folderSpan = folderSummary.querySelector("span.folder-name");
     const folderActions = folderSummary.querySelector("span.folder-actions");
@@ -359,51 +348,13 @@ function closeRenameFolderForm(event) {
     renameFolderForm.remove();
 }
 
-function submitRenameFolderForm(event) {
-    event.preventDefault();
-    const folderID = event.target.closest("details.folder").dataset.id;
-    const folderName = event.target.elements["name"].value;
-    if (folderName === null) {
-        return;
-    }
-
-    console.log(`Renaming folder ${folderID} to ${folderName}`);
-
-    fetch("/bookmarks/rename-folder", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/x-www-form-urlencoded"
-        },
-        body: `folder_id=${folderID}&name=${folderName}`
-    }).then(function(response) {
-        if (!response.ok) {
-            throw new Error(response.statusText);
-        }
-        return response.json();
-    }).then(function(data) {
-        // Update the folder name in the folder tree
-        document.getElementById(`folder-${folderID}`).querySelector("span.folder-name").innerText = `📁 ${folderName}`;
-
-        // Update the folder name in the folder select tree
-        const folderSelectTree = document.getElementById(`folder-select-tree-${folderID}`);
-        const folderSelectLi = folderSelectTree.querySelector("li.folder-select");
-        folderSelectLi.querySelector("label").innerText = `📁 ${folderName}`;
-
-        // Update the folder name in the modal
-        const modalFolderName = document.getElementById(`folder-name-${folderID}`);
-        modalFolderName.innerText = `📁 ${folderName}`;
-    }).catch(function(error) {
-        alert(`Failed to rename folder: ${error}`);
-    });
-}
-
 function submitDeleteFolder(event) {
-    const folderID = event.target.closest("details.folder").dataset.id;
+    const folderID = event.target.closest(".folder").dataset.id;
     if (folderID === null) {
         return;
     }
 
-    const folderName = document.querySelector(`#folder-${folderID} > summary > span.folder-name`).innerText;
+    const folderName = document.querySelector(`#folder-${folderID} > details.folder-details > summary > span.folder-name`).innerText.slice(3);
     if (!confirm(`Are you sure you want to delete the folder "${folderName}"?`)) {
         return;
     }
@@ -431,49 +382,49 @@ function submitDeleteFolder(event) {
     });
 }
 
-// Add a folder from Object
-function addFolderFromObject(folder) {
-    // Create folder elements
-    const folderTree = document.createElement("ul");
-    const folderLi = document.createElement("li");
-    const folderDetails = document.createElement("details");
-    const folderSummary = document.createElement("summary");
-    const folderName = document.createElement("span");
-    const folderActions = document.createElement("span");
-
-    // Set foldertree ID and class
-    folderTree.id = `folder-${folder.id}`;
-    folderTree.classList.add("foldertree");
-
-    // set folder li class
-    folderLi.classList.add("folder");
-
-    // Set folder name
-    folderName.innerText = folder.name;
-    folderName.classList.add("folder-name");
-
-    // Set folder data-id
-    folderDetails.dataset.id = folder.id;
-    // Set folder actions
-    folderActions.innerHTML = `
-        <button class="add-bookmark">+ Bookmark</button>
-        <button class="add-folder">+ Folder</button>
-    `;
-
-    // Set folder summary
-    folderSummary.appendChild(folderName);
-    folderSummary.appendChild(folderActions);
-
-    // Set folder details
-    folderDetails.appendChild(folderSummary);
-    folderDetails.appendChild(document.createElement("ul"));
-    folderLi.appendChild(folderDetails);
-    folderTree.appendChild(folderLi);
-
-    // Add folder to folder tree
-    const parentDiv = document.getElementById(`folder-${folder.parent_folder_id}`);
-    parentDiv.appendChild(folderDetails);
-}
+//// Add a folder from Object
+//function addFolderFromObject(folder) {
+//    // Create folder elements
+//    const folderTree = document.createElement("ul");
+//    const folderLi = document.createElement("li");
+//    const folderDetails = document.createElement("details");
+//    const folderSummary = document.createElement("summary");
+//    const folderName = document.createElement("span");
+//    const folderActions = document.createElement("span");
+//
+//    // Set foldertree ID and class
+//    folderTree.id = `folder-${folder.id}`;
+//    folderTree.classList.add("foldertree");
+//
+//    // set folder li class
+//    folderLi.classList.add("folder");
+//
+//    // Set folder name
+//    folderName.innerText = folder.name;
+//    folderName.classList.add("folder-name");
+//
+//    // Set folder data-id
+//    folderDetails.dataset.id = folder.id;
+//    // Set folder actions
+//    folderActions.innerHTML = `
+//        <button class="add-bookmark">+ Bookmark</button>
+//        <button class="add-folder">+ Folder</button>
+//    `;
+//
+//    // Set folder summary
+//    folderSummary.appendChild(folderName);
+//    folderSummary.appendChild(folderActions);
+//
+//    // Set folder details
+//    folderDetails.appendChild(folderSummary);
+//    folderDetails.appendChild(document.createElement("ul"));
+//    folderLi.appendChild(folderDetails);
+//    folderTree.appendChild(folderLi);
+//
+//    // Add folder to folder tree
+//    const parentDiv = document.getElementById(`folder-${folder.parent_folder_id}`);
+//    parentDiv.appendChild(folderDetails);
+//}
 
 // Update the folder tree after adding a new bookmark
 function updateNewBookmark(title, url, tags, folderID, newID) {
@@ -488,11 +439,12 @@ function addBookmarkToFolderTree(title, url, tags, folderID, newID) {
     } else {
         parentFolder = document.getElementById(`folder-${folderID}`);
     }
-    const parentDiv = parentFolder.querySelector(":scope > ul.bookmarks");
+    const parentDiv = parentFolder.querySelector(":scope > details.folder-details > ul.bookmarks");
     const bookmarkLi = document.createElement("li");
 
     bookmarkLi.id = `bookmark-${newID}`;
     bookmarkLi.classList.add("bookmark");
+    bookmarkLi.dataset.id = newID;
 
     const bookmarkLink = document.createElement("a");
     bookmarkLink.href = url;
@@ -513,11 +465,11 @@ function addBookmarkToFolderTree(title, url, tags, folderID, newID) {
     const editBookmarkButton = document.createElement("button");
     editBookmarkButton.classList.add("edit-bookmark");
     editBookmarkButton.innerText = "Edit";
-    //editBookmarkButton.addEventListener("click", openEditBookmarkModal);
+    editBookmarkButton.addEventListener("click", openEditBookmarkModal);
     const deleteBookmarkButton = document.createElement("button");
     deleteBookmarkButton.classList.add("delete-bookmark");
     deleteBookmarkButton.innerText = "Delete";
-    //deleteBookmarkButton.addEventListener("click", openDeleteBookmarkModal);
+    deleteBookmarkButton.addEventListener("click", submitDeleteBookmark);
     bookmarkActions.appendChild(editBookmarkButton);
     bookmarkActions.appendChild(deleteBookmarkButton);
     bookmarkLi.appendChild(bookmarkActions);
@@ -539,7 +491,8 @@ function addFolderToFolderTree(name, parentFolderID, newID) {
     } else {
         parentFolder = document.getElementById(`folder-${parentFolderID}`);
     }
-    const bookmarksUl = parentFolder.querySelector(":scope > ul.bookmarks");
+    const parentDiv = parentFolder.querySelector("ul.folders");
+    const folderLi = document.createElement("li");
     const folderDetails = document.createElement("details");
     const folderSummary = document.createElement("summary");
     const folderName = document.createElement("span");
@@ -555,8 +508,7 @@ function addFolderToFolderTree(name, parentFolderID, newID) {
     folderName.classList.add("folder-name");
 
     // Set folder data-id
-    folderDetails.id = `folder-${newID}`;
-    folderDetails.classList.add("folder");
+    folderDetails.classList.add("folder-details");
     folderDetails.dataset.id = newID;
 
     // Set folder actions
@@ -592,10 +544,13 @@ function addFolderToFolderTree(name, parentFolderID, newID) {
     folderDetails.appendChild(folderSummary);
     folderDetails.appendChild(folderUl);
 
-    // Add folder to folder tree
-    parentFolder.appendChild(folderDetails);
-    // Place the bookmarks ul at the end of the folder tree
-    bookmarksUl.parentElement.appendChild(bookmarksUl);
+    // Set folder li
+    folderLi.id = `folder-${newID}`;
+    folderLi.classList.add("folder");
+    folderLi.dataset.id = newID;
+
+    folderLi.appendChild(folderDetails);
+    parentDiv.appendChild(folderLi);
 }
 
 function addFolderToFolderSelectTree(name, parentFolderID, newID) {

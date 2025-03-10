@@ -68,7 +68,15 @@ span.folder-actions, span.bookmark-actions {
     padding: 0.1em 0.3em;
 }
 
-details.folder {
+ul.folders {
+    padding: 0;
+}
+
+li.folder {
+    list-style-type: none;
+}
+
+details.folder-details {
     background-color: white;
     margin: 0.4em 0 0.4em 0.7em;
     border-width: 1px 0 1px 1px;
@@ -77,7 +85,7 @@ details.folder {
     border-radius: 0.6em 0 0 0.6em;
 }
 
-details.folder > summary {
+details.folder-details > summary {
     display: flex;
     cursor: pointer;
     background-color: #E1AD01;

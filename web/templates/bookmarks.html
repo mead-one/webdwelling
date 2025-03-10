@@ -1,6 +1,7 @@
 <!-- nav: include, weight: 5, auth: require -->
 {{define "folder-tree"}}
-<details id="folder-{{.ID}}" class="folder" data-id="{{.ID}}">
+<li id="folder-{{.ID}}" class="folder" data-id="{{.ID}}">
+<details class="folder-details">
     <summary>
         <span class="folder-name">📁 {{.Name}}</span>
         <span class="folder-actions" data-id="{{.ID}}">
@@ -10,21 +11,20 @@
             <button class="delete-folder">Delete</button>
         </span>
     </summary>
+    <ul class="folders">
     {{ if .ChildFolders }}
         {{ range .ChildFolders }}
             {{ template "folder-tree" . }}
         {{ end }}
     {{ end }}
-
+    </ul>
     {{- /* Bookmarks within this folder */ -}}
     <ul class="bookmarks">
     {{if .ChildBookmarks}}
         {{range .ChildBookmarks}}
         <li id="bookmark-{{.ID}}" class="bookmark" data-id="{{.ID}}">
             <a href="{{.URL}}" target="_blank" class="bookmark-title">{{.Title}}</a>
-            {{if .Tags}}
-            <span class="bookmark-tags">{{.Tags}}</span>
-            {{end}}
+            <span class="bookmark-tags">{{if .Tags}}{{.Tags}}{{end}}</span>
             <span class="bookmark-actions">
                 <button class="edit-bookmark">Edit</button>
                 <button class="delete-bookmark">Delete</button>
@@ -34,6 +34,7 @@
     {{end}}
     </ul>
 </details>
+</li>
 {{end}}
 
 {{define "folder-select-tree"}}
@@ -53,23 +54,23 @@
 {{ template "header.html" . }}
 <section>
     <h1>Your bookmarks</h1>
-    <div id="bookmarks-elements" class="foldertree">
+    <div id="bookmarks-elements" class="folder" data-id="">
         <span class="folder-actions" data-id="{{.Bookmarks.ID}}">
             <button class="add-bookmark">+ Bookmark</button>
             <button class="add-folder">+ Folder</button>
         </span>
+        <ul class="folders">
         {{ if .Bookmarks.ChildFolders }}
             {{ range .Bookmarks.ChildFolders }}
                 {{ template "folder-tree" .}}
             {{ end }}
         {{ end }}
+        </ul>
         <ul class="bookmarks">
             {{range .Bookmarks.ChildBookmarks}}
             <li id="bookmark-{{.ID}}" class="bookmark" data-id="{{.ID}}">
                 <a href="{{.URL}}" target="_blank" class="bookmark-title">{{.Title}}</a>
-                {{if .Tags}}
-                <span class="bookmark-tags">{{.Tags}}</span>
-                {{end}}
+                <span class="bookmark-tags">{{if .Tags}}{{.Tags}}{{end}}</span>
                 <span class="bookmark-actions">
                     <button class="edit-bookmark">Edit</button>
                     <button class="delete-bookmark">Delete</button>
