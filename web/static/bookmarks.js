@@ -502,6 +502,7 @@ function addFolderToFolderTree(name, parentFolderID, newID) {
     const renameFolderButton = document.createElement("button");
     const deleteFolderButton = document.createElement("button");
     const folderUl = document.createElement("ul");
+    const bookmarksUl = document.createElement("ul");
 
     // Set folder name
     folderName.innerText = `📁 ${name}`;
@@ -535,7 +536,10 @@ function addFolderToFolderTree(name, parentFolderID, newID) {
     folderActions.appendChild(deleteFolderButton);
 
     // Set folder ul class
-    folderUl.classList.add("bookmarks");
+    folderUl.classList.add("folders");
+
+    // Set bookmarks ul class
+    bookmarksUl.classList.add("bookmarks");
 
     // Set folder summary
     folderSummary.appendChild(folderName);
@@ -543,6 +547,7 @@ function addFolderToFolderTree(name, parentFolderID, newID) {
     // Set folder details
     folderDetails.appendChild(folderSummary);
     folderDetails.appendChild(folderUl);
+    folderDetails.appendChild(bookmarksUl);
 
     // Set folder li
     folderLi.id = `folder-${newID}`;
