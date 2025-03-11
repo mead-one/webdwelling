@@ -155,7 +155,6 @@ function submitEditBookmarkForm(event) {
         }
         return response.json();
     }).then(function(data) {
-        console.log(data);
         // Update the bookmark li element from the editBookmarkForm
         const bookmarkLi = document.getElementById(`bookmark-${data.id}`);
         let parentFolder, parentDiv;
@@ -260,7 +259,8 @@ function submitAddFolderForm(event) {
         return response.json();
     }).then(function(data) {
         // Add the folder to the folder tree and folder-select-tree
-        updateNewFolder(data.name, data.parent_folder_id, data.id);
+        //updateNewFolder(data.name, data.parent_folder_id, data.id);
+        updateFolder({ID: data.id, Name: data.name, ParentFolderID: data.parent_folder_id});
         closeAddFolderModal();
     }).catch(function(error) {
         alert(`Failed to add folder: ${error}`);
@@ -278,11 +278,15 @@ function closeAddFolderModal() {
 }
 
 function openRenameFolderForm(event) {
+    // Ensure no existing rename folder forms
+    document.querySelectorAll("form.rename-folder-form").forEach(form => {
+        form.querySelector("button.cancel-rename-folder").click();
+    });
     const folderID = event.target.closest(".folder").dataset.id;
     const folderSummary = document.querySelector(`#folder-${folderID} > details.folder-details > summary`);
-    const folderSpan = folderSummary.querySelector("span.folder-name");
-    const folderActions = folderSummary.querySelector("span.folder-actions");
-    const folderName = folderSpan.innerText.slice(3);
+    const folderSpan = document.getElementById(`folder-name-${folderID}`);
+    const folderActions = document.getElementById(`folder-actions-${folderID}`);
+    const folderName = folderSpan.innerText;
     const renameFolderForm = document.createElement("form");
     renameFolderForm.id = `rename-folder-form-${folderID}`;
     renameFolderForm.classList.add("rename-folder-form");
@@ -290,7 +294,7 @@ function openRenameFolderForm(event) {
         <span class="folder-rename-span"><input type="text" name="name" placeholder="Folder name" value="${folderName}" required></span>
         <span class="folder-actions">
             <button type="submit" onsubmit="submitRenameFolderForm(event)">Rename folder</button>
-            <button type="button" id="cancel-rename-folder-${folderID}" class="cancel-rename-folder" onclick="closeRenameFolderForm(event)">Cancel</button>
+            <button type="button" id="cancel-rename-folder-${folderID}" class="cancel-rename-folder" onclick="closeRenameFolderForm(event)" data-id=${folderID}>Cancel</button>
         </span>
     `;
 
@@ -298,7 +302,6 @@ function openRenameFolderForm(event) {
     folderActions.style.display = "none";
     folderSummary.appendChild(renameFolderForm);
     renameFolderForm.addEventListener("submit", submitRenameFolderForm);
-    renameFolderForm.querySelector("button.cancel-rename-folder").addEventListener("click", closeRenameFolderForm);
 }
 
 function submitRenameFolderForm(event) {
@@ -324,28 +327,25 @@ function submitRenameFolderForm(event) {
         return response.json();
     }).then(function(data) {
         // Update the folder name in the folder tree
-        document.getElementById(`folder-${folderID}`).querySelector("span.folder-name").innerText = folderName;
+        updateFolder({ID: data.id, Name: data.name, ParentFolderID: data.parent_folder_id});
 
-        // Update the folder name in the folder select tree
-        const folderSelect = document.getElementById(`folder-select-${folderID}`);
-        folderSelect.parentElement.querySelector("label").innerText = folderName;
+        // Close the form
+        //document.getElementById(`cancel-rename-folder-${data.id}`).click();
+        event.target.remove();
 
-        event.target.querySelector("button.cancel-rename-folder").click();
+        // Show the hidden spans
+        document.getElementById(`folder-name-${data.id}`).style.display = "inline";
+        document.getElementById(`folder-actions-${data.id}`).style.display = "inline";
     }).catch(function(error) {
         alert(`Failed to rename folder: ${error}`);
     });
 }
 
 function closeRenameFolderForm(event) {
-    const folderID = event.target.closest(".folder").dataset.id;
-    const folderSummary = document.querySelector(`#folder-${folderID} > details.folder-details > summary`);
-    const renameFolderForm = document.getElementById(`rename-folder-form-${folderID}`);
-    const folderSpan = folderSummary.querySelector("span.folder-name");
-    const folderActions = folderSummary.querySelector("span.folder-actions");
-
-    folderSpan.style.display = "inline";
-    folderActions.style.display = "inline";
-    renameFolderForm.remove();
+    const folderID = event.target.dataset.id;
+    document.getElementById(`rename-folder-form-${folderID}`).remove();
+    document.getElementById(`folder-name-${folderID}`).style.display = "inline";
+    document.getElementById(`folder-actions-${folderID}`).style.display = "inline";
 }
 
 function submitDeleteFolder(event) {
@@ -354,7 +354,7 @@ function submitDeleteFolder(event) {
         return;
     }
 
-    const folderName = document.querySelector(`#folder-${folderID} > details.folder-details > summary > span.folder-name`).innerText.slice(3);
+    const folderName = document.querySelector(`#folder-${folderID} > details.folder-details > summary > span.folder-name`).innerText;
     if (!confirm(`Are you sure you want to delete the folder "${folderName}"?`)) {
         return;
     }
@@ -376,55 +376,11 @@ function submitDeleteFolder(event) {
         // Remove the folder details element from the folder tree
         document.getElementById(`folder-${folderID}`).remove();
         // Remove the folder from the folder select tree
-        document.getElementById(`folder-select-tree-${folderID}`).remove();
+        document.getElementById(`folder-select-item-${folderID}`).remove();
     }).catch(function(error) {
         alert(`Failed to delete folder: ${error}`);
     });
 }
-
-//// Add a folder from Object
-//function addFolderFromObject(folder) {
-//    // Create folder elements
-//    const folderTree = document.createElement("ul");
-//    const folderLi = document.createElement("li");
-//    const folderDetails = document.createElement("details");
-//    const folderSummary = document.createElement("summary");
-//    const folderName = document.createElement("span");
-//    const folderActions = document.createElement("span");
-//
-//    // Set foldertree ID and class
-//    folderTree.id = `folder-${folder.id}`;
-//    folderTree.classList.add("foldertree");
-//
-//    // set folder li class
-//    folderLi.classList.add("folder");
-//
-//    // Set folder name
-//    folderName.innerText = folder.name;
-//    folderName.classList.add("folder-name");
-//
-//    // Set folder data-id
-//    folderDetails.dataset.id = folder.id;
-//    // Set folder actions
-//    folderActions.innerHTML = `
-//        <button class="add-bookmark">+ Bookmark</button>
-//        <button class="add-folder">+ Folder</button>
-//    `;
-//
-//    // Set folder summary
-//    folderSummary.appendChild(folderName);
-//    folderSummary.appendChild(folderActions);
-//
-//    // Set folder details
-//    folderDetails.appendChild(folderSummary);
-//    folderDetails.appendChild(document.createElement("ul"));
-//    folderLi.appendChild(folderDetails);
-//    folderTree.appendChild(folderLi);
-//
-//    // Add folder to folder tree
-//    const parentDiv = document.getElementById(`folder-${folder.parent_folder_id}`);
-//    parentDiv.appendChild(folderDetails);
-//}
 
 // Update the folder tree after adding a new bookmark
 function updateNewBookmark(title, url, tags, folderID, newID) {
@@ -478,113 +434,153 @@ function addBookmarkToFolderTree(title, url, tags, folderID, newID) {
 }
 
 // Update the folder tree and folder select tree after adding a new folder
-function updateNewFolder(name, parentFolderID, newID) {
-    addFolderToFolderTree(name, parentFolderID, newID);
-    addFolderToFolderSelectTree(name, parentFolderID, newID);
+function updateFolder(folder) {
+    updateFolderTreeWithFolder(folder);
+    updateFolderSelectTreeWithFolder(folder);
 }
 
-// Add a folder to the folder tree
-function addFolderToFolderTree(name, parentFolderID, newID) {
+// Add a folder from Object
+function updateFolderTreeWithFolder(folder) {
     let parentFolder;
-    if (parentFolderID === null || parentFolderID === undefined || parentFolderID === "") {
-        parentFolder = document.getElementById("bookmarks-elements");
+    if (folder.ParentFolderID === null || folder.ParentFolderID === undefined || folder.ParentFolderID === "") {
+        parentFolder = document.getElementById(`folders-list-root`);
     } else {
-        parentFolder = document.getElementById(`folder-${parentFolderID}`);
+        parentFolder = document.getElementById(`folders-list-${folder.ParentFolderID}`);
     }
-    const parentDiv = parentFolder.querySelector("ul.folders");
-    const folderLi = document.createElement("li");
-    const folderDetails = document.createElement("details");
-    const folderSummary = document.createElement("summary");
-    const folderName = document.createElement("span");
-    const folderActions = document.createElement("span");
-    const addFolderButton = document.createElement("button");
-    const addBookmarkButton = document.createElement("button");
-    const renameFolderButton = document.createElement("button");
-    const deleteFolderButton = document.createElement("button");
-    const folderUl = document.createElement("ul");
-    const bookmarksUl = document.createElement("ul");
+    let folderLi = document.getElementById(`folder-${folder.ID}`);
 
-    // Set folder name
-    folderName.innerText = name;
-    folderName.classList.add("folder-name");
+    if (parentFolder === null) {
+        console.error(`Folder does not exist: folders-list-${folder.ParentFolderID}`);
+        return;
+    }
 
-    // Set folder data-id
-    folderDetails.classList.add("folder-details");
-    folderDetails.dataset.id = newID;
+    if (folderLi !== null) {
+        // Set name
+        folderLi.querySelector("span.folder-name").innerText = folder.Name;
+    } else {
+        folderLi = document.createElement("li");
+        folderLi.id = `folder-${folder.ID}`;
+        folderLi.classList.add("folder");
+        folderLi.dataset.id = folder.ID;
 
-    // Set folder actions
-    folderActions.classList.add("folder-actions");
+        const folderDetails = document.createElement("details");
+        const folderSummary = document.createElement("summary");
+        const openFolderIcon = document.createElement("span");
+        const closedFolderIcon = document.createElement("span");
+        const folderName = document.createElement("span");
+        const folderActions = document.createElement("span");
+        const addBookmarkButton = document.createElement("button");
+        const addFolderButton = document.createElement("button");
+        const renameFolderButton = document.createElement("button");
+        const deleteFolderButton = document.createElement("button");
+        const folderUl = document.createElement("ul");
+        const bookmarksUl = document.createElement("ul");
 
-    addBookmarkButton.classList.add("add-bookmark");
-    addBookmarkButton.innerText = "+ Bookmark";
-    addBookmarkButton.addEventListener("click", openAddBookmarkModal);
-    folderActions.appendChild(addBookmarkButton);
+        // Set folder icons
+        closedFolderIcon.classList.add("folder-icon-closed");
+        closedFolderIcon.innerText = "📁";
+        openFolderIcon.classList.add("folder-icon-open");
+        openFolderIcon.innerText = "📂";
 
-    addFolderButton.classList.add("add-folder");
-    addFolderButton.innerText = "+ Folder";
-    addFolderButton.addEventListener("click", openAddFolderModal);
-    folderActions.appendChild(addFolderButton);
-    
-    renameFolderButton.classList.add("rename-folder");
-    renameFolderButton.innerText = "Rename";
-    renameFolderButton.addEventListener("click", openRenameFolderForm);
-    folderActions.appendChild(renameFolderButton);
+        // Set folder name
+        folderName.innerText = folder.Name;
+        folderName.setAttribute("id", `folder-name-${folder.ID}`);
+        folderName.classList.add("folder-name");
 
-    deleteFolderButton.classList.add("delete-folder");
-    deleteFolderButton.innerText = "Delete";
-    deleteFolderButton.addEventListener("click", submitDeleteFolder);
-    folderActions.appendChild(deleteFolderButton);
+        // Set folder data-id
+        folderDetails.classList.add("folder-details");
+        folderDetails.dataset.id = folder.ID;
 
-    // Set folder ul class
-    folderUl.classList.add("folders");
+        // Set folder actions
+        folderActions.setAttribute("id", `folder-actions-${folder.ID}`);
+        folderActions.classList.add("folder-actions");
 
-    // Set bookmarks ul class
-    bookmarksUl.classList.add("bookmarks");
+        addBookmarkButton.classList.add("add-bookmark");
+        addBookmarkButton.innerText = "+ Bookmark";
+        addBookmarkButton.addEventListener("click", openAddBookmarkModal);
+        folderActions.appendChild(addBookmarkButton);
 
-    // Set folder summary
-    folderSummary.appendChild(folderName);
-    folderSummary.appendChild(folderActions);
-    // Set folder details
-    folderDetails.appendChild(folderSummary);
-    folderDetails.appendChild(folderUl);
-    folderDetails.appendChild(bookmarksUl);
+        addFolderButton.classList.add("add-folder");
+        addFolderButton.innerText = "+ Folder";
+        addFolderButton.addEventListener("click", openAddFolderModal);
+        folderActions.appendChild(addFolderButton);
 
-    // Set folder li
-    folderLi.id = `folder-${newID}`;
-    folderLi.classList.add("folder");
-    folderLi.dataset.id = newID;
+        renameFolderButton.classList.add("rename-folder");
+        renameFolderButton.innerText = "Rename";
+        renameFolderButton.addEventListener("click", openRenameFolderForm);
+        folderActions.appendChild(renameFolderButton);
 
-    folderLi.appendChild(folderDetails);
-    parentDiv.appendChild(folderLi);
+        deleteFolderButton.classList.add("delete-folder");
+        deleteFolderButton.innerText = "Delete";
+        deleteFolderButton.addEventListener("click", submitDeleteFolder);
+        folderActions.appendChild(deleteFolderButton);
+
+        // Set folder ul class
+        folderUl.setAttribute("id", `folders-list-${folder.ID}`);
+        folderUl.classList.add("folders");
+
+        // Set bookmarks ul class
+        bookmarksUl.classList.add("bookmarks");
+
+        // Set folder summary
+        folderSummary.appendChild(closedFolderIcon);
+        folderSummary.appendChild(openFolderIcon);
+        folderSummary.appendChild(folderName);
+        folderSummary.appendChild(folderActions);
+        // Set folder details
+        folderDetails.appendChild(folderSummary);
+        folderDetails.appendChild(folderUl);
+        folderDetails.appendChild(bookmarksUl);
+
+        // Set folder li
+        folderLi.appendChild(folderDetails);
+    }
+
+    try {
+        parentFolder.appendChild(folderLi);
+    } catch (error) {
+        console.error(`Failed to add folder to folder tree: ${error}`);
+    }
 }
 
-function addFolderToFolderSelectTree(name, parentFolderID, newID) {
+function updateFolderSelectTreeWithFolder(folder) {
     let parentDiv;
-    if (parentFolderID === null || parentFolderID === undefined || parentFolderID === "") {
-        parentDiv= document.getElementById("folder-select").querySelector(":scope > ul.folder-select-tree");
+    if (folder.ParentFolderID === null || folder.ParentFolderID === undefined || folder.ParentFolderID === "") {
+        parentDiv = document.getElementById("folder-select-tree-root")
     } else {
-        parentDiv = document.getElementById(`folder-select-tree-${parentFolderID}`)
+        parentDiv = document.getElementById(`folder-select-tree-${folder.ParentFolderID}`);
     }
-    const folderSelect = document.createElement("input");
+    let folderSelectLi = document.getElementById(`folder-select-item-${folder.ID}`);
 
-    folderSelect.type = "radio";
-    folderSelect.name = "folder-select";
-    folderSelect.value = newID;
-    folderSelect.id = `folder-select-${newID}`;
+    if (parentDiv === null) {
+        console.error(`Folder does not exist: folder-select-tree-${folder.ParentFolderID}`);
+        return;
+    }
 
-    const folderSelectLabel = document.createElement("label");
-    folderSelectLabel.innerText = `📁 ${name}`;
-    folderSelectLabel.htmlFor = folderSelect.id;
+    if (folderSelectLi !== null) {
+        // Set name
+        folderSelectLi.querySelector("label").innerText = folder.Name;
+    } else {
+        folderSelectLi = document.createElement("li");
+        folderSelectLi.id = `folder-select-item-${folder.ID}`;
+        folderSelectLi.classList.add("folder-select");
+        folderSelectLi.innerHTML = `
+            <input type="radio" name="folder-select" id="folder-select-${folder.ID}" value="${folder.ID}">
+            <label for="folder-select-${folder.ID}">📁 ${folder.Name}</label>
+        `;
 
-    const folderSelectLi = document.createElement("li");
-    folderSelectLi.classList.add("folder-select");
-    folderSelectLi.appendChild(folderSelect);
-    folderSelectLi.appendChild(folderSelectLabel);
+        const folderSelectTree = document.createElement("ul");
+        folderSelectTree.id = `folder-select-tree-${folder.ID}`;
+        folderSelectTree.classList.add("folder-select-tree");
+        folderSelectTree.appendChild(folderSelectLi);
 
-    const folderSelectTree = document.createElement("ul");
-    folderSelectTree.id = `folder-select-tree-${newID}`;
-    folderSelectTree.classList.add("folder-select-tree");
-    folderSelectTree.appendChild(folderSelectLi);
+        parentDiv.appendChild(folderSelectTree);
+    }
 
-    parentDiv.appendChild(folderSelectTree);
+    try {
+        parentDiv.appendChild(folderSelectLi);
+    } catch (error) {
+        console.error(`Failed to add folder ${folder.Name} to folder select tree ${folder.ParentFolderID}: ${error}`);
+    }
 }
+

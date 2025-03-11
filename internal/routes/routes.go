@@ -22,6 +22,15 @@ import (
     "github.com/labstack/echo/v4"
 )
 
+// Bookmark folder response type
+type BookmarkFolderResponse struct {
+    ID int `json:"id"`
+    Name string `json:"name"`
+    ParentFolderID *int `json:"parent_folder_id,omitempty"`
+    Public bool `json:"public"`
+    CreatedAt string `json:"created_at"`
+}
+
 func RegisterRoutes(e *echo.Echo, templatesDir string, staticDir string) {
     renderer := TemplateRenderer(templatesDir)
     e.Renderer = renderer
@@ -224,15 +233,6 @@ func RegisterRoutes(e *echo.Echo, templatesDir string, staticDir string) {
             })
         }
 
-        // Bookmark folder response type
-        type BookmarkFolderResponse struct {
-            ID int `json:"id"`
-            Name string `json:"name"`
-            ParentFolderID *int `json:"parent_folder_id,omitempty"`
-            Public bool `json:"public"`
-            CreatedAt string `json:"created_at"`
-        }
-
         response := BookmarkFolderResponse{
             ID: newFolder.ID,
             Name: newFolder.Name,
@@ -254,14 +254,19 @@ func RegisterRoutes(e *echo.Echo, templatesDir string, staticDir string) {
 
         name := c.FormValue("name")
 
-        err = database.RenameBookmarkFolder(userID, folderID, name)
+        newFolder, err := database.RenameBookmarkFolder(userID, folderID, name)
         if err != nil {
             return err
         }
 
-        return c.JSON(http.StatusOK, map[string]interface{}{
-            "success": true,
-        })
+        response := BookmarkFolderResponse{
+            ID: newFolder.ID,
+            Name: newFolder.Name,
+            ParentFolderID: newFolder.ParentFolderID,
+            Public: newFolder.Public,
+            CreatedAt: newFolder.CreatedAt,
+        }
+        return c.JSON(http.StatusOK, response)
     }))
 
     e.POST("/bookmarks/delete-folder", auth.RequireAuth(func(c echo.Context) error {

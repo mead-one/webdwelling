@@ -5,15 +5,15 @@
     <summary>
         <span class="folder-icon-closed">📁</span>
         <span class="folder-icon-open">📂</span>
-        <span class="folder-name">{{.Name}}</span>
-        <span class="folder-actions" data-id="{{.ID}}">
+        <span id="folder-name-{{.ID}}" class="folder-name">{{.Name}}</span>
+        <span id="folder-actions-{{.ID}}" class="folder-actions" data-id="{{.ID}}">
             <button class="add-bookmark">+ Bookmark</button>
             <button class="add-folder">+ Folder</button>
             <button class="rename-folder">Rename</button>
             <button class="delete-folder">Delete</button>
         </span>
     </summary>
-    <ul class="folders">
+    <ul id="folders-list-{{.ID}}" class="folders">
     {{ if .ChildFolders }}
         {{ range .ChildFolders }}
             {{ template "folder-tree" . }}
@@ -40,10 +40,9 @@
 {{end}}
 
 {{define "folder-select-tree"}}
-    <li class="folder-select">
+<li id="folder-select-item-{{.ID}}" class="folder-select">
         <input type="radio" name="folder-select" id="folder-select-{{.ID}}" value="{{.ID}}">
         <label for="folder-select-{{.ID}}">📁 {{.Name}}</label>
-    </li>
     <ul id="folder-select-tree-{{.ID}}" class="folder-select-tree">
     {{ if .ChildFolders }}
         {{ range .ChildFolders }}
@@ -51,6 +50,7 @@
         {{ end }}
     {{ end }}
     </ul>
+</li>
 {{ end }}
 
 {{ template "header.html" . }}
@@ -61,7 +61,7 @@
             <button class="add-bookmark">+ Bookmark</button>
             <button class="add-folder">+ Folder</button>
         </span>
-        <ul class="folders">
+        <ul id="folders-list-root" class="folders">
         {{ if .Bookmarks.ChildFolders }}
             {{ range .Bookmarks.ChildFolders }}
                 {{ template "folder-tree" .}}
@@ -120,7 +120,7 @@
         <button type="button" id="cancel-add-folder">Cancel</button>
     </form>
     <div id="folder-select">
-        <ul class="folder-select-tree">
+        <ul id="folder-select-tree-root" class="folder-select-tree">
             <li class="folder-select">
                 <input type="radio" name="folder-select" id="folder-select-0" value="0">
                 <label for="folder-select-0">📁 All bookmarks</label>

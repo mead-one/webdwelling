@@ -375,22 +375,27 @@ func AddBookmarkFolder(userID int, name string, parentFolderID *int, public bool
     return folder, nil
 }
 
-func RenameBookmarkFolder(userID int, folderID int, name string) error {
+func RenameBookmarkFolder(userID int, folderID int, name string) (*BookmarkFolder, error) {
     folderUserID := 0
     err := DB.QueryRow("SELECT user_id FROM bookmark_folders WHERE id = ?", folderID).Scan(&folderUserID)
     if err != nil {
-        return fmt.Errorf("Failed to get bookmark folder user ID: %v", err)
+        return nil, fmt.Errorf("Failed to get bookmark folder user ID: %v", err)
     }
     if folderUserID != userID {
-        return fmt.Errorf("You are not authorized to rename this folder")
+        return nil, fmt.Errorf("You are not authorized to rename this folder")
     }
 
-    _, err = DB.Exec("UPDATE bookmark_folders SET name = ? WHERE id = ?", name, folderID)
+    folder := &BookmarkFolder{}
+
+    err = DB.QueryRow(
+        "UPDATE bookmark_folders SET name = ? WHERE id = ? RETURNING id,name,parent_folder_id,public,created_at",
+        name, folderID,
+    ).Scan(&folder.ID, &folder.Name, &folder.ParentFolderID, &folder.Public, &folder.CreatedAt)
     if err != nil {
-        return fmt.Errorf("Failed to rename bookmark folder: %v", err)
+        return nil, fmt.Errorf("Failed to rename bookmark folder: %v", err)
     }
 
-    return nil
+    return folder, nil
 }
 
 func DeleteBookmarkFolder(userID int, folderID int) error {
