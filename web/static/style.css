@@ -93,10 +93,35 @@ details.folder-details > summary {
     padding: 0;
 }
 
+details.folder-details > summary:hover {
+    background-color: #E2C04F;
+}
+
+details.folder-details > summary > span.folder-icon-open,
+details.folder-details > summary > span.folder-icon-closed {
+    padding: 0.1em 0 0.1em 0.75em;
+}
+
+details.folder-details[open] > summary > span.folder-icon-closed {
+    display: none;
+}
+
+details.folder-details:not([open]) > summary > span.folder-icon-open {
+    display: none;
+}
+
+details.folder-details:not([open]) > summary:hover > span.folder-icon-open {
+    display: inline;
+}
+
+details.folder-details:not([open]) > summary:hover > span.folder-icon-closed {
+    display: none;
+}
+
 span.folder-name {
     flex: 1;
     user-select: none;
-    padding: 0.1em 0.75em;
+    padding: 0.1em 0.5em;
 }
 
 ul.bookmarks {

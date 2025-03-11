@@ -324,11 +324,11 @@ function submitRenameFolderForm(event) {
         return response.json();
     }).then(function(data) {
         // Update the folder name in the folder tree
-        document.getElementById(`folder-${folderID}`).querySelector("span.folder-name").innerText = `📁 ${folderName}`;
+        document.getElementById(`folder-${folderID}`).querySelector("span.folder-name").innerText = folderName;
 
         // Update the folder name in the folder select tree
         const folderSelect = document.getElementById(`folder-select-${folderID}`);
-        folderSelect.parentElement.querySelector("label").innerText = `📁 ${folderName}`;
+        folderSelect.parentElement.querySelector("label").innerText = folderName;
 
         event.target.querySelector("button.cancel-rename-folder").click();
     }).catch(function(error) {
@@ -505,7 +505,7 @@ function addFolderToFolderTree(name, parentFolderID, newID) {
     const bookmarksUl = document.createElement("ul");
 
     // Set folder name
-    folderName.innerText = `📁 ${name}`;
+    folderName.innerText = name;
     folderName.classList.add("folder-name");
 
     // Set folder data-id
