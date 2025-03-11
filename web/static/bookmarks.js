@@ -302,6 +302,7 @@ function openRenameFolderForm(event) {
     folderActions.style.display = "none";
     folderSummary.appendChild(renameFolderForm);
     renameFolderForm.addEventListener("submit", submitRenameFolderForm);
+    renameFolderForm.elements["name"].focus();
 }
 
 function submitRenameFolderForm(event) {
