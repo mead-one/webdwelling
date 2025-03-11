@@ -134,6 +134,12 @@ div#bookmarks-elements li.bookmark {
     padding: 0.1em 0 0.1em 1em;
 }
 
+li.bookmark:hover {
+    border-width: 1px 0;
+    border-style: solid;
+    border-color: #E1AD01;
+}
+
 li.bookmark:nth-child(odd) {
     background-color: #E9E9E9;
 }
