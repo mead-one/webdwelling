@@ -21,7 +21,7 @@
     {{ end }}
     </ul>
     {{- /* Bookmarks within this folder */ -}}
-    <ul class="bookmarks">
+    <ul id="bookmarks-{{.ID}}" class="bookmarks">
     {{if .ChildBookmarks}}
         {{range .ChildBookmarks}}
         <li id="bookmark-{{.ID}}" class="bookmark" data-id="{{.ID}}">
@@ -68,7 +68,7 @@
             {{ end }}
         {{ end }}
         </ul>
-        <ul class="bookmarks">
+        <ul id="bookmarks-root" class="bookmarks">
             {{range .Bookmarks.ChildBookmarks}}
             <li id="bookmark-{{.ID}}" class="bookmark" data-id="{{.ID}}">
                 <a href="{{.URL}}" target="_blank" class="bookmark-title">{{.Title}}</a>

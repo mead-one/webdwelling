@@ -90,7 +90,7 @@ function submitAddBookmarkForm(event) {
         return response.json();
     }).then(function(data) {
         // Add the bookmark to the folder tree and folder-select-tree
-        updateNewBookmark(data.title, data.url, data.tags, data.folder_id, data.id);
+        updateNewBookmark({Title: data.title, URL: data.url, Tags: data.tags, FolderID: data.folder_id, ID: data.id});
         closeAddBookmarkModal();
     }).catch(function(error) {
         alert(`Failed to add bookmark: ${error}`);
@@ -384,54 +384,82 @@ function submitDeleteFolder(event) {
 }
 
 // Update the folder tree after adding a new bookmark
-function updateNewBookmark(title, url, tags, folderID, newID) {
-    addBookmarkToFolderTree(title, url, tags, folderID, newID);
+//function updateNewBookmark(title, url, tags, folderID, newID) {
+function updateNewBookmark(bookmark) {
+    updateFolderTreeWithBookmark(bookmark);
 }
 
-// Add a bookmark to the bookmark tree
-function addBookmarkToFolderTree(title, url, tags, folderID, newID) {
+function updateFolderTreeWithBookmark(bookmark) {
     let parentFolder;
-    if (folderID === null || folderID === undefined || folderID === "") {
-        parentFolder = document.getElementById("bookmarks-elements");
+    if (bookmark.FolderID === null || bookmark.FolderID === undefined || bookmark.FolderID === "") {
+        parentFolder = document.getElementById("bookmarks-root");
     } else {
-        parentFolder = document.getElementById(`folder-${folderID}`);
+        parentFolder = document.getElementById(`bookmarks-${bookmark.FolderID}`);
     }
-    const parentDiv = parentFolder.querySelector(":scope > details.folder-details > ul.bookmarks");
-    const bookmarkLi = document.createElement("li");
 
-    bookmarkLi.id = `bookmark-${newID}`;
-    bookmarkLi.classList.add("bookmark");
-    bookmarkLi.dataset.id = newID;
+    if (parentFolder === null) {
+        console.error(`Folder does not exist: bookmarks-${bookmark.FolderID}`);
+        return;
+    }
 
-    const bookmarkLink = document.createElement("a");
-    bookmarkLink.href = url;
-    bookmarkLink.target = "_blank";
-    bookmarkLink.classList.add("bookmark-title");
-    bookmarkLink.innerText = title;
-    bookmarkLi.appendChild(bookmarkLink);
+    let bookmarkLi = document.getElementById(`bookmark-${bookmark.ID}`);
+    if (bookmarkLi !== null) {
+        // Set name
+        bookmarkLi.querySelector("span.folder-name").innerText = bookmark.Name;
 
-    if (tags !== null && tags !== undefined) {
-        bookmarkTags = document.createElement("span");
-        bookmarkTags.classList.add("bookmark-tags");
-        bookmarkTags.innerText = tags;
+        if (typeof bookmark.URL !== "undefined" && bookmark.URL !== null) {
+            bookmarkLi.querySelector("a.bookmark-title").href = bookmark.URL;
+        } else {
+            bookmarkLi.querySelector("a.bookmark-title").href = "";
+        }
+
+        if (typeof bookmark.Tags !== "undefined" && bookmark.Tags !== null) {
+            bookmarkLi.querySelector("span.bookmark-tags").innerText = bookmark.Tags;
+        } else {
+            bookmarkLi.querySelector("span.bookmark-tags").innerText = "";
+        }
+    } else {
+        bookmarkLi = document.createElement("li");
+        bookmarkLi.setAttribute("id", `bookmark-${bookmark.ID}`);
+        bookmarkLi.classList.add("bookmark");
+        bookmarkLi.dataset.id = bookmark.ID;
+
+        const bookmarkTitle = document.createElement("a");
+        bookmarkTitle.href = bookmark.URL;
+        bookmarkTitle.target = "_blank";
+        bookmarkTitle.classList.add("bookmark-title");
+        bookmarkTitle.innerText = bookmark.Title;
+        bookmarkLi.appendChild(bookmarkTitle);
+
+        const bookmarkTags = document.createElement("span");
+        if (typeof bookmark.Tags !== "undefined" && bookmark.Tags !== null) {
+            bookmarkTags.classList.add("bookmark-tags");
+            bookmarkTags.innerText = bookmark.Tags;
+        }
         bookmarkLi.appendChild(bookmarkTags);
+
+        const bookmarkActions = document.createElement("span");
+        bookmarkActions.classList.add("bookmark-actions");
+        const editBookmarkButton = document.createElement("button");
+        editBookmarkButton.classList.add("edit-bookmark");
+        editBookmarkButton.innerText = "Edit";
+        editBookmarkButton.addEventListener("click", openEditBookmarkModal);
+        const deleteBookmarkButton = document.createElement("button");
+        deleteBookmarkButton.classList.add("delete-bookmark");
+        deleteBookmarkButton.innerText = "Delete";
+        deleteBookmarkButton.addEventListener("click", submitDeleteBookmark);
+        bookmarkActions.appendChild(editBookmarkButton);
+        bookmarkActions.appendChild(deleteBookmarkButton);
+        bookmarkLi.appendChild(bookmarkActions);
+
+        parentFolder.appendChild(bookmarkLi);
     }
 
-    const bookmarkActions = document.createElement("span");
-    bookmarkActions.classList.add("bookmark-actions");
-    const editBookmarkButton = document.createElement("button");
-    editBookmarkButton.classList.add("edit-bookmark");
-    editBookmarkButton.innerText = "Edit";
-    editBookmarkButton.addEventListener("click", openEditBookmarkModal);
-    const deleteBookmarkButton = document.createElement("button");
-    deleteBookmarkButton.classList.add("delete-bookmark");
-    deleteBookmarkButton.innerText = "Delete";
-    deleteBookmarkButton.addEventListener("click", submitDeleteBookmark);
-    bookmarkActions.appendChild(editBookmarkButton);
-    bookmarkActions.appendChild(deleteBookmarkButton);
-    bookmarkLi.appendChild(bookmarkActions);
-
-    parentDiv.appendChild(bookmarkLi);
+    try {
+        parentFolder.appendChild(bookmarkLi);
+    } catch (error) {
+        console.error(`Failed to add bookmark ${bookmark.Name} to folder tree ${bookmark.FolderID}: ${error}`);
+    }
 }
 
 // Update the folder tree and folder select tree after adding a new folder
@@ -448,13 +476,13 @@ function updateFolderTreeWithFolder(folder) {
     } else {
         parentFolder = document.getElementById(`folders-list-${folder.ParentFolderID}`);
     }
-    let folderLi = document.getElementById(`folder-${folder.ID}`);
 
     if (parentFolder === null) {
         console.error(`Folder does not exist: folders-list-${folder.ParentFolderID}`);
         return;
     }
 
+    let folderLi = document.getElementById(`folder-${folder.ID}`);
     if (folderLi !== null) {
         // Set name
         folderLi.querySelector("span.folder-name").innerText = folder.Name;
@@ -521,6 +549,7 @@ function updateFolderTreeWithFolder(folder) {
         folderUl.classList.add("folders");
 
         // Set bookmarks ul class
+        bookmarksUl.setAttribute("id", `bookmarks-${folder.ID}`);
         bookmarksUl.classList.add("bookmarks");
 
         // Set folder summary
