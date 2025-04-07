@@ -1,5 +1,3 @@
-export {};
-
 document.addEventListener("DOMContentLoaded", function() {
     const bookmarkButtons: NodeListOf<HTMLButtonElement> = document.querySelectorAll("button.add-bookmark");
     const editBookmarkButtons: NodeListOf<HTMLButtonElement> = document.querySelectorAll("button.edit-bookmark");
@@ -82,27 +80,43 @@ function openAddBookmarkModal(event: MouseEvent) {
     const folderSelectWrapper: HTMLDivElement | null = document.getElementById("add-bookmark-folder-select-wrapper") as HTMLDivElement;
     const folderSelect: HTMLDivElement | null = document.getElementById("folder-select") as HTMLDivElement;
 
-    if (folderSelectWrapper === null || addBookmarkForm === null || folderSelect === null || modalContainer === null) {
+    // Include the folder select sub-form
+    folderSelectWrapper.appendChild(folderSelect);
+
+    // Form elements
+    const folderRadio: HTMLInputElement | null =
+        addBookmarkForm.elements.namedItem("folder-select") as HTMLInputElement;
+    const bookmarkTitle: HTMLInputElement =
+        addBookmarkForm.elements.namedItem("title") as HTMLInputElement;
+
+    if (folderSelectWrapper === null || addBookmarkForm === null || folderSelect === null ||
+        modalContainer === null || folderRadio === null || bookmarkTitle === null) {
         console.error("Missing elements");
         return;
     }
 
-    folderSelectWrapper.appendChild(folderSelect);
     addBookmarkForm.reset();
-    addBookmarkForm.elements["folder-select"].value = parentFolderID ? parentFolderID : "";
+    folderRadio.value = parentFolderID ? parentFolderID : "";
     modalContainer.style.display = "block";
     addBookmarkForm.style.display = "block";
-    addBookmarkForm.elements["title"].focus();
+    bookmarkTitle.focus();
 }
 
 function submitAddBookmarkForm(event: SubmitEvent) {
     event.preventDefault();
     const form: HTMLFormElement = event.target as HTMLFormElement;
-    const title = form.elements["title"].value;
-    const url = form.elements["url"].value;
-    const tags = form.elements["tags"].value;
-    const isPublic = form.elements["public"].checked;
-    const folderID = form.elements["folder-select"].value === "0" ? null : form.elements["folder-select"].value;
+    const titleInput: HTMLInputElement | null = form.elements.namedItem("title") as HTMLInputElement;
+    const urlInput: HTMLInputElement | null = form.elements.namedItem("url") as HTMLInputElement;
+    const tagsInput: HTMLInputElement | null = form.elements.namedItem("tags") as HTMLInputElement;
+    const isPublicInput: HTMLInputElement | null = form.elements.namedItem("public") as HTMLInputElement;
+    const folderRadio: HTMLInputElement | null =
+        form.elements.namedItem("folder-select") as HTMLInputElement;
+
+    const title = titleInput.value;
+    const url = urlInput.value;
+    const tags = tagsInput.value;
+    const isPublic = isPublicInput.checked;
+    const folderID = folderRadio.value === "0" ? null : folderRadio.value;
     if (title === null) {
         return;
     }
@@ -150,8 +164,9 @@ function closeAddBookmarkModal() {
 
 // Open the edit bookmark modal
 function openEditBookmarkModal(event: MouseEvent) {
-    const parentFolder: HTMLDivElement | null = (event.target as HTMLFormElement).closest(".folder");
-    if (parentFolder === null) {
+    const parentFolder: HTMLDivElement | null = (event.target as HTMLButtonElement).closest(".folder");
+    const bookmarkLi: HTMLLIElement | null = (event.target as HTMLButtonElement).closest(".bookmark") as HTMLLIElement;
+    if (parentFolder === null || bookmarkLi === null) {
         console.error("No parent folder found");
         return;
     }
@@ -161,31 +176,78 @@ function openEditBookmarkModal(event: MouseEvent) {
     const editBookmarkForm: HTMLFormElement | null = document.getElementById("edit-bookmark-form") as HTMLFormElement;
     const folderSelectWrapper: HTMLDivElement | null = document.getElementById("edit-bookmark-folder-select-wrapper") as HTMLDivElement;
     const folderSelect: HTMLDivElement | null = document.getElementById("folder-select") as HTMLDivElement;
-    const bookmarkLi: HTMLLIElement | null = parentFolder.closest(".bookmark") as HTMLLIElement;
+    const bookmarkID: string | undefined = bookmarkLi.dataset.id;
     const bookmarkTitle: HTMLAnchorElement | null = parentFolder.querySelector("a.bookmark-title") as HTMLAnchorElement;
     const bookmarkTags: HTMLSpanElement | null = parentFolder.querySelector("span.bookmark-tags") as HTMLSpanElement;
 
+    // Include the folder select sub-form
     folderSelectWrapper.appendChild(folderSelect);
-    editBookmarkForm.reset();
-    editBookmarkForm.elements["bookmark_id"].value = bookmarkLi.dataset.id;
-    editBookmarkForm.elements["title"].value = bookmarkTitle.innerText;
-    editBookmarkForm.elements["url"].value = bookmarkTitle.href;
-    if (bookmarkLi.querySelector("span.bookmark-tags") != null) {
-        editBookmarkForm.elements["tags"].value = bookmarkTags.innerText;
+
+    // Form elements
+    const bookmarkRadio: HTMLInputElement | null =
+        editBookmarkForm.elements.namedItem("bookmark_id") as HTMLInputElement;
+    const folderRadio: HTMLInputElement | null =
+        editBookmarkForm.elements.namedItem("folder-select") as HTMLInputElement;
+    const bookmarkTitleInput: HTMLInputElement =
+        editBookmarkForm.elements.namedItem("title") as HTMLInputElement;
+    const bookmarkUrlInput: HTMLInputElement =
+        editBookmarkForm.elements.namedItem("url") as HTMLInputElement;
+    const bookmarkTagsInput: HTMLInputElement =
+        editBookmarkForm.elements.namedItem("tags") as HTMLInputElement;
+
+    if (parentFolder === null || modalContainer === null || editBookmarkForm === null ||
+        folderSelectWrapper === null || bookmarkRadio === null || folderRadio === null ||
+        bookmarkTitleInput === null || bookmarkUrlInput === null || bookmarkTagsInput === null) {
+        console.error("Missing elements");
+        return;
     }
-    editBookmarkForm.elements["folder-select"].value = parentFolderID;
+
+    if (parentFolderID === undefined) {
+        console.error("Parent folder ID is undefined");
+        return;
+    }
+
+    if (bookmarkID === undefined) {
+        console.error("Bookmark ID is undefined");
+        return;
+    }
+
+    editBookmarkForm.reset();
+    bookmarkRadio.value = bookmarkID;
+    bookmarkTitleInput.value = bookmarkTitle.innerText;
+    bookmarkUrlInput.value = bookmarkTitle.href;
+    if (bookmarkLi.querySelector("span.bookmark-tags") != null) {
+        bookmarkTagsInput.value = bookmarkTags.innerText;
+    }
+    folderRadio.value = parentFolderID;
     modalContainer.style.display = "block";
     editBookmarkForm.style.display = "block";
-    editBookmarkForm.elements["title"].focus();
+    bookmarkTitleInput.focus();
 }
 
 function submitEditBookmarkForm(event: SubmitEvent) {
     const form: HTMLFormElement = event.target as HTMLFormElement;
-    const title = form.elements["title"].value;
-    const url = form.elements["url"].value;
-    const tags = form.elements["tags"].value;
-    const isPublic = form.elements["public"].checked;
-    const folderID = form.elements["folder-select"].value === "0" ? null : form.elements["folder-select"].value;
+    const bookmarkIDInput: HTMLInputElement | null = form.elements.namedItem("bookmark_id") as HTMLInputElement;
+    const titleInput: HTMLInputElement | null = form.elements.namedItem("title") as HTMLInputElement;
+    const urlInput: HTMLInputElement | null = form.elements.namedItem("url") as HTMLInputElement;
+    const tagsInput: HTMLInputElement | null = form.elements.namedItem("tags") as HTMLInputElement;
+    const isPublicInput: HTMLInputElement | null = form.elements.namedItem("public") as HTMLInputElement;
+    const folderRadio: HTMLInputElement | null =
+        form.elements.namedItem("folder-select") as HTMLInputElement;
+
+    if (bookmarkIDInput === null || titleInput === null || urlInput === null || tagsInput === null ||
+        isPublicInput === null || folderRadio === null) {
+        console.error("Missing elements");
+        return;
+    }
+
+    const bookmarkID: string = bookmarkIDInput.value;
+    const title: string = titleInput.value;
+    const url: string = urlInput.value;
+    const tags: string = tagsInput.value;
+    const isPublic: boolean = isPublicInput.checked;
+    const folderID: string | null = folderRadio.value === "0" ? null : folderRadio.value;
+
     if (title === null) {
         return;
     }
@@ -199,7 +261,7 @@ function submitEditBookmarkForm(event: SubmitEvent) {
         headers: {
             "Content-Type": "application/x-www-form-urlencoded"
         },
-        body: `bookmark_id=${form.elements["bookmark_id"].value}&title=${title}&url=${url}&tags=${tags}&public=${isPublic}&folder_id=${folderID}`
+        body: `bookmark_id=${bookmarkID}&title=${title}&url=${url}&tags=${tags}&public=${isPublic}&folder_id=${folderID}`
     }).then(function(response) {
         if (!response.ok) {
             throw new Error(response.statusText);
@@ -242,13 +304,24 @@ function closeEditBookmarkModal() {
 }
 
 function submitDeleteBookmark(event: Event) {
-    const form: HTMLFormElement = event.target as HTMLFormElement;
-    const bookmarkID: string = form.elements["bookmark_id"].value;
-    if (bookmarkID === null) {
+    const button: HTMLButtonElement | null = event.target as HTMLButtonElement;
+    if (button === null) {
+        console.error("Missing button");
         return;
     }
 
-    const bookmarkLi: HTMLLIElement | null = document.getElementById(`bookmark-${bookmarkID}`) as HTMLLIElement;
+    const bookmarkLi: HTMLLIElement | null = button.closest("li.bookmark") as HTMLLIElement;
+    if (bookmarkLi === null) {
+        console.error("Parent LI is null");
+        return;
+    }
+
+    const bookmarkID: string | undefined = bookmarkLi.dataset.id;
+    if (bookmarkID === undefined) {
+        console.error("Bookmark ID is undefined");
+        return;
+    }
+
     const bookmarkTitle: HTMLAnchorElement | null = bookmarkLi.querySelector("a.bookmark-title") as HTMLAnchorElement;
     const bookmarkName = bookmarkTitle.innerText;
     if (!confirm(`Are you sure you want to delete the bookmark "${bookmarkName}"?`)) {
@@ -291,19 +364,44 @@ function openAddFolderModal(event: Event) {
     const folderSelectWrapper: HTMLDivElement | null = document.getElementById("add-folder-folder-select-wrapper") as HTMLDivElement;
     const folderSelect: HTMLDivElement | null = document.getElementById("folder-select") as HTMLDivElement;
 
+    // Include the folder select sub-form
     folderSelectWrapper.appendChild(folderSelect);
+
+    // Form elements
+    const folderRadio: HTMLInputElement | null =
+        addFolderForm.elements.namedItem("folder-select") as HTMLInputElement;
+    const folderNameInput: HTMLInputElement =
+        addFolderForm.elements.namedItem("name") as HTMLInputElement;
+
+    if (folderSelectWrapper === null || addFolderForm === null || folderSelect === null ||
+        modalContainer === null || folderRadio === null || folderNameInput === null) {
+        console.error("Missing elements");
+        return;
+    }
+
+    if (parentFolderID === undefined) {
+        console.error("Parent folder ID is undefined");
+        return;
+    }
+
     addFolderForm.reset();
-    addFolderForm.elements["folder-select"].value = parentFolderID;
+    folderRadio.value = parentFolderID;
     modalContainer.style.display = "block";
     addFolderForm.style.display = "block";
-    addFolderForm.elements["name"].focus();
+    folderNameInput.focus();
 }
 
 function submitAddFolderForm(event: SubmitEvent) {
     const form: HTMLFormElement = event.target as HTMLFormElement;
-    const name = form.elements["name"].value;
-    const isPublic = form.elements["public"].checked;
-    const parentFolderID = form.elements["folder-select"].value === "0" ? null : form.elements["folder-select"].value;
+    const nameInput: HTMLInputElement | null = form.elements.namedItem("name") as HTMLInputElement;
+    const isPublicInput: HTMLInputElement | null = form.elements.namedItem("public") as HTMLInputElement;
+    const folderRadio: HTMLInputElement | null =
+        form.elements.namedItem("folder-select") as HTMLInputElement;
+
+    const name = nameInput.value;
+    const isPublic = isPublicInput.checked;
+    const parentFolderID = folderRadio.value === "0" ? null : folderRadio.value;
+
     if (name === null) {
         return;
     }
@@ -373,19 +471,24 @@ function openRenameFolderForm(event: MouseEvent) {
         </span>
     `;
 
+    const folderNameInput: HTMLInputElement | null = renameFolderForm.elements.namedItem("name") as HTMLInputElement;
+
     folderSpan.style.display = "none";
     folderActions.style.display = "none";
     folderSummary.appendChild(renameFolderForm);
     renameFolderForm.addEventListener("submit", submitRenameFolderForm);
-    renameFolderForm.elements["name"].focus();
+    folderNameInput.focus();
 }
 
 function submitRenameFolderForm(event: SubmitEvent) {
     const form: HTMLFormElement = event.target as HTMLFormElement;
     const parentFolder: HTMLDivElement | null = form.closest(".folder") as HTMLDivElement;
     const folderID = parentFolder.dataset.id;
-    const folderName = form.elements["name"].value;
-    if (folderName === null) {
+    const folderNameSpan: HTMLSpanElement | null = document.getElementById(`folder-name-${folderID}`) as HTMLSpanElement;
+    const folderNameInput: HTMLInputElement | null = form.elements.namedItem("name") as HTMLInputElement;
+    const folderName: string | undefined = folderNameInput.value;
+    if (folderNameInput === null || folderName === undefined) {
+        console.error("Missing elements");
         return;
     }
     const folderActions: HTMLSpanElement | null = document.getElementById(`folder-actions-${folderID}`) as HTMLSpanElement;
@@ -420,7 +523,7 @@ function submitRenameFolderForm(event: SubmitEvent) {
         form.remove();
 
         // Show the hidden spans
-        folderName.style.display = "inline";
+        folderNameSpan.style.display = "inline";
         folderActions.style.display = "inline";
     }).catch(function(error) {
         alert(`Failed to rename folder: ${error}`);
