@@ -306,10 +306,54 @@ func AddBookmark(userID int, title string, url string, tags string, folderID *in
     return bookmark, nil
 }
 
+// Move a bookmark to a folder
+func MoveBookmark(userID int, bookmarkID int, folderID *int) error {
+	// Check if the user is the owner of the bookmark
+	bookmarkUserID := 0
+	err := DB.QueryRow("SELECT user_id FROM bookmarks WHERE id = ?", bookmarkID).Scan(&bookmarkUserID)
+	if err != nil {
+		return fmt.Errorf("Failed to get bookmark user ID: %v", err)
+	}
+	if bookmarkUserID != userID {
+		return fmt.Errorf("You are not authorized to move this bookmark")
+	}
+
+	// Check if the user is the owner of the folder
+	folderUserID := 0
+	err = DB.QueryRow("SELECT user_id FROM bookmark_folders WHERE id = ?", folderID).Scan(&folderUserID)
+	if err != nil {
+		return fmt.Errorf("Failed to get folder user ID: %v", err)
+	}
+	if folderUserID != userID {
+		return fmt.Errorf("You are not authorized to move this bookmark")
+	}
+
+    // Write bookmark to database
+    _, err = DB.Exec(
+        "UPDATE bookmarks SET folder_id = ? WHERE id = ?",
+        folderID, bookmarkID,
+    )
+    if err != nil {
+        return fmt.Errorf("Failed to move bookmark: %v", err)
+    }
+
+    return nil
+}
+
 // Edit a bookmark
 func EditBookmark(userID int, bookmarkID int, title string, url string, tags string, folderID *int, public bool) (*Bookmark, error) {
+	// Check if the user is the owner of the bookmark
+	var bookmarkUserID int
+	err := DB.QueryRow("SELECT user_id FROM bookmarks WHERE id = ?", bookmarkID).Scan(&bookmarkUserID)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to get bookmark user ID: %v", err)
+	}
+	if bookmarkUserID != userID {
+		return nil, fmt.Errorf("You are not authorized to edit this bookmark")
+	}
+
     // Write bookmark to database
-    _, err := DB.Exec(
+    _, err = DB.Exec(
         "UPDATE bookmarks SET title = ?, url = ?, tags = ?, folder_id = ?, public = ? WHERE id = ?",
         title, url, tags, folderID, public, bookmarkID,
     )
@@ -353,8 +397,19 @@ func DeleteBookmark(userID int, bookmarkID int) error {
 // Add a new bookmark folder
 func AddBookmarkFolder(userID int, name string, parentFolderID *int, public bool) (*BookmarkFolder, error) {
     lastID := 0
+
+    // Check if the user is the owner of the parent folder
+	var parentFolderUserID int
+	err := DB.QueryRow("SELECT user_id FROM bookmark_folders WHERE id = ?", parentFolderID).Scan(&parentFolderUserID)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to get parent folder user ID: %v", err)
+	}
+	if parentFolderUserID != userID {
+		return nil, fmt.Errorf("You are not authorized to create a folder in this folder")
+	}
+
     // Create folder
-    err := DB.QueryRow(
+    err = DB.QueryRow(
         "INSERT INTO bookmark_folders (user_id,name,parent_folder_id,public) VALUES (?,?,?,?) RETURNING id",
         userID, name, parentFolderID, public,
     ).Scan(&lastID)
@@ -373,6 +428,40 @@ func AddBookmarkFolder(userID int, name string, parentFolderID *int, public bool
         ChildFolders: make([]*BookmarkFolder, 0),
     }
     return folder, nil
+}
+
+// Move a bookmark folder to a new parent folder
+func MoveBookmarkFolder(userID int, folderID int, parentFolderID *int) error {
+	// Check if the user is the owner of the folder
+	folderUserID := 0
+	err := DB.QueryRow("SELECT user_id FROM bookmark_folders WHERE id = ?", folderID).Scan(&folderUserID)
+	if err != nil {
+		return fmt.Errorf("Failed to get bookmark folder user ID: %v", err)
+	}
+	if folderUserID != userID {
+		return fmt.Errorf("You are not authorized to move this folder")
+	}
+
+	// Check if the user is the owner of the parent folder
+	parentFolderUserID := 0
+	err = DB.QueryRow("SELECT user_id FROM bookmark_folders WHERE id = ?", parentFolderID).Scan(&parentFolderUserID)
+	if err != nil {
+		return fmt.Errorf("Failed to get parent folder user ID: %v", err)
+	}
+	if parentFolderUserID != userID {
+		return fmt.Errorf("You are not authorized to move this folder")
+	}
+
+    // Write folder to database
+    _, err = DB.Exec(
+        "UPDATE bookmark_folders SET parent_folder_id = ? WHERE id = ?",
+        parentFolderID, folderID,
+    )
+    if err != nil {
+        return fmt.Errorf("Failed to move bookmark folder: %v", err)
+    }
+
+    return nil
 }
 
 func RenameBookmarkFolder(userID int, folderID int, name string) (*BookmarkFolder, error) {
