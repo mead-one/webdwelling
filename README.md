@@ -1,4 +1,4 @@
-![webdwelling logo](https://raw.githubusercontent.com/mead-one/webdwelling/main/assets/logos/logo-large.png)
+![webdwelling logo](https://raw.githubusercontent.com/mead-one/webdwelling/refs/heads/main/assets/logos/logo-large.png)
 
 # webdwelling
 Webdwelling is a small project I have undertaken both as an exercise in becoming more familiar with Go, and to create a
