@@ -1,3 +1,5 @@
+![webdwelling logo](https://raw.githubusercontent.com/mead-one/webdwelling/main/assets/logos/logo-large.png)
+
 # webdwelling
 Webdwelling is a small project I have undertaken both as an exercise in becoming more familiar with Go, and to create a
 digital home on the web, independent of browser and device.
