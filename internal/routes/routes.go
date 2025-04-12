@@ -131,6 +131,28 @@ func RegisterRoutes(e *echo.Echo, templatesDir string, staticDir string) {
         return c.JSON(http.StatusOK, response)
     }))
 
+    e.POST("/bookmarks/move-bookmark", auth.RequireAuth(func(c echo.Context) error {
+        userID := c.Get("user_id").(int)
+        bookmarkID, err := strconv.Atoi(c.FormValue("bookmark_id"))
+        if err != nil {
+            return err
+        }
+
+        folderID, err := strconv.Atoi(c.FormValue("folder_id"))
+        if err != nil {
+            return err
+        }
+
+        err = database.MoveBookmark(userID, bookmarkID, &folderID)
+        if err != nil {
+            return err
+        }
+        
+        return c.JSON(http.StatusOK, map[string]interface{}{
+            "success": true,
+        })
+    }))
+
     e.POST("/bookmarks/edit-bookmark", auth.RequireAuth(func(c echo.Context) error {
         userID := c.Get("user_id").(int)
         bookmarkID, err := strconv.Atoi(c.FormValue("bookmark_id"))
@@ -243,6 +265,28 @@ func RegisterRoutes(e *echo.Echo, templatesDir string, staticDir string) {
 
         // Return the new folder details from newFolder but dereference pointers
         return c.JSON(http.StatusOK, response)
+    }))
+
+    e.POST("/bookmarks/move-folder", auth.RequireAuth(func(c echo.Context) error {
+        userID := c.Get("user_id").(int)
+        folderID, err := strconv.Atoi(c.FormValue("folder_id"))
+        if err != nil {
+            return err
+        }
+
+        parentFolderID, err := strconv.Atoi(c.FormValue("parent_folder_id"))
+        if err != nil {
+            return err
+        }
+
+        err = database.MoveBookmarkFolder(userID, folderID, &parentFolderID)
+        if err != nil {
+            return err
+        }
+
+        return c.JSON(http.StatusOK, map[string]interface{}{
+            "success": true,
+        })
     }))
 
     e.POST("/bookmarks/rename-folder", auth.RequireAuth(func(c echo.Context) error {
