@@ -138,12 +138,20 @@ func RegisterRoutes(e *echo.Echo, templatesDir string, staticDir string) {
             return err
         }
 
-        folderID, err := strconv.Atoi(c.FormValue("folder_id"))
-        if err != nil {
-            return err
-        }
+		var folderIDValue string = c.FormValue("folder_id")
 
-        err = database.MoveBookmark(userID, bookmarkID, &folderID)
+		var folderID *int
+		if folderIDValue == "" {
+			folderID = nil
+		} else {
+			folderIDConv, err := strconv.Atoi(folderIDValue)
+			if err != nil {
+				return err
+			}
+			folderID = &folderIDConv
+		}
+
+        err = database.MoveBookmark(userID, bookmarkID, folderID)
         if err != nil {
             return err
         }

@@ -21,14 +21,12 @@ document.addEventListener("DOMContentLoaded", function() {
         if (link !== null) link.draggable = false;
 
         li.addEventListener("dragstart", dragStartBookmark);
-        // li.addEventListener("dragover", dragOverBookmark);
-        // li.addEventListener("drop", dropBookmark);
     });
 
-    folderLIs.forEach(li => {
-        // li.addEventListener("dragover", dragOverFolder);
-        li.addEventListener("drop", dropOnFolder);
-    });
+    // folderLIs.forEach(li => {
+    document.addEventListener("dragover", dragOverFolder);
+    document.addEventListener("drop", dropOnFolder);
+    // });
 
     // Add bookmark buttons
     bookmarkButtons.forEach(button => {
@@ -114,8 +112,69 @@ function dragStartBookmark(event: DragEvent) {
     event.dataTransfer.setData("bookmark-id", bookmarkID);
 }
 
+function dragOverFolder(event: DragEvent) {
+    event.preventDefault();
+    const targetElement: HTMLElement | null = event.target as HTMLElement;
+
+    let folderLi: HTMLLIElement | null;
+    if (targetElement.classList.contains("folder")) {
+        folderLi = targetElement as HTMLLIElement;
+    } else if (targetElement.closest(".folder") !== null) {
+        folderLi = targetElement.closest(".folder") as HTMLLIElement;
+    } else {
+        console.error("Target is not a folder");
+        return;
+    }
+
+    if (folderLi === null) {
+        console.error("Target is null");
+        return;
+    }
+
+    if (folderLi.dataset.id !== undefined) {
+        console.log(`Drag over folder: ${folderLi.dataset.id}`);
+    }
+
+    folderLi.classList.add("dragover");
+}
+
+function dragLeaveFolder(event: DragEvent) {
+    event.preventDefault();
+    const targetElement: HTMLElement | null = event.target as HTMLElement;
+
+    let folderLi: HTMLLIElement | null;
+    if (targetElement.classList.contains("folder")) {
+        folderLi = targetElement as HTMLLIElement;
+    } else if (targetElement.closest(".folder") !== null) {
+        folderLi = targetElement.closest(".folder") as HTMLLIElement;
+    } else {
+        console.error("Target is null");
+        return;
+    }
+
+    if (folderLi === null) {
+        console.error("Target is null");
+        return;
+    }
+
+    folderLi.classList.remove("dragover");
+}
+
 function dropOnFolder(event: DragEvent) {
-    if (event.target === null) {
+    event.preventDefault();
+    const targetElement: HTMLElement | null = event.target as HTMLElement;
+
+    let folderLi: HTMLLIElement | null;
+    if (targetElement.classList.contains("folder")) {
+        folderLi = targetElement as HTMLLIElement;
+    } else if (targetElement.closest(".folder") !== null) {
+        folderLi = targetElement.closest(".folder") as HTMLLIElement;
+    } else {
+        console.error("Target is not a folder");
+        return;
+    }
+
+    if (folderLi === null) {
         console.error("Target is null");
         return;
     }
@@ -126,26 +185,15 @@ function dropOnFolder(event: DragEvent) {
     }
 
     const bookmarkID: string | undefined = event.dataTransfer.getData("bookmark-id");
-    const targetElement: HTMLElement | null = event.target as HTMLElement;
-    let targetFolder: HTMLLIElement | null;
-
-    if (targetElement.classList.contains("folder")) {
-        targetFolder = targetElement as HTMLLIElement;
-    } else {
-        targetFolder = targetElement.closest(".folder") as HTMLLIElement;
-    }
-
-    if (targetFolder === null) {
-        console.error("Target folder is null");
-        return;
-    }
 
     if (bookmarkID === undefined) {
         console.error("Bookmark ID is undefined");
         return;
     }
 
-    const folderID: string | undefined = targetFolder.dataset.id;
+    targetElement.classList.remove("dragover");
+
+    const folderID: string | undefined = folderLi.dataset.id;
 
     if (folderID === undefined) {
         console.error("Folder ID is undefined");
@@ -317,7 +365,7 @@ function openEditBookmarkModal(event: MouseEvent) {
 }
 
 // Move a bookmark to a folder when dropped on a folder
-function moveBookmarkToFolder(bookmarkID: string, folderID: string | null) {
+function moveBookmarkToFolder(bookmarkID: string, folderID: string) {
     fetch("/bookmarks/move-bookmark", {
         method: "POST",
         headers: {
@@ -333,13 +381,16 @@ function moveBookmarkToFolder(bookmarkID: string, folderID: string | null) {
         if (data.success === true) {
             // Update the folder tree and folder select tree
             const bookmarkLi: HTMLLIElement | null = document.getElementById(`bookmark-${bookmarkID}`) as HTMLLIElement;
-            let bookmarkFolder: HTMLLIElement | null;
+            let bookmarkFolder: HTMLLIElement | null, bookmarkUl: HTMLUListElement | null;
             if (folderID === null || folderID === "") {
-                bookmarkFolder = document.getElementById(`bookmarks-root`) as HTMLLIElement;
+                bookmarkFolder = document.getElementById(`bookmarks-elements`) as HTMLLIElement;
+                bookmarkUl = document.getElementById("bookmarks-root") as HTMLUListElement;
             } else {
-                bookmarkFolder = document.getElementById(`bookmarks-${folderID}`) as HTMLLIElement;
+                bookmarkFolder = document.getElementById(`folder-${folderID}`) as HTMLLIElement;
+                bookmarkUl = bookmarkFolder.querySelector("ul.bookmarks") as HTMLUListElement;
             }
-            const bookmarkUl: HTMLUListElement | null = bookmarkFolder.querySelector(":scope > ul.bookmarks") as HTMLUListElement;
+            console.log(bookmarkFolder);
+            console.log(folderID);
             bookmarkUl.appendChild(bookmarkLi);
         } else {
             alert(`Failed to move bookmark: ${data.error}`);
