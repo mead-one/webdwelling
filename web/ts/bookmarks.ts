@@ -25,6 +25,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
     // folderLIs.forEach(li => {
     document.addEventListener("dragover", dragOverFolder);
+    document.addEventListener("dragleave", dragLeaveFolder);
     document.addEventListener("drop", dropOnFolder);
     // });
 
@@ -191,7 +192,7 @@ function dropOnFolder(event: DragEvent) {
         return;
     }
 
-    targetElement.classList.remove("dragover");
+    folderLi.classList.remove("dragover");
 
     const folderID: string | undefined = folderLi.dataset.id;
 
