@@ -25,7 +25,9 @@
     {{if .ChildBookmarks}}
         {{range .ChildBookmarks}}
         <li id="bookmark-{{.ID}}" class="bookmark" data-id="{{.ID}}">
-            <a href="{{.URL}}" target="_blank" class="bookmark-title">{{.Title}}</a>
+            <span class="bookmark-title-span" draggable="false">
+                <a href="{{.URL}}" target="_blank" class="bookmark-title">{{.Title}}</a>
+            </span>
             <span class="bookmark-tags">{{if .Tags}}{{.Tags}}{{end}}</span>
             <span class="bookmark-actions">
                 <button class="edit-bookmark">Edit</button>
@@ -71,7 +73,9 @@
         <ul id="bookmarks-root" class="bookmarks">
             {{range .Bookmarks.ChildBookmarks}}
             <li id="bookmark-{{.ID}}" class="bookmark" data-id="{{.ID}}">
-                <a href="{{.URL}}" target="_blank" class="bookmark-title">{{.Title}}</a>
+                <span class="bookmark-title-span" draggable="false">
+                    <a href="{{.URL}}" target="_blank" class="bookmark-title">{{.Title}}</a>
+                </span>
                 <span class="bookmark-tags">{{if .Tags}}{{.Tags}}{{end}}</span>
                 <span class="bookmark-actions">
                     <button class="edit-bookmark">Edit</button>

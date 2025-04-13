@@ -1,4 +1,6 @@
 document.addEventListener("DOMContentLoaded", function() {
+    const bookmarkLIs: NodeListOf<HTMLLIElement> = document.querySelectorAll("li.bookmark");
+    const folderLIs: NodeListOf<HTMLLIElement> = document.querySelectorAll("li.folder");
     const bookmarkButtons: NodeListOf<HTMLButtonElement> = document.querySelectorAll("button.add-bookmark");
     const editBookmarkButtons: NodeListOf<HTMLButtonElement> = document.querySelectorAll("button.edit-bookmark");
     const deleteBookmarkButtons: NodeListOf<HTMLButtonElement> = document.querySelectorAll("button.delete-bookmark");
@@ -10,6 +12,23 @@ document.addEventListener("DOMContentLoaded", function() {
     const addFolderForm: HTMLFormElement | null = document.getElementById("add-folder-form") as HTMLFormElement;
     const cancelAddBookmarkButton: HTMLButtonElement | null = document.getElementById("cancel-add-bookmark") as HTMLButtonElement;
     const cancelAddFolderButton: HTMLButtonElement | null = document.getElementById("cancel-add-folder") as HTMLButtonElement;
+
+    // Drag and drop
+    bookmarkLIs.forEach(li => {
+        li.setAttribute("draggable", "true");
+        // Disable dragging of anchor element
+        const link: HTMLAnchorElement | null = li.querySelector("a.bookmark-title") as HTMLAnchorElement;
+        if (link !== null) link.draggable = false;
+
+        li.addEventListener("dragstart", dragStartBookmark);
+        // li.addEventListener("dragover", dragOverBookmark);
+        // li.addEventListener("drop", dropBookmark);
+    });
+
+    folderLIs.forEach(li => {
+        // li.addEventListener("dragover", dragOverFolder);
+        li.addEventListener("drop", dropOnFolder);
+    });
 
     // Add bookmark buttons
     bookmarkButtons.forEach(button => {
@@ -65,6 +84,78 @@ type BookmarkFolder = {
     ParentFolderID: string | null;
     CreatedAt: string;
 };
+
+// Drag start event for dragging a bookmark
+function dragStartBookmark(event: DragEvent) {
+    if (event.target === null) {
+        console.error("Target is null");
+        return;
+    }
+
+    if (event.dataTransfer === null) {
+        console.error("Data transfer is null");
+        return;
+    }
+
+    const bookmarkLi: HTMLLIElement | null = event.target as HTMLLIElement;
+    if (bookmarkLi === null) {
+        console.error("Target is null");
+        return;
+    } else if (bookmarkLi.dataset.id === undefined) {
+        console.log(bookmarkLi);
+        console.error("Target dataset is undefined");
+        return;
+    }
+
+    const bookmarkID: string | undefined = bookmarkLi.dataset.id;
+
+    console.log(`Drag start: ${bookmarkID}`);
+
+    event.dataTransfer.setData("bookmark-id", bookmarkID);
+}
+
+function dropOnFolder(event: DragEvent) {
+    if (event.target === null) {
+        console.error("Target is null");
+        return;
+    }
+
+    if (event.dataTransfer === null) {
+        console.error("Data transfer is null");
+        return;
+    }
+
+    const bookmarkID: string | undefined = event.dataTransfer.getData("bookmark-id");
+    const targetElement: HTMLElement | null = event.target as HTMLElement;
+    let targetFolder: HTMLLIElement | null;
+
+    if (targetElement.classList.contains("folder")) {
+        targetFolder = targetElement as HTMLLIElement;
+    } else {
+        targetFolder = targetElement.closest(".folder") as HTMLLIElement;
+    }
+
+    if (targetFolder === null) {
+        console.error("Target folder is null");
+        return;
+    }
+
+    if (bookmarkID === undefined) {
+        console.error("Bookmark ID is undefined");
+        return;
+    }
+
+    const folderID: string | undefined = targetFolder.dataset.id;
+
+    if (folderID === undefined) {
+        console.error("Folder ID is undefined");
+        return;
+    }
+
+    console.log(`Drop on folder: ${bookmarkID}`);
+
+    moveBookmarkToFolder(bookmarkID, folderID);
+}
 
 // Open the add bookmark modal
 function openAddBookmarkModal(event: MouseEvent) {
@@ -223,6 +314,39 @@ function openEditBookmarkModal(event: MouseEvent) {
     modalContainer.style.display = "block";
     editBookmarkForm.style.display = "block";
     bookmarkTitleInput.focus();
+}
+
+// Move a bookmark to a folder when dropped on a folder
+function moveBookmarkToFolder(bookmarkID: string, folderID: string | null) {
+    fetch("/bookmarks/move-bookmark", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body: `bookmark_id=${bookmarkID}&folder_id=${folderID}`
+    }).then(function(response) {
+        if (!response.ok) {
+            throw new Error(response.statusText);
+        }
+        return response.json();
+    }).then(function(data) {
+        if (data.success === true) {
+            // Update the folder tree and folder select tree
+            const bookmarkLi: HTMLLIElement | null = document.getElementById(`bookmark-${bookmarkID}`) as HTMLLIElement;
+            let bookmarkFolder: HTMLLIElement | null;
+            if (folderID === null || folderID === "") {
+                bookmarkFolder = document.getElementById(`bookmarks-root`) as HTMLLIElement;
+            } else {
+                bookmarkFolder = document.getElementById(`bookmarks-${folderID}`) as HTMLLIElement;
+            }
+            const bookmarkUl: HTMLUListElement | null = bookmarkFolder.querySelector(":scope > ul.bookmarks") as HTMLUListElement;
+            bookmarkUl.appendChild(bookmarkLi);
+        } else {
+            alert(`Failed to move bookmark: ${data.error}`);
+        }
+    }).catch(function(error) {
+        alert(`Failed to move bookmark: ${error}`);
+    });
 }
 
 function submitEditBookmarkForm(event: SubmitEvent) {
@@ -480,6 +604,38 @@ function openRenameFolderForm(event: MouseEvent) {
     folderNameInput.focus();
 }
 
+function moveFolderToFolder(folderID: string, parentFolderID: string | null) {
+    fetch("/bookmarks/move-folder", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body: `folder_id=${folderID}&parent_folder_id=${parentFolderID}`
+    }).then(function(response) {
+        if (!response.ok) {
+            throw new Error(response.statusText);
+        }
+        return response.json();
+    }).then(function(data) {
+        if (data.success === true) {
+            // Update the folder tree and folder select tree
+            const folderLi: HTMLLIElement | null = document.getElementById(`folder-${folderID}`) as HTMLLIElement;
+            let folderParent: HTMLLIElement | null;
+            if (parentFolderID === null || parentFolderID === "") {
+                folderParent = document.getElementById(`folders-list-root`) as HTMLLIElement;
+            } else {
+                folderParent = document.getElementById(`folders-list-${parentFolderID}`) as HTMLLIElement;
+            }
+            const folderUl: HTMLUListElement | null = folderParent.querySelector(":scope > ul.folders") as HTMLUListElement;
+            folderUl.appendChild(folderLi);
+        } else {
+            alert(`Failed to move folder: ${data.error}`);
+        }
+    }).catch(function(error) {
+        alert(`Failed to move folder: ${error}`);
+    });
+}
+
 function submitRenameFolderForm(event: SubmitEvent) {
     const form: HTMLFormElement = event.target as HTMLFormElement;
     const parentFolder: HTMLDivElement | null = form.closest(".folder") as HTMLDivElement;
@@ -632,13 +788,19 @@ function updateFolderTreeWithBookmark(bookmark: Bookmark) {
         bookmarkLi.setAttribute("id", `bookmark-${bookmark.ID}`);
         bookmarkLi.classList.add("bookmark");
         bookmarkLi.dataset.id = bookmark.ID.toString();
+        bookmarkLi.setAttribute("draggable", "true");
+
+        const bookmarkTitleSpan: HTMLSpanElement | null = document.createElement("span");
+        bookmarkTitleSpan.classList.add("bookmark-title-span");
+        bookmarkTitleSpan.setAttribute("draggable", "false");
+        bookmarkLi.appendChild(bookmarkTitleSpan);
 
         const bookmarkTitle: HTMLAnchorElement | null = document.createElement("a");
         bookmarkTitle.href = bookmark.URL;
         bookmarkTitle.target = "_blank";
         bookmarkTitle.classList.add("bookmark-title");
         bookmarkTitle.innerText = bookmark.Title;
-        bookmarkLi.appendChild(bookmarkTitle);
+        bookmarkTitleSpan.appendChild(bookmarkTitle);
 
         const bookmarkTags: HTMLSpanElement | null = document.createElement("span");
         if (typeof bookmark.Tags !== "undefined" && bookmark.Tags !== null) {

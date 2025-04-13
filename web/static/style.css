@@ -75,6 +75,7 @@ ul.folders {
 
 li.folder {
     list-style-type: none;
+    cursor: grab;
 }
 
 details.folder-details {
@@ -133,6 +134,7 @@ ul.bookmarks {
 div#bookmarks-elements li.bookmark {
     display: flex;
     padding: 0.1em 0 0.1em 1em;
+    cursor: grab;
 }
 
 li.bookmark:hover {
@@ -149,8 +151,11 @@ li.bookmark:last-child {
     border-radius: 0 0 0.5em 0.5em;
 }
 
-.bookmark-title {
+.bookmark-title-span {
     flex: 1;
+}
+
+.bookmark-title {
     text-decoration: none;
     color: black;
 }
