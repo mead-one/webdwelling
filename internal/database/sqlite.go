@@ -308,6 +308,7 @@ func AddBookmark(userID int, title string, url string, tags string, folderID *in
 
 // Move a bookmark to a folder
 func MoveBookmark(userID int, bookmarkID int, folderID *int) error {
+	fmt.Println("Moving bookmark", bookmarkID, "to folder", folderID)
 	// Check if the user is the owner of the bookmark
 	bookmarkUserID := 0
 	err := DB.QueryRow("SELECT user_id FROM bookmarks WHERE id = ?", bookmarkID).Scan(&bookmarkUserID)
@@ -444,7 +445,7 @@ func MoveBookmarkFolder(userID int, folderID int, parentFolderID *int) error {
 		return fmt.Errorf("You are not authorized to move this folder")
 	}
 
-	// Check if the user is the owner of the parent folder
+	// Check if the user is the owner of the destination folder
 	parentFolderUserID := 0
 	err = DB.QueryRow("SELECT user_id FROM bookmark_folders WHERE id = ?", parentFolderID).Scan(&parentFolderUserID)
 	if err != nil {

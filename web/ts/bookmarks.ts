@@ -23,6 +23,11 @@ document.addEventListener("DOMContentLoaded", function() {
         li.addEventListener("dragstart", dragStartBookmark);
     });
 
+    folderLIs.forEach(li => {
+        li.setAttribute("draggable", "true");
+        li.addEventListener("dragstart", dragStartFolder);
+    });
+
     // folderLIs.forEach(li => {
     document.addEventListener("dragover", dragOverFolder);
     document.addEventListener("dragleave", dragLeaveFolder);
@@ -101,16 +106,48 @@ function dragStartBookmark(event: DragEvent) {
         console.error("Target is null");
         return;
     } else if (bookmarkLi.dataset.id === undefined) {
-        console.log(bookmarkLi);
         console.error("Target dataset is undefined");
         return;
     }
 
     const bookmarkID: string | undefined = bookmarkLi.dataset.id;
 
-    console.log(`Drag start: ${bookmarkID}`);
+    console.log(`Drag start: Bookmark ${bookmarkID}`);
 
     event.dataTransfer.setData("bookmark-id", bookmarkID);
+    event.dataTransfer.setData("type", "bookmark");
+}
+
+function dragStartFolder(event: DragEvent) {
+    if (event.target === null) {
+        console.error("Target is null");
+        return;
+    }
+
+    if (event.dataTransfer === null) {
+        console.error("Data transfer is null");
+        return;
+    }
+
+    const folderLi: HTMLLIElement | null = event.target as HTMLLIElement;
+    if (folderLi === null) {
+        console.error("Target is null");
+        return;
+    } else if (folderLi.dataset.id === undefined) {
+        console.error("Target dataset is undefined");
+        return;
+    }
+
+    if (folderLi.dataset.id !== undefined) {
+        console.log(`Drag start: ${folderLi.dataset.id}`);
+    }
+
+    const folderID: string | undefined = folderLi.dataset.id;
+
+    console.log(`Drag start: Folder ${folderID}`);
+
+    event.dataTransfer.setData("folder-id", folderID);
+    event.dataTransfer.setData("type", "folder");
 }
 
 function dragOverFolder(event: DragEvent) {
@@ -180,20 +217,6 @@ function dropOnFolder(event: DragEvent) {
         return;
     }
 
-    if (event.dataTransfer === null) {
-        console.error("Data transfer is null");
-        return;
-    }
-
-    const bookmarkID: string | undefined = event.dataTransfer.getData("bookmark-id");
-
-    if (bookmarkID === undefined) {
-        console.error("Bookmark ID is undefined");
-        return;
-    }
-
-    folderLi.classList.remove("dragover");
-
     const folderID: string | undefined = folderLi.dataset.id;
 
     if (folderID === undefined) {
@@ -201,9 +224,39 @@ function dropOnFolder(event: DragEvent) {
         return;
     }
 
-    console.log(`Drop on folder: ${bookmarkID}`);
+    console.log(`Drop on folder: ${folderID}`);
+    folderLi.classList.remove("dragover");
 
-    moveBookmarkToFolder(bookmarkID, folderID);
+    if (event.dataTransfer === null) {
+        console.error("Data transfer is null");
+        return;
+    }
+
+    if (!event.dataTransfer.types.includes("type")) {
+        console.error("Unknown data type");
+        return;
+    }
+
+    console.log(`Data transfer: ${event.dataTransfer.types}`);
+    if (event.dataTransfer.getData("type") === "bookmark") {
+        const bookmarkID: string | undefined = event.dataTransfer.getData("bookmark-id");
+
+        if (bookmarkID === undefined) {
+            console.error("Bookmark ID is undefined");
+            return;
+        }
+
+        moveBookmarkToFolder(bookmarkID, folderID);
+    } else if (event.dataTransfer.getData("type") === "folder") {
+        const draggedFolderID: string | undefined = event.dataTransfer.getData("folder-id");
+
+        if (draggedFolderID === undefined) {
+            console.error("Folder ID is undefined");
+            return;
+        }
+
+        moveBookmarkFolderToFolder(draggedFolderID, folderID);
+    }
 }
 
 // Open the add bookmark modal
@@ -398,6 +451,38 @@ function moveBookmarkToFolder(bookmarkID: string, folderID: string) {
         }
     }).catch(function(error) {
         alert(`Failed to move bookmark: ${error}`);
+    });
+}
+
+function moveBookmarkFolderToFolder(folderID: string, parentFolderID: string | null) {
+    fetch("/bookmarks/move-folder", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body: `folder_id=${folderID}&parent_folder_id=${parentFolderID}`
+    }).then(function(response) {
+        if (!response.ok) {
+            throw new Error(response.statusText);
+        }
+        return response.json();
+    }).then(function(data) {
+        if (data.success === true) {
+            // Update the folder tree and folder select tree
+            const folderLi: HTMLLIElement | null = document.getElementById(`folder-${folderID}`) as HTMLLIElement;
+            let folderParent: HTMLLIElement | null;
+            if (parentFolderID === null || parentFolderID === "") {
+                folderParent = document.getElementById(`folders-list-root`) as HTMLLIElement;
+            } else {
+                folderParent = document.getElementById(`folders-list-${parentFolderID}`) as HTMLLIElement;
+            }
+            const folderUl: HTMLUListElement | null = folderParent.querySelector(":scope > ul.folders") as HTMLUListElement;
+            folderUl.appendChild(folderLi);
+        } else {
+            alert(`Failed to move folder: ${data.error}`);
+        }
+    }).catch(function(error) {
+        alert(`Failed to move folder: ${error}`);
     });
 }
 
