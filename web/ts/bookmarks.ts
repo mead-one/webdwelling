@@ -171,10 +171,6 @@ function dragOverFolder(event: DragEvent) {
         return;
     }
 
-    if (folderLi.dataset.id !== undefined) {
-        console.log(`Drag over folder: ${folderLi.dataset.id}`);
-    }
-
     folderLi.classList.add("dragover");
 }
 
