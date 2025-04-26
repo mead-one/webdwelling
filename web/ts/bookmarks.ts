@@ -86,6 +86,7 @@ type BookmarkFolder = {
 
 // Drag start event for dragging a bookmark
 function dragStartBookmark(event: DragEvent) {
+    event.stopPropagation();
     if (event.target === null) {
         console.error("Target is null");
         return;
