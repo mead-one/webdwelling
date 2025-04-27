@@ -308,6 +308,7 @@ func AddBookmark(userID int, title string, url string, tags string, folderID *in
 
 // Move a bookmark to a folder
 func MoveBookmark(userID int, bookmarkID int, folderID *int) error {
+	fmt.Println("Moving bookmark", bookmarkID, "to folder", folderID)
 	// Check if the user is the owner of the bookmark
 	bookmarkUserID := 0
 	err := DB.QueryRow("SELECT user_id FROM bookmarks WHERE id = ?", bookmarkID).Scan(&bookmarkUserID)
@@ -400,18 +401,21 @@ func DeleteBookmark(userID int, bookmarkID int) error {
 func AddBookmarkFolder(userID int, name string, parentFolderID *int, public bool) (*BookmarkFolder, error) {
     lastID := 0
 
-    // Check if the user is the owner of the parent folder
-	var parentFolderUserID int
-	err := DB.QueryRow("SELECT user_id FROM bookmark_folders WHERE id = ?", parentFolderID).Scan(&parentFolderUserID)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to get parent folder user ID: %v", err)
-	}
-	if parentFolderUserID != userID {
-		return nil, fmt.Errorf("You are not authorized to create a folder in this folder")
+	if parentFolderID != nil {
+		// Check if the user is the owner of the parent folder
+		var parentFolderUserID int
+		err := DB.QueryRow("SELECT user_id FROM bookmark_folders WHERE id = ?", parentFolderID).Scan(&parentFolderUserID)
+		if err != nil {
+			return nil, fmt.Errorf("Failed to get parent folder user ID: %v", err)
+		}
+
+		if parentFolderUserID != userID {
+			return nil, fmt.Errorf("You are not authorized to create a folder in this folder")
+		}
 	}
 
     // Create folder
-    err = DB.QueryRow(
+	err := DB.QueryRow(
         "INSERT INTO bookmark_folders (user_id,name,parent_folder_id,public) VALUES (?,?,?,?) RETURNING id",
         userID, name, parentFolderID, public,
     ).Scan(&lastID)
@@ -433,37 +437,67 @@ func AddBookmarkFolder(userID int, name string, parentFolderID *int, public bool
 }
 
 // Move a bookmark folder to a new parent folder
-func MoveBookmarkFolder(userID int, folderID int, parentFolderID *int) error {
+func MoveBookmarkFolder(userID int, folderID int, destinationFolderID *int) error {
+	// Check if the destination folder is a descendant of the moved folder
+	if FolderIsDescendant(folderID, destinationFolderID) {
+		return fmt.Errorf("Cannot move a folder into one of its descendants")
+	}
+
 	// Check if the user is the owner of the folder
-	folderUserID := 0
-	err := DB.QueryRow("SELECT user_id FROM bookmark_folders WHERE id = ?", folderID).Scan(&folderUserID)
+	var storedFolderID int
+	err := DB.QueryRow("SELECT user_id FROM bookmark_folders WHERE id = ?", folderID).Scan(&storedFolderID)
 	if err != nil {
 		return fmt.Errorf("Failed to get bookmark folder user ID: %v", err)
 	}
-	if folderUserID != userID {
+	if storedFolderID != userID {
 		return fmt.Errorf("You are not authorized to move this folder")
 	}
 
-	// Check if the user is the owner of the parent folder
-	parentFolderUserID := 0
-	err = DB.QueryRow("SELECT user_id FROM bookmark_folders WHERE id = ?", parentFolderID).Scan(&parentFolderUserID)
-	if err != nil {
-		return fmt.Errorf("Failed to get parent folder user ID: %v", err)
-	}
-	if parentFolderUserID != userID {
-		return fmt.Errorf("You are not authorized to move this folder")
+	// Check if the user is the owner of the destination folder
+	if destinationFolderID != nil {
+		var storedParentFolderUserID *int
+		err = DB.QueryRow("SELECT user_id FROM bookmark_folders WHERE id = ?", *destinationFolderID).Scan(&storedParentFolderUserID)
+		if err != nil {
+			return fmt.Errorf("Failed to get parent folder user ID: %v", err)
+		}
+		if storedParentFolderUserID != nil && *storedParentFolderUserID != userID {
+			return fmt.Errorf("You are not authorized to move this folder")
+		}
 	}
 
     // Write folder to database
     _, err = DB.Exec(
         "UPDATE bookmark_folders SET parent_folder_id = ? WHERE id = ?",
-        parentFolderID, folderID,
+        destinationFolderID, folderID,
     )
     if err != nil {
         return fmt.Errorf("Failed to move bookmark folder: %v", err)
     }
 
     return nil
+}
+
+// Check if a folder is a descendant of another folder
+func FolderIsDescendant(folderID int, destinationFolderID *int) bool {
+	if destinationFolderID == nil {
+		return false
+	}
+
+	destinationFolder, err := GetBookmarkFolderByID(*destinationFolderID)
+	if err != nil {
+		fmt.Println("Failed to get destination folder:", err)
+		return false
+	}
+
+	if folderID == destinationFolder.ID {
+		return true
+	}
+
+	if destinationFolder.ParentFolderID == nil {
+		return false
+	}
+
+	return FolderIsDescendant(folderID, destinationFolder.ParentFolderID)
 }
 
 func RenameBookmarkFolder(userID int, folderID int, name string) (*BookmarkFolder, error) {
@@ -550,7 +584,7 @@ func DeleteBookmarkFolder(userID int, folderID int) error {
 // Get a bookmark folder by name
 func GetBookmarkFolderByID(folderID int) (*BookmarkFolder, error) {
     folder := &BookmarkFolder{}
-    err := DB.QueryRow("SELECT * FROM bookmark_folders WHERE id = ?", folderID).Scan(
+    err := DB.QueryRow("SELECT id,name,parent_folder_id,created_at FROM bookmark_folders WHERE id = ?", folderID).Scan(
         &folder.ID, &folder.Name, &folder.ParentFolderID, &folder.CreatedAt,
     )
     if err != nil {
