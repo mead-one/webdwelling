@@ -113,8 +113,6 @@ function dragStartBookmark(event: DragEvent) {
 
     const bookmarkID: string | undefined = bookmarkLi.dataset.id;
 
-    console.log(`Drag start: Bookmark ${bookmarkID}`);
-
     event.dataTransfer.setData("bookmark-id", bookmarkID);
     event.dataTransfer.setData("type", "bookmark");
 }
@@ -140,13 +138,7 @@ function dragStartFolder(event: DragEvent) {
         return;
     }
 
-    if (folderLi.dataset.id !== undefined) {
-        console.log(`Drag start: ${folderLi.dataset.id}`);
-    }
-
     const folderID: string | undefined = folderLi.dataset.id;
-
-    console.log(`Drag start: Folder ${folderID}`);
 
     event.dataTransfer.setData("folder-id", folderID);
     event.dataTransfer.setData("type", "folder");
@@ -257,7 +249,6 @@ function dropOnFolder(event: DragEvent) {
         return;
     }
 
-    console.log(`Data transfer: ${event.dataTransfer.types}`);
     if (event.dataTransfer.getData("type") === "bookmark") {
         const bookmarkID: string | undefined = event.dataTransfer.getData("bookmark-id");
 
@@ -337,8 +328,6 @@ function submitAddBookmarkForm(event: SubmitEvent) {
     if (title === null) {
         return;
     }
-
-    console.log(`Adding bookmark ${title} to folder ${folderID}`);
 
     fetch("/bookmarks/add-bookmark", {
         method: "POST",
@@ -467,8 +456,6 @@ function moveBookmarkToFolder(bookmarkID: string, folderID: string) {
                 bookmarkFolder = document.getElementById(`folder-${folderID}`) as HTMLLIElement;
                 bookmarkUl = bookmarkFolder.querySelector("ul.bookmarks") as HTMLUListElement;
             }
-            console.log(bookmarkFolder);
-            console.log(folderID);
             bookmarkUl.appendChild(bookmarkLi);
         } else {
             alert(`Failed to move bookmark: ${data.error}`);
@@ -537,8 +524,6 @@ function submitEditBookmarkForm(event: SubmitEvent) {
     }
 
     event.preventDefault();
-
-    console.log(`Editing bookmark ${title} to folder ${folderID}`);
 
     fetch("/bookmarks/edit-bookmark", {
         method: "POST",
@@ -611,8 +596,6 @@ function submitDeleteBookmark(event: Event) {
     if (!confirm(`Are you sure you want to delete the bookmark "${bookmarkName}"?`)) {
         return;
     }
-
-    console.log(`Deleting bookmark ${bookmarkID}`);
 
     fetch("/bookmarks/delete-bookmark", {
         method: "POST",
@@ -690,7 +673,6 @@ function submitAddFolderForm(event: SubmitEvent) {
         return;
     }
 
-    console.log(`Adding folder ${name} to folder ${parentFolderID}`);
     event.preventDefault();
 
     fetch("/bookmarks/add-folder", {
@@ -809,7 +791,6 @@ function submitRenameFolderForm(event: SubmitEvent) {
     }
     const folderActions: HTMLSpanElement | null = document.getElementById(`folder-actions-${folderID}`) as HTMLSpanElement;
 
-    console.log(`Renaming folder ${folderID} to ${folderName}`);
     event.preventDefault();
 
     fetch("/bookmarks/rename-folder", {
@@ -881,8 +862,6 @@ function submitDeleteFolder(event: MouseEvent) {
     if (!confirm(`Are you sure you want to delete the folder "${folderName}"?`)) {
         return;
     }
-
-    console.log(`Deleting folder ${folderID}`);
 
     fetch("/bookmarks/delete-folder", {
         method: "POST",
