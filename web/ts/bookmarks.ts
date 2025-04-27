@@ -153,14 +153,25 @@ function dragStartFolder(event: DragEvent) {
 }
 
 function dragOverFolder(event: DragEvent) {
+    let draggedType: string | null, draggedLi: HTMLLIElement | null;
     event.preventDefault();
-    if (event.dataTransfer === null || event.dataTransfer.getData("folder-id") === undefined) {
+
+    if (event.dataTransfer === null) {
+        console.error("Data transfer is null");
         return;
     }
 
+    draggedType = event.dataTransfer.getData("type");
+
+    if (draggedType === "folder") {
+        const draggedFolderID: string | undefined = event.dataTransfer.getData("folder-id");
+        draggedLi = document.getElementById(`folder-${draggedFolderID}`) as HTMLLIElement;
+    } else {
+        const draggedBookmarkID: string | undefined = event.dataTransfer.getData("bookmark-id");
+        draggedLi = document.getElementById(`bookmark-${draggedBookmarkID}`) as HTMLLIElement;
+    }
+
     const targetElement: HTMLElement | null = event.target as HTMLElement;
-    const draggedFolderID: string | undefined = event.dataTransfer.getData("folder-id");
-    const draggedFolderLi: HTMLLIElement | null = document.getElementById(`folder-${draggedFolderID}`) as HTMLLIElement;
 
     let folderLi: HTMLLIElement | null;
     if (targetElement.classList.contains("folder")) {
@@ -177,7 +188,8 @@ function dragOverFolder(event: DragEvent) {
         return;
     }
 
-    if (!(draggedFolderLi.contains(targetElement))) {
+    if (draggedType === "bookmark" ||
+        (draggedLi !== null && !(draggedLi.contains(targetElement)))) {
         folderLi.classList.add("dragover");
     }
 }
