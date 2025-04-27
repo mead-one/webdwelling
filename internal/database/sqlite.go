@@ -401,18 +401,21 @@ func DeleteBookmark(userID int, bookmarkID int) error {
 func AddBookmarkFolder(userID int, name string, parentFolderID *int, public bool) (*BookmarkFolder, error) {
     lastID := 0
 
-    // Check if the user is the owner of the parent folder
-	var parentFolderUserID int
-	err := DB.QueryRow("SELECT user_id FROM bookmark_folders WHERE id = ?", parentFolderID).Scan(&parentFolderUserID)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to get parent folder user ID: %v", err)
-	}
-	if parentFolderUserID != userID {
-		return nil, fmt.Errorf("You are not authorized to create a folder in this folder")
+	if parentFolderID != nil {
+		// Check if the user is the owner of the parent folder
+		var parentFolderUserID int
+		err := DB.QueryRow("SELECT user_id FROM bookmark_folders WHERE id = ?", parentFolderID).Scan(&parentFolderUserID)
+		if err != nil {
+			return nil, fmt.Errorf("Failed to get parent folder user ID: %v", err)
+		}
+
+		if parentFolderUserID != userID {
+			return nil, fmt.Errorf("You are not authorized to create a folder in this folder")
+		}
 	}
 
     // Create folder
-    err = DB.QueryRow(
+	err := DB.QueryRow(
         "INSERT INTO bookmark_folders (user_id,name,parent_folder_id,public) VALUES (?,?,?,?) RETURNING id",
         userID, name, parentFolderID, public,
     ).Scan(&lastID)
