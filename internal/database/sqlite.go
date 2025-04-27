@@ -435,6 +435,11 @@ func AddBookmarkFolder(userID int, name string, parentFolderID *int, public bool
 
 // Move a bookmark folder to a new parent folder
 func MoveBookmarkFolder(userID int, folderID int, parentFolderID *int) error {
+	// // Check if the destination folder is a descendant of the source folder
+	// if FolderIsDescendant(folderID, parentFolderID) {
+	// 	return fmt.Errorf("Cannot move a folder into one of its descendants")
+	// }
+
 	// Check if the user is the owner of the folder
 	folderUserID := 0
 	err := DB.QueryRow("SELECT user_id FROM bookmark_folders WHERE id = ?", folderID).Scan(&folderUserID)
@@ -465,6 +470,28 @@ func MoveBookmarkFolder(userID int, folderID int, parentFolderID *int) error {
     }
 
     return nil
+}
+
+// Check if a folder is a descendant of another folder
+func FolderIsDescendant(folderID int, parentFolderID *int) bool {
+	if parentFolderID == nil {
+		return false
+	}
+
+	parentFolder, err := GetBookmarkFolderByID(*parentFolderID)
+	if err != nil {
+		return false
+	}
+
+	if folderID == parentFolder.ID {
+		return true
+	}
+
+	if parentFolder.ParentFolderID == nil {
+		return false
+	}
+
+	return FolderIsDescendant(folderID, parentFolder.ParentFolderID)
 }
 
 func RenameBookmarkFolder(userID int, folderID int, name string) (*BookmarkFolder, error) {
