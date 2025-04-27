@@ -154,7 +154,13 @@ function dragStartFolder(event: DragEvent) {
 
 function dragOverFolder(event: DragEvent) {
     event.preventDefault();
+    if (event.dataTransfer === null || event.dataTransfer.getData("folder-id") === undefined) {
+        return;
+    }
+
     const targetElement: HTMLElement | null = event.target as HTMLElement;
+    const draggedFolderID: string | undefined = event.dataTransfer.getData("folder-id");
+    const draggedFolderLi: HTMLLIElement | null = document.getElementById(`folder-${draggedFolderID}`) as HTMLLIElement;
 
     let folderLi: HTMLLIElement | null;
     if (targetElement.classList.contains("folder")) {
@@ -171,7 +177,9 @@ function dragOverFolder(event: DragEvent) {
         return;
     }
 
-    folderLi.classList.add("dragover");
+    if (!(draggedFolderLi.contains(targetElement))) {
+        folderLi.classList.add("dragover");
+    }
 }
 
 function dragLeaveFolder(event: DragEvent) {
@@ -222,15 +230,12 @@ function dropOnFolder(event: DragEvent) {
         return;
     }
 
-    console.log(`Drop on folder: ${folderID}`);
     folderLi.classList.remove("dragover");
 
     if (event.dataTransfer === null) {
         console.error("Data transfer is null");
         return;
-    }
-
-    if (!event.dataTransfer.types.includes("type")) {
+    } else if (!event.dataTransfer.types.includes("type")) {
         console.error("Unknown data type");
         return;
     }
