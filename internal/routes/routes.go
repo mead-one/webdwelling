@@ -267,7 +267,6 @@ func RegisterRoutes(e *echo.Echo, templatesDir string, staticDir string) {
     }))
 
     e.POST("/bookmarks/add-folder", auth.RequireAuth(func(c echo.Context) error {
-    	fmt.Println("Add folder form values:", c.FormValue("name"), c.FormValue("parent_folder_id") == "", c.FormValue("public"))
         userID := c.Get("user_id").(int)
         name := c.FormValue("name")
         var parentFolderID *int
@@ -281,8 +280,6 @@ func RegisterRoutes(e *echo.Echo, templatesDir string, staticDir string) {
                 return err
             }
         }
-
-        fmt.Println("Parent folder ID:", parentFolderID)
 
         var public bool = c.FormValue("public") == "true"
 
@@ -314,12 +311,18 @@ func RegisterRoutes(e *echo.Echo, templatesDir string, staticDir string) {
             return err
         }
 
-        parentFolderID, err := strconv.Atoi(c.FormValue("parent_folder_id"))
-        if err != nil {
-            return err
-        }
+		var parentFolderID *int
+		if c.FormValue("parent_folder_id") == "null" || c.FormValue("parent_folder_id") == "" {
+			parentFolderID = nil
+		} else {
+			parentFolderID = new(int)
+			*parentFolderID, err = strconv.Atoi(c.FormValue("parent_folder_id"))
+			if err != nil {
+				return err
+			}
+		}
 
-        err = database.MoveBookmarkFolder(userID, folderID, &parentFolderID)
+        err = database.MoveBookmarkFolder(userID, folderID, parentFolderID)
         if err != nil {
             return err
         }
