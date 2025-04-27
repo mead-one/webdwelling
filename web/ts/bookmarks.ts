@@ -163,12 +163,17 @@ function dragOverFolder(event: DragEvent) {
 
     draggedType = event.dataTransfer.getData("type");
 
-    if (draggedType === "folder") {
+    switch (draggedType) {
+    case "folder":
         const draggedFolderID: string | undefined = event.dataTransfer.getData("folder-id");
         draggedLi = document.getElementById(`folder-${draggedFolderID}`) as HTMLLIElement;
-    } else {
+        break;
+    case "bookmark":
         const draggedBookmarkID: string | undefined = event.dataTransfer.getData("bookmark-id");
         draggedLi = document.getElementById(`bookmark-${draggedBookmarkID}`) as HTMLLIElement;
+        break;
+    default:
+        draggedLi = null;
     }
 
     const targetElement: HTMLElement | null = event.target as HTMLElement;
@@ -264,9 +269,13 @@ function dropOnFolder(event: DragEvent) {
         moveBookmarkToFolder(bookmarkID, folderID);
     } else if (event.dataTransfer.getData("type") === "folder") {
         const draggedFolderID: string | undefined = event.dataTransfer.getData("folder-id");
+        const draggedLi: HTMLLIElement | null = document.getElementById(`folder-${draggedFolderID}`) as HTMLLIElement;
 
         if (draggedFolderID === undefined) {
             console.error("Folder ID is undefined");
+            return;
+        } else if (draggedLi.contains(targetElement)) {
+            console.error("Cannot move folder into itself or its descendants");
             return;
         }
 
