@@ -474,8 +474,7 @@ function moveBookmarkFolderToFolder(folderID: string, parentFolderID: string | n
             } else {
                 folderParent = document.getElementById(`folders-list-${parentFolderID}`) as HTMLLIElement;
             }
-            const folderUl: HTMLUListElement | null = folderParent.querySelector(":scope > ul.folders") as HTMLUListElement;
-            folderUl.appendChild(folderLi);
+            folderParent.appendChild(folderLi);
         } else {
             alert(`Failed to move folder: ${data.error}`);
         }
