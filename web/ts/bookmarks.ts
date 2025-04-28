@@ -508,13 +508,17 @@ function moveBookmarkFolderToFolder(folderID: string, parentFolderID: string | n
         if (data.success === true) {
             // Update the folder tree and folder select tree
             const folderLi: HTMLLIElement | null = document.getElementById(`folder-${folderID}`) as HTMLLIElement;
-            let folderParent: HTMLLIElement | null;
+            const folderSelectLi: HTMLLIElement | null = document.getElementById(`folder-select-item-${folderID}`) as HTMLLIElement;
+            let folderParent: HTMLLIElement | null, folderSelectParent: HTMLLIElement | null;
             if (parentFolderID === null || parentFolderID === "") {
                 folderParent = document.getElementById(`folders-list-root`) as HTMLLIElement;
+                folderSelectParent = document.getElementById(`folder-select-tree-root`) as HTMLLIElement;
             } else {
                 folderParent = document.getElementById(`folders-list-${parentFolderID}`) as HTMLLIElement;
+                folderSelectParent = document.getElementById(`folder-select-tree-${parentFolderID}`) as HTMLLIElement;
             }
             folderParent.appendChild(folderLi);
+            folderSelectParent.appendChild(folderSelectLi);
         } else {
             alert(`Failed to move folder: ${data.error}`);
         }
