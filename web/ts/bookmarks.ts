@@ -1,4 +1,6 @@
 document.addEventListener("DOMContentLoaded", function() {
+    const expandAllFoldersButton: HTMLButtonElement | null = document.getElementById("expand-all-folders") as HTMLButtonElement;
+    const collapseAllFoldersButton: HTMLButtonElement | null = document.getElementById("collapse-all-folders") as HTMLButtonElement;
     const bookmarkLIs: NodeListOf<HTMLLIElement> = document.querySelectorAll("li.bookmark");
     const folderLIs: NodeListOf<HTMLLIElement> = document.querySelectorAll("li.folder");
     const bookmarkButtons: NodeListOf<HTMLButtonElement> = document.querySelectorAll("button.add-bookmark");
@@ -12,6 +14,9 @@ document.addEventListener("DOMContentLoaded", function() {
     const addFolderForm: HTMLFormElement | null = document.getElementById("add-folder-form") as HTMLFormElement;
     const cancelAddBookmarkButton: HTMLButtonElement | null = document.getElementById("cancel-add-bookmark") as HTMLButtonElement;
     const cancelAddFolderButton: HTMLButtonElement | null = document.getElementById("cancel-add-folder") as HTMLButtonElement;
+
+    if (expandAllFoldersButton !== null) expandAllFoldersButton.addEventListener("click", expandAllFolders);
+    if (collapseAllFoldersButton !== null) collapseAllFoldersButton.addEventListener("click", collapseAllFolders);
 
     // Drag and drop
     bookmarkLIs.forEach(li => {
@@ -88,6 +93,22 @@ type BookmarkFolder = {
     ParentFolderID: string | null;
     CreatedAt: string;
 };
+
+// Expand all folders
+function expandAllFolders() {
+    const folderDetails: NodeListOf<HTMLDetailsElement> = document.querySelectorAll("details.folder-details");
+    folderDetails.forEach(d => {
+        d.setAttribute("open", "");
+    });
+}
+
+// Collapse all folders
+function collapseAllFolders() {
+    const folderDetails: NodeListOf<HTMLDetailsElement> = document.querySelectorAll("details.folder-details");
+    folderDetails.forEach(d => {
+        d.removeAttribute("open");
+    });
+}
 
 // Drag start event for dragging a bookmark
 function dragStartBookmark(event: DragEvent) {
