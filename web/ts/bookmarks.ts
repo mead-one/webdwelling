@@ -1033,6 +1033,7 @@ function updateFolderTreeWithFolder(folder: BookmarkFolder) {
     } else {
         folderLi = document.createElement("li");
         folderLi.dataset.id = folder.ID.toString();
+        folderLi.setAttribute("draggable", "true");
         folderLi.addEventListener("dragstart", dragStartFolder);
         folderLi.setAttribute("id", `folder-${folder.ID}`);
         folderLi.classList.add("folder");
