@@ -951,6 +951,8 @@ function updateFolderTreeWithBookmark(bookmark: Bookmark) {
         }
     } else {
         bookmarkLi = document.createElement("li");
+        bookmarkLi.dataset.id = bookmark.ID.toString();
+        bookmarkLi.addEventListener("dragstart", dragStartBookmark);
         bookmarkLi.setAttribute("id", `bookmark-${bookmark.ID}`);
         bookmarkLi.classList.add("bookmark");
         bookmarkLi.dataset.id = bookmark.ID.toString();
@@ -1030,6 +1032,8 @@ function updateFolderTreeWithFolder(folder: BookmarkFolder) {
         folderName.innerText = folder.Name;
     } else {
         folderLi = document.createElement("li");
+        folderLi.dataset.id = folder.ID.toString();
+        folderLi.addEventListener("dragstart", dragStartFolder);
         folderLi.setAttribute("id", `folder-${folder.ID}`);
         folderLi.classList.add("folder");
         folderLi.dataset.id = folder.ID;
