@@ -270,7 +270,8 @@ function dropOnFolder(event: DragEvent) {
         return;
     }
 
-    if (event.dataTransfer.getData("type") === "bookmark") {
+    switch (event.dataTransfer.getData("type")) {
+    case "bookmark":
         const bookmarkID: string | undefined = event.dataTransfer.getData("bookmark-id");
 
         if (bookmarkID === undefined) {
@@ -279,7 +280,8 @@ function dropOnFolder(event: DragEvent) {
         }
 
         moveBookmarkToFolder(bookmarkID, folderID);
-    } else if (event.dataTransfer.getData("type") === "folder") {
+        break;
+    case "folder":
         const draggedFolderID: string | undefined = event.dataTransfer.getData("folder-id");
         const draggedLi: HTMLLIElement | null = document.getElementById(`folder-${draggedFolderID}`) as HTMLLIElement;
 
@@ -292,6 +294,10 @@ function dropOnFolder(event: DragEvent) {
         }
 
         moveBookmarkFolderToFolder(draggedFolderID, folderID);
+        break;
+    default:
+        console.error("Incompatible element dropped");
+        return;
     }
 }
 
@@ -475,7 +481,7 @@ function moveBookmarkToFolder(bookmarkID: string, folderID: string) {
                 bookmarkUl = document.getElementById("bookmarks-root") as HTMLUListElement;
             } else {
                 bookmarkFolder = document.getElementById(`folder-${folderID}`) as HTMLLIElement;
-                bookmarkUl = bookmarkFolder.querySelector("ul.bookmarks") as HTMLUListElement;
+                bookmarkUl = bookmarkFolder.querySelector(":scope > details.folder-details > ul.bookmarks") as HTMLUListElement;
             }
             bookmarkUl.appendChild(bookmarkLi);
         } else {
