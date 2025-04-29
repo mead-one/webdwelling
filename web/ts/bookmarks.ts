@@ -13,6 +13,7 @@ document.addEventListener("DOMContentLoaded", function() {
     const editBookmarkForm: HTMLFormElement | null = document.getElementById("edit-bookmark-form") as HTMLFormElement;
     const addFolderForm: HTMLFormElement | null = document.getElementById("add-folder-form") as HTMLFormElement;
     const cancelAddBookmarkButton: HTMLButtonElement | null = document.getElementById("cancel-add-bookmark") as HTMLButtonElement;
+    const cancelEditBookmarkButton: HTMLButtonElement | null = document.getElementById("cancel-edit-bookmark") as HTMLButtonElement;
     const cancelAddFolderButton: HTMLButtonElement | null = document.getElementById("cancel-add-folder") as HTMLButtonElement;
 
     if (expandAllFoldersButton !== null) expandAllFoldersButton.addEventListener("click", expandAllFolders);
@@ -73,6 +74,7 @@ document.addEventListener("DOMContentLoaded", function() {
     if (editBookmarkForm !== null) editBookmarkForm.addEventListener("submit", submitEditBookmarkForm);
     if (addFolderForm !== null) addFolderForm.addEventListener("submit", submitAddFolderForm);
     if (cancelAddBookmarkButton !== null) cancelAddBookmarkButton.addEventListener("click", closeAddBookmarkModal);
+    if (cancelEditBookmarkButton !== null) cancelEditBookmarkButton.addEventListener("click", closeEditBookmarkModal);
     if (cancelAddFolderButton !== null) cancelAddFolderButton.addEventListener("click", closeAddFolderModal);
 });
 
@@ -775,38 +777,6 @@ function openRenameFolderForm(event: MouseEvent) {
     folderSummary.appendChild(renameFolderForm);
     renameFolderForm.addEventListener("submit", submitRenameFolderForm);
     folderNameInput.focus();
-}
-
-function moveFolderToFolder(folderID: string, parentFolderID: string | null) {
-    fetch("/bookmarks/move-folder", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/x-www-form-urlencoded"
-        },
-        body: `folder_id=${folderID}&parent_folder_id=${parentFolderID}`
-    }).then(function(response) {
-        if (!response.ok) {
-            throw new Error(response.statusText);
-        }
-        return response.json();
-    }).then(function(data) {
-        if (data.success === true) {
-            // Update the folder tree and folder select tree
-            const folderLi: HTMLLIElement | null = document.getElementById(`folder-${folderID}`) as HTMLLIElement;
-            let folderParent: HTMLLIElement | null;
-            if (parentFolderID === null || parentFolderID === "") {
-                folderParent = document.getElementById(`folders-list-root`) as HTMLLIElement;
-            } else {
-                folderParent = document.getElementById(`folders-list-${parentFolderID}`) as HTMLLIElement;
-            }
-            const folderUl: HTMLUListElement | null = folderParent.querySelector(":scope > ul.folders") as HTMLUListElement;
-            folderUl.appendChild(folderLi);
-        } else {
-            alert(`Failed to move folder: ${data.error}`);
-        }
-    }).catch(function(error) {
-        alert(`Failed to move folder: ${error}`);
-    });
 }
 
 function submitRenameFolderForm(event: SubmitEvent) {
