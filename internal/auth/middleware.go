@@ -7,7 +7,7 @@ import (
 
     "github.com/golang-jwt/jwt/v4"
     "github.com/labstack/echo/v4"
-    "github.com/cjm-1/webdwelling/internal/database"
+    "github.com/mead-one/webdwelling/internal/database"
 )
 
 // Secret used to sign JWT tokens

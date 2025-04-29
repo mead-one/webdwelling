@@ -11,8 +11,9 @@
         <header>
             <nav>
                 <ul>
+                    {{ $basePath := .basePath }}
                     {{ range .NavItems }}
-                    <li><a href="{{ .URL }}">{{ .Name }}</a></li>
+                    <li><a href="{{ $basePath }}{{ .URL }}">{{ .Name }}</a></li>
                     {{ end }}
                 </ul>
             </nav>

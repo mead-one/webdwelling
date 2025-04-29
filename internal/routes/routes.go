@@ -12,8 +12,8 @@ import (
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 
-    "github.com/cjm-1/webdwelling/internal/auth"
-    "github.com/cjm-1/webdwelling/internal/database"
+    "github.com/mead-one/webdwelling/internal/auth"
+    "github.com/mead-one/webdwelling/internal/database"
 )
 
 import (
@@ -31,21 +31,25 @@ type BookmarkFolderResponse struct {
     CreatedAt string `json:"created_at"`
 }
 
-func RegisterRoutes(e *echo.Echo, templatesDir string, staticDir string) {
+func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDir string) {
     renderer := TemplateRenderer(templatesDir)
     e.Renderer = renderer
+
+	g := e.Group(basePath)
+
     files, _ := filepath.Glob(filepath.Join(templatesDir, "*.html"))
 
     // Set up language caser for casing titles
     caser := cases.Title(language.BritishEnglish)
 
     // Route / to rendered homepage
-    e.GET("/", func(c echo.Context) error {
+    g.GET("/", func(c echo.Context) error {
         var isAuthenticated bool = auth.IsUserAuthenticated(c)
         navItems := GetNavItems(templatesDir, isAuthenticated)
         username := c.Get("username")
 
         return c.Render(http.StatusOK, "home.html", map[string]interface{}{
+        	"basePath": basePath,
             "title": "Home",
             "NavItems": navItems,
             "IsAuthenticated": isAuthenticated,
@@ -54,7 +58,7 @@ func RegisterRoutes(e *echo.Echo, templatesDir string, staticDir string) {
     })
 
     // Bookmarks route
-    e.GET("/bookmarks", auth.RequireAuth(func(c echo.Context) error {
+    g.GET("/bookmarks", auth.RequireAuth(func(c echo.Context) error {
         navItems := GetNavItems(templatesDir, true)
         userID := c.Get("user_id").(int)
         bookmarks, err := database.GetBookmarksByUserID(userID, true)
@@ -69,13 +73,14 @@ func RegisterRoutes(e *echo.Echo, templatesDir string, staticDir string) {
         }
 
         return c.Render(http.StatusOK, "bookmarks.html", map[string]interface{}{
+        	"basePath": basePath,
             "title": "Bookmarks",
             "NavItems": navItems,
             "Bookmarks": bookmarks,
         })
     }))
 
-    e.POST("/bookmarks/add-bookmark", auth.RequireAuth(func(c echo.Context) error {
+    g.POST("/bookmarks/add-bookmark", auth.RequireAuth(func(c echo.Context) error {
         userID := c.Get("user_id").(int)
         title := c.FormValue("title")
         url := c.FormValue("url")
@@ -131,7 +136,7 @@ func RegisterRoutes(e *echo.Echo, templatesDir string, staticDir string) {
         return c.JSON(http.StatusOK, response)
     }))
 
-    e.POST("/bookmarks/move-bookmark", auth.RequireAuth(func(c echo.Context) error {
+    g.POST("/bookmarks/move-bookmark", auth.RequireAuth(func(c echo.Context) error {
         userID := c.Get("user_id").(int)
         bookmarkID, err := strconv.Atoi(c.FormValue("bookmark_id"))
         if err != nil {
@@ -161,7 +166,7 @@ func RegisterRoutes(e *echo.Echo, templatesDir string, staticDir string) {
         })
     }))
 
-    e.POST("/bookmarks/move-folder", auth.RequireAuth(func(c echo.Context) error {
+    g.POST("/bookmarks/move-folder", auth.RequireAuth(func(c echo.Context) error {
         userID := c.Get("user_id").(int)
         folderID, err := strconv.Atoi(c.FormValue("folder_id"))
         if err != nil {
@@ -190,7 +195,7 @@ func RegisterRoutes(e *echo.Echo, templatesDir string, staticDir string) {
         })
     }))
 
-    e.POST("/bookmarks/edit-bookmark", auth.RequireAuth(func(c echo.Context) error {
+    g.POST("/bookmarks/edit-bookmark", auth.RequireAuth(func(c echo.Context) error {
         userID := c.Get("user_id").(int)
         bookmarkID, err := strconv.Atoi(c.FormValue("bookmark_id"))
         if err != nil {
@@ -249,7 +254,7 @@ func RegisterRoutes(e *echo.Echo, templatesDir string, staticDir string) {
         return c.JSON(http.StatusOK, response)
     }))
 
-    e.POST("/bookmarks/delete-bookmark", auth.RequireAuth(func(c echo.Context) error {
+    g.POST("/bookmarks/delete-bookmark", auth.RequireAuth(func(c echo.Context) error {
         userID := c.Get("user_id").(int)
         bookmarkID, err := strconv.Atoi(c.FormValue("bookmark_id"))
         if err != nil {
@@ -266,7 +271,7 @@ func RegisterRoutes(e *echo.Echo, templatesDir string, staticDir string) {
         })
     }))
 
-    e.POST("/bookmarks/add-folder", auth.RequireAuth(func(c echo.Context) error {
+    g.POST("/bookmarks/add-folder", auth.RequireAuth(func(c echo.Context) error {
         userID := c.Get("user_id").(int)
         name := c.FormValue("name")
         var parentFolderID *int
@@ -304,7 +309,7 @@ func RegisterRoutes(e *echo.Echo, templatesDir string, staticDir string) {
         return c.JSON(http.StatusOK, response)
     }))
 
-    e.POST("/bookmarks/move-folder", auth.RequireAuth(func(c echo.Context) error {
+    g.POST("/bookmarks/move-folder", auth.RequireAuth(func(c echo.Context) error {
         userID := c.Get("user_id").(int)
         folderID, err := strconv.Atoi(c.FormValue("folder_id"))
         if err != nil {
@@ -332,7 +337,7 @@ func RegisterRoutes(e *echo.Echo, templatesDir string, staticDir string) {
         })
     }))
 
-    e.POST("/bookmarks/rename-folder", auth.RequireAuth(func(c echo.Context) error {
+    g.POST("/bookmarks/rename-folder", auth.RequireAuth(func(c echo.Context) error {
         userID := c.Get("user_id").(int)
         folderID, err := strconv.Atoi(c.FormValue("folder_id"))
         if err != nil {
@@ -356,7 +361,7 @@ func RegisterRoutes(e *echo.Echo, templatesDir string, staticDir string) {
         return c.JSON(http.StatusOK, response)
     }))
 
-    e.POST("/bookmarks/delete-folder", auth.RequireAuth(func(c echo.Context) error {
+    g.POST("/bookmarks/delete-folder", auth.RequireAuth(func(c echo.Context) error {
         userID := c.Get("user_id").(int)
         folderID, err := strconv.Atoi(c.FormValue("folder_id"))
         if err != nil {
@@ -375,9 +380,9 @@ func RegisterRoutes(e *echo.Echo, templatesDir string, staticDir string) {
 
     e.Static("/", staticDir)
 
-    e.POST("/login", auth.Login)
+    g.POST("/login", auth.Login)
 
-    e.GET("/logout", auth.Logout)
+    g.GET("/logout", auth.Logout)
 
     // Blacklisted template names
     var blacklist []string = []string{"header", "footer", "error", "home", "bookmarks"}
@@ -413,28 +418,31 @@ func RegisterRoutes(e *echo.Echo, templatesDir string, staticDir string) {
         _, _, requireAuth, hideIfAuth := parseNavComment(line)
 
         if requireAuth {
-            e.GET(url, auth.RequireAuth(func(c echo.Context) error {
+            g.GET(url, auth.RequireAuth(func(c echo.Context) error {
                 var isAuthenticated bool = auth.IsUserAuthenticated(c)
                 navItems := GetNavItems(templatesDir, isAuthenticated)
                 return c.Render(http.StatusOK, name + ".html", map[string]interface{}{
+					"basePath": basePath,
                     "title": caser.String(name),
                     "NavItems": navItems,
                 })
             }))
         } else if hideIfAuth {
-            e.GET(url, auth.RequireNoAuth(func(c echo.Context) error {
+            g.GET(url, auth.RequireNoAuth(func(c echo.Context) error {
                 var isAuthenticated bool = auth.IsUserAuthenticated(c)
                 navItems := GetNavItems(templatesDir, isAuthenticated)
                 return c.Render(http.StatusOK, name + ".html", map[string]interface{}{
+					"basePath": basePath,
                     "title": caser.String(name),
                     "NavItems": navItems,
                 })
             }))
         } else {
-            e.GET(url, func(c echo.Context) error {
+            g.GET(url, func(c echo.Context) error {
                 var isAuthenticated bool = auth.IsUserAuthenticated(c)
                 navItems := GetNavItems(templatesDir, isAuthenticated)
                 return c.Render(http.StatusOK, name + ".html", map[string]interface{}{
+					"basePath": basePath,
                     "title": caser.String(name),
                     "NavItems": navItems,
                 })

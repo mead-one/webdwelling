@@ -8,7 +8,7 @@
     {{ else }}
     <h1>Welcome to Webdwelling!</h1>
     <p>Your digital home is waiting for you.</p>
-    <p>To get started, please <a href="/login">login</a>.</p>
+    <p>To get started, please <a href="{{ .basePath }}/login">login</a>.</p>
     {{ end }}
 </section>
 {{ template "footer.html" . }}
