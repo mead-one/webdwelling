@@ -1,0 +1,13 @@
+# systemd service file for webdwelling
+[Unit]
+Description=Web app for dwelling on the web
+After=network.target
+
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/webdwelling
+ExecStart=/opt/webdwelling/bin/webdwelling
+
+[Install]
+WantedBy=multi-user.target
