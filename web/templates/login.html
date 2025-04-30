@@ -2,7 +2,7 @@
 {{ template "header.html" . }}
 <section>
     <h1>Login</h1>
-    <form action="/login" method="post">
+    <form action="{{ .basePath }}/login" method="post">
         <label for="username">Username</label>
         <input type="text" name="username" id="username" required>
         <label for="password">Password</label>
