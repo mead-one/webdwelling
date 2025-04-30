@@ -20,6 +20,13 @@ func main() {
 
     e := echo.New()
 
+    e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+    	return func(c echo.Context) error {
+    		c.Set("basePath", cfg.BasePath)
+    		return next(c)
+    	}
+    })
+
     database.InitDB()
 
     e.Use(middleware.Logger())

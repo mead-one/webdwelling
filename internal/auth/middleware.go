@@ -61,7 +61,11 @@ func Login(c echo.Context) error {
     cookie.HttpOnly = true
     c.SetCookie(cookie)
 
-    return c.Redirect(http.StatusSeeOther, "/")
+    // Redirect to home page
+    basePath := c.Get("basePath").(string)
+    var homePath string = basePath + "/"
+
+    return c.Redirect(http.StatusSeeOther, homePath)
 }
 
 func IsUserAuthenticated(c echo.Context) bool {
@@ -78,7 +82,8 @@ func RequireAuth(next echo.HandlerFunc) echo.HandlerFunc {
     return func(c echo.Context) error {
         err := checkCookie(c)
         if err != nil {
-            return c.Redirect(http.StatusSeeOther, "/login")
+			var loginPath string = c.Get("basePath").(string) + "/login"
+            return c.Redirect(http.StatusSeeOther, loginPath)
         }
 
         return next(c)
@@ -90,7 +95,8 @@ func RequireNoAuth(next echo.HandlerFunc) echo.HandlerFunc {
     return func(c echo.Context) error {
         err := checkCookie(c)
         if err == nil {
-            return c.Redirect(http.StatusSeeOther, "/")
+        	var homePath string = c.Get("basePath").(string) + "/"
+            return c.Redirect(http.StatusSeeOther, homePath)
         }
 
         return next(c)
@@ -147,6 +153,8 @@ func Logout(c echo.Context) error {
     cookie.HttpOnly = true
     c.SetCookie(cookie)
 
-    return c.Redirect(http.StatusSeeOther, "/login")
+    var loginPath string = c.Get("basePath").(string) + "/login"
+
+    return c.Redirect(http.StatusSeeOther, loginPath)
 }
 
