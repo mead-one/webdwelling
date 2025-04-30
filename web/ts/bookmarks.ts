@@ -96,6 +96,19 @@ type BookmarkFolder = {
     CreatedAt: string;
 };
 
+// Add base path to URLs
+function addBasePath(url: string) {
+    let basePath: string;
+    if (typeof (<any>window).basePath === "string") {
+        basePath = (<any>window).basePath;
+    } else {
+        basePath = "";
+    }
+    const normalisedPath = basePath.startsWith("/") || basePath === "" ? basePath : `/${basePath}`;
+
+    return `${normalisedPath}${url}`;
+}
+
 // Expand all folders
 function expandAllFolders() {
     const folderDetails: NodeListOf<HTMLDetailsElement> = document.querySelectorAll("details.folder-details");
@@ -358,7 +371,7 @@ function submitAddBookmarkForm(event: SubmitEvent) {
         return;
     }
 
-    fetch("/bookmarks/add-bookmark", {
+    fetch(addBasePath("/bookmarks/add-bookmark"), {
         method: "POST",
         headers: {
             "Content-Type": "application/x-www-form-urlencoded"
@@ -462,7 +475,7 @@ function openEditBookmarkModal(event: MouseEvent) {
 
 // Move a bookmark to a folder when dropped on a folder
 function moveBookmarkToFolder(bookmarkID: string, folderID: string) {
-    fetch("/bookmarks/move-bookmark", {
+    fetch(addBasePath("/bookmarks/move-bookmark"), {
         method: "POST",
         headers: {
             "Content-Type": "application/x-www-form-urlencoded"
@@ -495,7 +508,7 @@ function moveBookmarkToFolder(bookmarkID: string, folderID: string) {
 }
 
 function moveBookmarkFolderToFolder(folderID: string, parentFolderID: string | null) {
-    fetch("/bookmarks/move-folder", {
+    fetch(addBasePath("/bookmarks/move-folder"), {
         method: "POST",
         headers: {
             "Content-Type": "application/x-www-form-urlencoded"
@@ -558,7 +571,7 @@ function submitEditBookmarkForm(event: SubmitEvent) {
 
     event.preventDefault();
 
-    fetch("/bookmarks/edit-bookmark", {
+    fetch(addBasePath("/bookmarks/edit-bookmark"), {
         method: "POST",
         headers: {
             "Content-Type": "application/x-www-form-urlencoded"
@@ -630,7 +643,7 @@ function submitDeleteBookmark(event: Event) {
         return;
     }
 
-    fetch("/bookmarks/delete-bookmark", {
+    fetch(addBasePath("/bookmarks/delete-bookmark"), {
         method: "POST",
         headers: {
             "Content-Type": "application/x-www-form-urlencoded"
@@ -708,7 +721,7 @@ function submitAddFolderForm(event: SubmitEvent) {
 
     event.preventDefault();
 
-    fetch("/bookmarks/add-folder", {
+    fetch(addBasePath("/bookmarks/add-folder"), {
         method: "POST",
         headers: {
             "Content-Type": "application/x-www-form-urlencoded"
@@ -794,7 +807,7 @@ function submitRenameFolderForm(event: SubmitEvent) {
 
     event.preventDefault();
 
-    fetch("/bookmarks/rename-folder", {
+    fetch(addBasePath("/bookmarks/rename-folder"), {
         method: "POST",
         headers: {
             "Content-Type": "application/x-www-form-urlencoded"
@@ -864,7 +877,7 @@ function submitDeleteFolder(event: MouseEvent) {
         return;
     }
 
-    fetch("/bookmarks/delete-folder", {
+    fetch(addBasePath("/bookmarks/delete-folder"), {
         method: "POST",
         headers: {
             "Content-Type": "application/x-www-form-urlencoded"
