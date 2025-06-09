@@ -1,9 +1,64 @@
 <!-- nav: include, weight: 0 -->
+{{define "folder-tree"}}
+<li id="folder-{{.ID}}" class="folder">
+<details class="folder-details">
+    <summary>
+        <span class="folder-icon-closed">📁</span>
+        <span class="folder-icon-open">📂</span>
+        <span id="folder-name-{{.ID}}" class="folder-name">{{.Name}}</span>
+    </summary>
+    <ul id="folders-list-{{.ID}}" class="folders">
+    {{ if .ChildFolders }}
+        {{ range .ChildFolders }}
+            {{ template "folder-tree" . }}
+        {{ end }}
+    {{ end }}
+    </ul>
+    {{- /* Bookmarks within this folder */ -}}
+    <ul id="bookmarks-{{.ID}}" class="bookmarks">
+    {{if .ChildBookmarks}}
+        {{range .ChildBookmarks}}
+        <li id="bookmark-{{.ID}}" class="bookmark" data-id="{{.ID}}">
+            <span class="bookmark-title-span" draggable="false">
+                <a href="{{.URL}}" target="_blank" class="bookmark-title">{{.Title}}</a>
+            </span>
+            <span class="bookmark-tags">{{if .Tags}}{{.Tags}}{{end}}</span>
+        </li>
+        {{end}}
+    {{end}}
+    </ul>
+</details>
+</li>
+{{end}}
+
 {{ template "header.html" . }}
 <section>
     {{ if .IsAuthenticated }}
-    <h1>Welcome back, {{ .Username }}!</h1>
+    <h1>Welcome Back, {{ .Username }}!</h1>
     <div id="home-elements">
+        <h2>Your Bookmarks</h2>
+        <div id="bookmarks-elements" class="folder">
+            <span class="folder-actions">
+                <button id="expand-all-folders">Expand all</button>
+                <button id="collapse-all-folders">Collapse all</button>
+                <a class="fake-button" href="{{ .basePath }}/bookmarks">Manage bookmarks</a>
+            </span>
+            {{ if .Bookmarks.ChildFolders }}
+                {{ range .Bookmarks.ChildFolders }}
+                    {{ template "folder-tree" .}}
+                {{ end }}
+            {{ end }}
+            <ul id="bookmarks-root" class="bookmarks">
+                {{range .Bookmarks.ChildBookmarks}}
+                <li id="bookmark-{{.ID}}" class="bookmark" data-id="{{.ID}}">
+                    <span class="bookmark-title-span" draggable="false">
+                        <a href="{{.URL}}" target="_blank" class="bookmark-title">{{.Title}}</a>
+                    </span>
+                    <span class="bookmark-tags">{{if .Tags}}{{.Tags}}{{end}}</span>
+                </li>
+                {{end}}
+            </ul>
+        </div>
     </div>
     {{ else }}
     <h1>Welcome to Webdwelling!</h1>
@@ -12,3 +67,4 @@
     {{ end }}
 </section>
 {{ template "footer.html" . }}
+<script src="{{.basePath}}/bookmarks.js"></script>
