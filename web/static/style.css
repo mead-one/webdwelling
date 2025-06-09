@@ -153,8 +153,12 @@ li.bookmark:nth-child(odd) {
     background-color: #E9E9E9;
 }
 
-li.bookmark:last-child {
+div#bookmarks-elements > ul.bookmarks > li.bookmark:last-child {
     border-radius: 0 0 0.5em 0.5em;
+}
+
+details.folder-details > ul.bookmarks > li.bookmark:last-child {
+    border-radius: 0 0 0 0.5em;
 }
 
 .bookmark-title-span {
