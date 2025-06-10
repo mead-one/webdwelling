@@ -44,8 +44,14 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
     e.GET("/", func(c echo.Context) error {
         var isAuthenticated bool = auth.IsUserAuthenticated(c)
         navItems := GetNavItems(templatesDir, isAuthenticated)
-        username := c.Get("username")
-        bookmarks, err := database.GetBookmarksByUserID(c.Get("user_id").(int), true)
+        var username string;
+        var bookmarks database.BookmarkFolder;
+        var err error;
+
+        if isAuthenticated {
+			username = c.Get("username").(string)
+			bookmarks, err = database.GetBookmarksByUserID(c.Get("user_id").(int), true)
+		}
 
         if err != nil {
             return c.Render(http.StatusInternalServerError, "error.html", map[string]interface{}{
