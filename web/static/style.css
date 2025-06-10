@@ -1,5 +1,16 @@
+/* Variables */
+:root {
+    --color-background1: skyblue;
+    --color-background2: #ECEFF1;
+    --color-background3: #CFD8DC;
+    --color-background4: #E1AD01;
+    --color-background5: #E2C04F;
+    --color-foreground1: #030303;
+    --color-foreground2: #616161;
+}
+
 body {
-    background-color: skyblue;
+    background-color: var(--color-background1);
     font-family: sans-serif;
 }
 
@@ -10,51 +21,100 @@ main {
     min-width: 10em;
 }
 
-nav ul, footer p {
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-    list-style-type: none;
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
-    background-color: rgba(255, 255, 255, 0.75);
-    border-radius: 0.5em;
+/* --- Hamburger menu --- */
+#hamburger-menu-checkbox {
+    opacity: 0;
+    /* display: none; */
 }
 
-nav ul li, footer p a {
-    flex: 1;
-    /*display: inline-block;*/
-    margin: .3em;
-    padding: 0 0.5em;
-    border-radius: 0.5em;
-    background-color: skyblue;
-    text-align: center;
+#hamburger-menu-checkbox:checked + #hamburger-menu-btn > span {
+    transform: rotate(45deg);
 }
 
-nav ul li a {
-    text-decoration: none;
-    color: black;
+#hamburger-menu-checkbox:checked + #hamburger-menu-btn > span::before {
+    top: 0;
+    transform: rotate(0deg);
 }
 
-footer {
-    position: static;
-    bottom: 0;
-    left: 0;
-    margin: 0;
-    padding: 0;
+#hamburger-menu-checkbox:checked + #hamburger-menu-btn > span::after {
+    top: 0;
+    transform: rotate(90deg);
+}
+
+#hamburger-menu-checkbox:checked ~ .hamburger-menu-list {
+    left: 0 !important;
+}
+
+#hamburger-menu-btn {
+    position: fixed;
+    top: 16px;
+    left: 20px;
+    width: 26px;
+    height: 26px;
+    cursor: pointer;
+    z-index: 1;
+}
+
+#hamburger-menu-btn > span,
+#hamburger-menu-btn > span::before,
+#hamburger-menu-btn > span::after {
+    display: block;
+    position: absolute;
     width: 100%;
-    background-color: rgba(255, 255, 255, 0.75);
-    border-radius: 0.5em;
-    text-align: center;
+    height: 2px;
+    background-color: var(--color-foreground2);
+    transition-duration: .25s;
+}
+
+#hamburger-menu-btn > span {
+    top: 12px;
+}
+
+#hamburger-menu-btn > span::before {
+    content: '';
+    top: -8px;
+}
+
+#hamburger-menu-btn > span::after {
+    content: '';
+    top: 8px;
+}
+
+.hamburger-menu-list {
+    display: block;
+    position: fixed;
+    top: 0;
+    left: -100%;
+    width: 300px;
+    height: 100%;
+    margin: 0;
+    padding: 80px 0;
+    list-style: none;
+    background-color: var(--color-background2);
+    box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.16);
+    transition-duration: .25s;
+}
+
+.hamburger-menu-item {
+    display: block;
+    padding: 12px 24px;
+    color: var(--color-foreground1);
+    /* font-family: Roboto, sans-serif; */
+    font-size: 20px;
+    font-weight: 500;
+    text-decoration: none;
+    transition-duration: .25s;
+}
+
+.hamburger-menu-item:hover {
+    background-color: var(--color-background3);
 }
 
 /* --- Bookmarks --- */
 div#bookmarks-elements {
     border: 1px solid black;
     border-radius: 0.5em;
-    background-color: white;
+    background-color: var(--color-background2);
     margin-bottom: 1em;
 }
 
@@ -89,20 +149,20 @@ details.folder-details {
     margin: 0.4em 0 0.4em 0.7em;
     border-width: 1px 0 1px 1px;
     border-style: solid;
-    border-color: #E1AD01;
+    border-color: var(--color-background4);
     border-radius: 0.6em 0 0 0.6em;
 }
 
 details.folder-details > summary {
     display: flex;
     cursor: pointer;
-    background-color: #E1AD01;
+    background-color: var(--color-background4);
     border-radius: 0.5em 0 0 .5em;
     padding: 0;
 }
 
 details.folder-details > summary:hover {
-    background-color: #E2C04F;
+    background-color: var(--color-background5);
 }
 
 details.folder-details > summary > span.folder-icon-open,
@@ -146,7 +206,7 @@ div#bookmarks-elements li.bookmark {
 li.bookmark:hover {
     border-width: 1px 0;
     border-style: solid;
-    border-color: #E1AD01;
+    border-color: var(--color-background4);
 }
 
 li.bookmark:nth-child(odd) {

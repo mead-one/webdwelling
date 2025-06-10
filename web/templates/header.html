@@ -9,14 +9,16 @@
         <link rel="stylesheet" href="{{ .basePath }}/style.css">
     </head>
     <body>
-        <header>
-            <nav>
-                <ul>
-                    {{ $basePath := .basePath }}
-                    {{ range .NavItems }}
-                    <li><a href="{{ $basePath }}{{ .URL }}">{{ .Name }}</a></li>
-                    {{ end }}
-                </ul>
-            </nav>
-        </header>
+        <nav class="hamburger-menu">
+            <input type="checkbox" id="hamburger-menu-checkbox">
+            <label for="hamburger-menu-checkbox" id="hamburger-menu-btn">
+                <span></span>
+            </label>
+            <ul class="hamburger-menu-list">
+                {{ $basePath := .basePath }}
+                {{ range .NavItems }}
+                <li><a href="{{ $basePath }}{{ .URL }}" class="hamburger-menu-item">{{ .Name }}</a></li>
+                {{ end }}
+            </ul>
+        </nav>
         <main>
