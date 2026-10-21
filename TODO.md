@@ -25,8 +25,8 @@ Findings from a code review on 2026-10-21, ordered by priority. File references 
   - maximum lengths for title, URL, tags and folder name
   - `middleware.Secure()` and a CSP header
 - [ ] **Pin the JWT signing method** with `jwt.WithValidMethods([]string{"HS256"})`. Consider shorter token lifetimes or a way to revoke tokens, e.g. a per-user `token_version` claim.
-- [ ] **Make usernames unique on their own.** `UNIQUE(username, email, subdirectory)` allows duplicate usernames whenever `email` is NULL. Add `UNIQUE(username)`, plus `UNIQUE(email)` and `UNIQUE(subdirectory)` if those should be unique too.
-- [ ] **Reconsider the `prevent_username_subdirectory_clash` trigger** (`sqlite.go:100-112`). The public page column exists so that loading a public page doesn't reveal whether a username exists. The trigger undoes that: when someone picks a public page name, `'Subdirectory taken by existing username'` tells them that name is a username. If public pages are only ever addressed by this column and usernames never appear in URLs, the two namespaces never meet, so the trigger can go. The column then just needs its own `UNIQUE`. If a clash rule really is needed, return a generic "name unavailable" error. The trigger also only runs on `INSERT`, so it doesn't apply when the value is changed later.
+- [x] **Make usernames unique on their own.** `UNIQUE(username, email, public_slug)` allows duplicate usernames whenever `email` is NULL. Add `UNIQUE(username)`, plus `UNIQUE(email)` and `UNIQUE(public_slug)` if those should be unique too.
+- [ ] **Reconsider the `prevent_username_public_slug_clash` trigger** (`sqlite.go:100-112`). The public page column exists so that loading a public page doesn't reveal whether a username exists. The trigger undoes that: when someone picks a public page name, `'Public slug taken by existing username'` tells them that name is a username. If public pages are only ever addressed by this column and usernames never appear in URLs, the two namespaces never meet, so the trigger can go. The column then just needs its own `UNIQUE`. If a clash rule really is needed, return a generic "name unavailable" error. The trigger also only runs on `INSERT`, so it doesn't apply when the value is changed later.
 - [ ] **Delete `web/static/bookmarks.js.bak`.** It's committed and served publicly by `e.Static`.
 
 ## 3. Correctness
@@ -69,7 +69,7 @@ Findings from a code review on 2026-10-21, ordered by priority. File references 
 
 ## 5. Naming, Standards and Tooling
 
-- [ ] **Rename `users.subdirectory`.** The name doesn't describe what the column is for, and it suggests a filesystem path. Suggested: `public_slug`, used as `/{public_slug}`. Also rename:
+- [x] **Rename `users.subdirectory`.** The name doesn't describe what the column is for, and it suggests a filesystem path. Suggested: `public_slug`, used as `/{public_slug}`. Also rename:
   - the Go field `Subdirectory` → `PublicSlug`
   - the `CreateUser` parameter
   - the trigger, if it's kept

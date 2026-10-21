@@ -56,14 +56,13 @@ func createTables() {
     // Create table if it doesn't exist
     if _, err := DB.Exec(`CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        username TEXT NOT NULL,
+        username TEXT UNIQUE NOT NULL,
         password TEXT NOT NULL,
         email TEXT,
-        subdirectory TEXT,
+        public_slug TEXT,
         admin BOOLEAN NOT NULL DEFAULT FALSE,
         created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        last_login TEXT,
-        UNIQUE(username, email, subdirectory)
+        last_login TEXT
     )`); err != nil {
         log.Fatalf("Failed to create users table: %v", err)
     }
@@ -97,18 +96,18 @@ func createTables() {
     }
 
     // Create trigger to ensure no clash between users' usernames and subdirectories
-    if _, err := DB.Exec(`CREATE TRIGGER IF NOT EXISTS prevent_username_subdirectory_clash
+    if _, err := DB.Exec(`CREATE TRIGGER IF NOT EXISTS prevent_username_public_slug_clash
     BEFORE INSERT ON users
     FOR EACH ROW
     BEGIN
-        SELECT RAISE(ABORT, 'Username taken by existing subdirectory')
-        FROM users WHERE subdirectory = NEW.username;
-        
-        SELECT RAISE(ABORT, 'Subdirectory taken by existing username')
-        FROM users WHERE username = NEW.subdirectory;
+        SELECT RAISE(ABORT, 'Username taken by existing public_slug')
+        FROM users WHERE public_slug = NEW.username;
+
+        SELECT RAISE(ABORT, 'Public slug taken by existing username')
+        FROM users WHERE username = NEW.public_slug;
     END
     `); err != nil {
-        log.Fatalf("Failed to create prevent_username_subdirectory_clash trigger: %v", err)
+        log.Fatalf("Failed to create prevent_username_public_slug_clash trigger: %v", err)
     }
 }
 
@@ -118,7 +117,7 @@ type User struct {
     Username string
     Password string
     Email *string
-    Subdirectory *string
+    PublicSlug *string
     Admin bool
     CreatedAt string
     LastLogin *string
@@ -145,7 +144,7 @@ type Bookmark struct {
 }
 
 // ### User functions ###
-func CreateUser(username string, password string, email *string, subdirectory *string, admin bool) (*User, error) {
+func CreateUser(username string, password string, email *string, public_slug *string, admin bool) (*User, error) {
     hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
     if err != nil {
         return nil, fmt.Errorf("Failed to hash password: %v", err)
@@ -153,8 +152,8 @@ func CreateUser(username string, password string, email *string, subdirectory *s
 
     // Write user to database
     _, err = DB.Exec(
-        "INSERT INTO users (username,password,email,subdirectory,admin) VALUES (?,?,?,?,?)",
-        username, string(hashedPassword), email, subdirectory, admin,
+        "INSERT INTO users (username,password,email,public_slug,admin) VALUES (?,?,?,?,?)",
+        username, string(hashedPassword), email, public_slug, admin,
     )
     if err != nil {
         return nil, fmt.Errorf("Failed to write user to database: %v", err)
@@ -165,7 +164,7 @@ func CreateUser(username string, password string, email *string, subdirectory *s
         Username: username,
         Password: string(hashedPassword),
         Email: email,
-        Subdirectory: subdirectory,
+        PublicSlug: public_slug,
         Admin: admin,
         CreatedAt: time.Now().Format("2006-01-02 15:04:05"),
     }
@@ -174,8 +173,8 @@ func CreateUser(username string, password string, email *string, subdirectory *s
 
 func GetUserByUsername(username string) (*User, error) {
     user := &User{}
-    err := DB.QueryRow("SELECT * FROM users WHERE username = ?", username).Scan(
-        &user.ID, &user.Username, &user.Password, &user.Email, &user.Subdirectory, &user.Admin, &user.CreatedAt, &user.LastLogin,
+    err := DB.QueryRow("SELECT id,username,password,email,public_slug,admin,created_at,last_login FROM users WHERE username = ?", username).Scan(
+        &user.ID, &user.Username, &user.Password, &user.Email, &user.PublicSlug, &user.Admin, &user.CreatedAt, &user.LastLogin,
     )
     if err != nil {
         return nil, fmt.Errorf("Failed to get user by username: %v", err)
