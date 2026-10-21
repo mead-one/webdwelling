@@ -3,6 +3,10 @@ BINARY_NAME=webdwelling
 BINARY_DIR=bin
 BINARY_PATH=$(BINARY_DIR)/$(BINARY_NAME)
 
+# Load secrets from .env if it exists (see .env.default)
+-include .env
+export JWT_SECRET
+
 all: build_ts test build
 
 build_ts:

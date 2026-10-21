@@ -10,9 +10,8 @@ import (
     "github.com/mead-one/webdwelling/internal/database"
 )
 
-// Secret used to sign JWT tokens
-// TODO: Move to config file or environment variable
-var JWTSecret = []byte("secret")
+// Secret used to sign JWT tokens, set from config at startup
+var JWTSecret []byte
 
 // Custom claims for JWT tokens
 type JWTCustomClaims struct {

@@ -1,8 +1,8 @@
 # Configuration file for webdwelling
-# Place this file in /etc/webdwelling/config.yaml
+# Options that are commented out use the default value shown
 
 # Port to listen on
 #port: 1323
 
 # Base path for the web app
-base_path: ''
+#base_path: ''

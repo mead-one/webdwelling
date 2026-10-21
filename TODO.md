@@ -4,7 +4,7 @@ Findings from a code review on 2026-10-21, ordered by priority. File references 
 
 ## 1. Fix First
 
-- [ ] **Replace the hardcoded JWT secret** (`internal/auth/middleware.go:15`). The repo is public, so anyone can sign a token for any `user_id`. Load the secret from an environment variable or a root-only file (systemd `EnvironmentFile`), refuse to start if it's missing or shorter than 32 bytes, and rotate it. Rotating logs everyone out.
+- [x] **Replace the hardcoded JWT secret** (`internal/auth/middleware.go:15`). The repo is public, so anyone can sign a token for any `user_id`. Load the secret from an environment variable or a root-only file (systemd `EnvironmentFile`), refuse to start if it's missing or shorter than 32 bytes, and rotate it. Rotating logs everyone out.
 - [ ] **Add CSRF protection.** Set `SameSite=Strict` (or `Lax`) on the `jwt` cookie and add Echo's `middleware.CSRF()`. Send the token from `bookmarks.ts` and include it in the login form.
 - [ ] **Make logout a POST** (`routes.go:400`). As a GET, an `<img>` tag on any site can log you out.
 - [ ] **Set `Secure` on the cookie** whenever the app is served over HTTPS. Use one helper for setting and clearing the cookie, since the same code appears three times in `middleware.go`.
@@ -31,7 +31,7 @@ Findings from a code review on 2026-10-21, ordered by priority. File references 
 
 ## 3. Correctness
 
-- [ ] **Use `cfg.Port`.** `main.go:38` always listens on `:1323`.
+- [x] **Use `cfg.Port`.** `main.go:38` always listens on `:1323`.
 - [ ] **Fix the shared `cases.Caser` data race** (`routes.go:41`). It isn't safe to use from several goroutines. Compute page titles once at startup.
 - [ ] **URL-encode request bodies in `bookmarks.ts`.** Use `new URLSearchParams({...})`. Currently URLs containing `&` or `#` get cut off and `+` turns into a space.
 - [ ] **Stop the edit dialog rewriting relative URLs** (`bookmarks.ts:466`). Read `getAttribute("href")` instead of `.href`, which the browser has already resolved, so `example.com` doesn't come back as `https://host/example.com`.
@@ -92,4 +92,4 @@ Findings from a code review on 2026-10-21, ordered by priority. File references 
   - `ProtectHome=yes`
   - `PrivateTmp=yes`
   - `ReadWritePaths=/opt/webdwelling/data`
-  - `EnvironmentFile=` for the JWT secret
+  - ~~`EnvironmentFile=` for the JWT secret~~ (done)
