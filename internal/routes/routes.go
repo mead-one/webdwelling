@@ -4,22 +4,17 @@ package routes
 import (
     "fmt"
     "os"
+    "slices"
     "strings"
     "strconv"
+    "net/http"
     "path/filepath"
 
-    "golang.org/x/exp/slices"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 
     "github.com/mead-one/webdwelling/internal/auth"
     "github.com/mead-one/webdwelling/internal/database"
-)
-
-import (
-    "net/http"
-
-    "github.com/labstack/echo/v4"
 )
 
 // Bookmark folder response type

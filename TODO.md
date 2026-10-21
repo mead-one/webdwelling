@@ -78,11 +78,11 @@ Findings from a code review on 2026-10-21, ordered by priority. File references 
   Do this through the migration mechanism above (`ALTER TABLE users RENAME COLUMN subdirectory TO public_slug`). SQLite 3.25+ updates the trigger body automatically.
 - [x] **Replace `SELECT *` in `GetUserByUsername`** with an explicit column list, so that adding or renaming columns doesn't silently break the `Scan`.
 - [ ] **Run `gofmt` and `go vet`, and add `staticcheck`.** Specifics:
-  - merge the two `import` blocks in `routes.go`
-  - start error strings in lowercase
-  - wrap errors with `%w`
+  - ~~merge the two `import` blocks in `routes.go`~~
+  - ~~start error strings in lowercase~~
+  - ~~wrap errors with `%w`~~
   - write `x := …` instead of `var x T = …`
-  - use the standard library `slices` instead of `golang.org/x/exp/slices`
+  - ~~use the standard library `slices` instead of `golang.org/x/exp/slices`~~
 - [ ] **Fix the Makefile:** `go vet ./...`, `go test ./...`, and `go build -o $(BINARY_PATH) ./cmd/server`. Add tests, starting with the database layer against an in-memory SQLite.
 - [ ] **Commit `package.json` and its lockfile** so the TypeScript version is pinned. Change the tsconfig `module` to `none` or `es2020` for a browser script.
 - [ ] **Make the paths configurable:** data directory, templates, static files and the config file location.

@@ -147,7 +147,7 @@ type Bookmark struct {
 func CreateUser(username string, password string, email *string, public_slug *string, admin bool) (*User, error) {
     hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
     if err != nil {
-        return nil, fmt.Errorf("Failed to hash password: %v", err)
+        return nil, fmt.Errorf("failed to hash password: %w", err)
     }
 
     // Write user to database
@@ -156,7 +156,7 @@ func CreateUser(username string, password string, email *string, public_slug *st
         username, string(hashedPassword), email, public_slug, admin,
     )
     if err != nil {
-        return nil, fmt.Errorf("Failed to write user to database: %v", err)
+        return nil, fmt.Errorf("failed to write user to database: %w", err)
     }
 
     // Create user struct
@@ -177,7 +177,7 @@ func GetUserByUsername(username string) (*User, error) {
         &user.ID, &user.Username, &user.Password, &user.Email, &user.PublicSlug, &user.Admin, &user.CreatedAt, &user.LastLogin,
     )
     if err != nil {
-        return nil, fmt.Errorf("Failed to get user by username: %v", err)
+        return nil, fmt.Errorf("failed to get user by username: %w", err)
     }
 
     return user, nil
@@ -218,7 +218,7 @@ func GetBookmarksByUserID(userID int, includePrivate bool) (BookmarkFolder, erro
     // Get bookmark folders
     rows, err := DB.Query("SELECT id,name,parent_folder_id,created_at FROM bookmark_folders WHERE user_id = ?", userID)
     if err != nil {
-        return bookmarks, fmt.Errorf("Failed to get bookmark folders: %v", err)
+        return bookmarks, fmt.Errorf("failed to get bookmark folders: %w", err)
     }
 
     // Iterate over rows
@@ -229,7 +229,7 @@ func GetBookmarksByUserID(userID int, includePrivate bool) (BookmarkFolder, erro
         if err := rows.Scan(
             &folder.ID, &folder.Name, &parentFolderID, &folder.CreatedAt,
         ); err != nil {
-            return bookmarks, fmt.Errorf("Failed to scan bookmark folder: %v", err)
+            return bookmarks, fmt.Errorf("failed to scan bookmark folder: %w", err)
         }
 
         folder.ParentFolderID = parentFolderID
@@ -249,7 +249,7 @@ func GetBookmarksByUserID(userID int, includePrivate bool) (BookmarkFolder, erro
     // Get bookmarks
     rows, err = DB.Query("SELECT id,title,url,tags,folder_id,public FROM bookmarks WHERE user_id = ?", userID)
     if err != nil {
-        return bookmarks, fmt.Errorf("Failed to get bookmarks: %v", err)
+        return bookmarks, fmt.Errorf("failed to get bookmarks: %w", err)
     }
 
     // Iterate over rows
@@ -260,7 +260,7 @@ func GetBookmarksByUserID(userID int, includePrivate bool) (BookmarkFolder, erro
         if err := rows.Scan(
             &bookmark.ID, &bookmark.Title, &bookmark.URL, &bookmark.Tags, &folderID, &bookmark.Public,
         ); err != nil {
-            return bookmarks, fmt.Errorf("Failed to scan bookmark: %v", err)
+            return bookmarks, fmt.Errorf("failed to scan bookmark: %w", err)
         }
 
         bookmark.FolderID = folderID
@@ -288,7 +288,7 @@ func AddBookmark(userID int, title string, url string, tags string, folderID *in
         userID, title, url, tags, folderID, public,
     ).Scan(&lastID)
     if err != nil {
-        return nil, fmt.Errorf("Failed to create bookmark: %v", err)
+        return nil, fmt.Errorf("failed to create bookmark: %w", err)
     }
 
     // Create bookmark struct
@@ -312,10 +312,10 @@ func MoveBookmark(userID int, bookmarkID int, folderID *int) error {
 	bookmarkUserID := 0
 	err := DB.QueryRow("SELECT user_id FROM bookmarks WHERE id = ?", bookmarkID).Scan(&bookmarkUserID)
 	if err != nil {
-		return fmt.Errorf("Failed to get bookmark user ID: %v", err)
+		return fmt.Errorf("failed to get bookmark user ID: %w", err)
 	}
 	if bookmarkUserID != userID {
-		return fmt.Errorf("You are not authorized to move this bookmark")
+		return fmt.Errorf("user is not authorized to move this bookmark")
 	}
 
 	if folderID != nil {
@@ -323,10 +323,10 @@ func MoveBookmark(userID int, bookmarkID int, folderID *int) error {
 		folderUserID := 0
 		err = DB.QueryRow("SELECT user_id FROM bookmark_folders WHERE id = ?", folderID).Scan(&folderUserID)
 		if err != nil {
-			return fmt.Errorf("Failed to get folder user ID: %v", err)
+			return fmt.Errorf("failed to get folder user ID: %w", err)
 		}
 		if folderUserID != userID {
-			return fmt.Errorf("You are not authorized to move this bookmark")
+			return fmt.Errorf("user is not authorized to move this bookmark")
 		}
 	}
 
@@ -336,7 +336,7 @@ func MoveBookmark(userID int, bookmarkID int, folderID *int) error {
         folderID, bookmarkID,
     )
     if err != nil {
-        return fmt.Errorf("Failed to move bookmark: %v", err)
+        return fmt.Errorf("failed to move bookmark: %w", err)
     }
 
     return nil
@@ -348,10 +348,10 @@ func EditBookmark(userID int, bookmarkID int, title string, url string, tags str
 	var bookmarkUserID int
 	err := DB.QueryRow("SELECT user_id FROM bookmarks WHERE id = ?", bookmarkID).Scan(&bookmarkUserID)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to get bookmark user ID: %v", err)
+		return nil, fmt.Errorf("failed to get bookmark user ID: %w", err)
 	}
 	if bookmarkUserID != userID {
-		return nil, fmt.Errorf("You are not authorized to edit this bookmark")
+		return nil, fmt.Errorf("user is not authorized to edit this bookmark")
 	}
 
     // Write bookmark to database
@@ -360,7 +360,7 @@ func EditBookmark(userID int, bookmarkID int, title string, url string, tags str
         title, url, tags, folderID, public, bookmarkID,
     )
     if err != nil {
-        return nil, fmt.Errorf("Failed to edit bookmark: %v", err)
+        return nil, fmt.Errorf("failed to edit bookmark: %w", err)
     }
 
     // Create bookmark struct
@@ -382,15 +382,15 @@ func DeleteBookmark(userID int, bookmarkID int) error {
     bookmarkUserID := 0
     err := DB.QueryRow("SELECT user_id FROM bookmarks WHERE id = ?", bookmarkID).Scan(&bookmarkUserID)
     if err != nil {
-        return fmt.Errorf("Failed to get bookmark user ID: %v", err)
+        return fmt.Errorf("failed to get bookmark user ID: %w", err)
     }
     if bookmarkUserID != userID {
-        return fmt.Errorf("You are not authorized to delete this bookmark")
+        return fmt.Errorf("user is not authorized to delete this bookmark")
     }
 
     _, err = DB.Exec("DELETE FROM bookmarks WHERE id = ?", bookmarkID)
     if err != nil {
-        return fmt.Errorf("Failed to delete bookmark: %v", err)
+        return fmt.Errorf("failed to delete bookmark: %w", err)
     }
 
     return nil
@@ -405,11 +405,11 @@ func AddBookmarkFolder(userID int, name string, parentFolderID *int, public bool
 		var parentFolderUserID int
 		err := DB.QueryRow("SELECT user_id FROM bookmark_folders WHERE id = ?", parentFolderID).Scan(&parentFolderUserID)
 		if err != nil {
-			return nil, fmt.Errorf("Failed to get parent folder user ID: %v", err)
+			return nil, fmt.Errorf("failed to get parent folder user ID: %w", err)
 		}
 
 		if parentFolderUserID != userID {
-			return nil, fmt.Errorf("You are not authorized to create a folder in this folder")
+			return nil, fmt.Errorf("user is not authorized to create a folder in this folder")
 		}
 	}
 
@@ -419,7 +419,7 @@ func AddBookmarkFolder(userID int, name string, parentFolderID *int, public bool
         userID, name, parentFolderID, public,
     ).Scan(&lastID)
     if err != nil {
-        return nil, fmt.Errorf("Failed to create bookmark folder: %v", err)
+        return nil, fmt.Errorf("failed to create bookmark folder: %w", err)
     }
 
     // // Create folder struct
@@ -439,17 +439,17 @@ func AddBookmarkFolder(userID int, name string, parentFolderID *int, public bool
 func MoveBookmarkFolder(userID int, folderID int, destinationFolderID *int) error {
 	// Check if the destination folder is a descendant of the moved folder
 	if FolderIsDescendant(folderID, destinationFolderID) {
-		return fmt.Errorf("Cannot move a folder into one of its descendants")
+		return fmt.Errorf("cannot move a folder into one of its descendants")
 	}
 
 	// Check if the user is the owner of the folder
 	var storedFolderID int
 	err := DB.QueryRow("SELECT user_id FROM bookmark_folders WHERE id = ?", folderID).Scan(&storedFolderID)
 	if err != nil {
-		return fmt.Errorf("Failed to get bookmark folder user ID: %v", err)
+		return fmt.Errorf("failed to get bookmark folder user ID: %w", err)
 	}
 	if storedFolderID != userID {
-		return fmt.Errorf("You are not authorized to move this folder")
+		return fmt.Errorf("user is not authorized to move this folder")
 	}
 
 	// Check if the user is the owner of the destination folder
@@ -457,10 +457,10 @@ func MoveBookmarkFolder(userID int, folderID int, destinationFolderID *int) erro
 		var storedParentFolderUserID *int
 		err = DB.QueryRow("SELECT user_id FROM bookmark_folders WHERE id = ?", *destinationFolderID).Scan(&storedParentFolderUserID)
 		if err != nil {
-			return fmt.Errorf("Failed to get parent folder user ID: %v", err)
+			return fmt.Errorf("failed to get parent folder user ID: %w", err)
 		}
 		if storedParentFolderUserID != nil && *storedParentFolderUserID != userID {
-			return fmt.Errorf("You are not authorized to move this folder")
+			return fmt.Errorf("user is not authorized to move this folder")
 		}
 	}
 
@@ -470,7 +470,7 @@ func MoveBookmarkFolder(userID int, folderID int, destinationFolderID *int) erro
         destinationFolderID, folderID,
     )
     if err != nil {
-        return fmt.Errorf("Failed to move bookmark folder: %v", err)
+        return fmt.Errorf("failed to move bookmark folder: %w", err)
     }
 
     return nil
@@ -503,10 +503,10 @@ func RenameBookmarkFolder(userID int, folderID int, name string) (*BookmarkFolde
     folderUserID := 0
     err := DB.QueryRow("SELECT user_id FROM bookmark_folders WHERE id = ?", folderID).Scan(&folderUserID)
     if err != nil {
-        return nil, fmt.Errorf("Failed to get bookmark folder user ID: %v", err)
+        return nil, fmt.Errorf("failed to get bookmark folder user ID: %w", err)
     }
     if folderUserID != userID {
-        return nil, fmt.Errorf("You are not authorized to rename this folder")
+        return nil, fmt.Errorf("user is not authorized to rename this folder")
     }
 
     folder := &BookmarkFolder{}
@@ -516,7 +516,7 @@ func RenameBookmarkFolder(userID int, folderID int, name string) (*BookmarkFolde
         name, folderID,
     ).Scan(&folder.ID, &folder.Name, &folder.ParentFolderID, &folder.Public, &folder.CreatedAt)
     if err != nil {
-        return nil, fmt.Errorf("Failed to rename bookmark folder: %v", err)
+        return nil, fmt.Errorf("failed to rename bookmark folder: %w", err)
     }
 
     return folder, nil
@@ -526,23 +526,23 @@ func DeleteBookmarkFolder(userID int, folderID int) error {
     folderUserID := 0
     err := DB.QueryRow("SELECT user_id FROM bookmark_folders WHERE id = ?", folderID).Scan(&folderUserID)
     if err != nil {
-        return fmt.Errorf("Failed to get bookmark folder user ID: %v", err)
+        return fmt.Errorf("failed to get bookmark folder user ID: %w", err)
     }
     if folderUserID != userID {
-        return fmt.Errorf("You are not authorized to delete this folder")
+        return fmt.Errorf("user is not authorized to delete this folder")
     }
 
     // Delete all bookmarks in this folder
     _, err = DB.Exec("DELETE FROM bookmarks WHERE folder_id = ?", folderID)
     if err != nil {
-        return fmt.Errorf("Failed to delete bookmarks: %v", err)
+        return fmt.Errorf("failed to delete bookmarks: %w", err)
     }
 
     // Recursively delete all descendant folders
     // Get all child folders
     rows, err := DB.Query("SELECT id FROM bookmark_folders WHERE parent_folder_id = ?", folderID)
     if err != nil {
-        return fmt.Errorf("Failed to get child folders: %v", err)
+        return fmt.Errorf("failed to get child folders: %w", err)
     }
 
     // Iterate over rows, storing child folder IDs
@@ -550,7 +550,7 @@ func DeleteBookmarkFolder(userID int, folderID int) error {
     for rows.Next() {
         var childFolderID int
         if err := rows.Scan(&childFolderID); err != nil {
-            return fmt.Errorf("Failed to scan child folder ID: %v", err)
+            return fmt.Errorf("failed to scan child folder ID: %w", err)
         }
 
         childFolderIDs = append(childFolderIDs, childFolderID)
@@ -561,20 +561,20 @@ func DeleteBookmarkFolder(userID int, folderID int) error {
         // Delete child bookmarks
         _, err = DB.Exec("DELETE FROM bookmarks WHERE folder_id = ?", childFolderID)
         if err != nil {
-            return fmt.Errorf("Failed to delete child bookmarks: %v", err)
+            return fmt.Errorf("failed to delete child bookmarks: %w", err)
         }
 
         // Recursively delete child folders
         err = DeleteBookmarkFolder(userID, childFolderID)
         if err != nil {
-            return fmt.Errorf("Failed to delete child folder: %v", err)
+            return fmt.Errorf("failed to delete child folder: %w", err)
         }
     }
    
     // Delete the folder
     _, err = DB.Exec("DELETE FROM bookmark_folders WHERE id = ?", folderID)
     if err != nil {
-        return fmt.Errorf("Failed to delete bookmark folder: %v", err)
+        return fmt.Errorf("failed to delete bookmark folder: %w", err)
     }
 
     return nil
@@ -587,7 +587,7 @@ func GetBookmarkFolderByID(folderID int) (*BookmarkFolder, error) {
         &folder.ID, &folder.Name, &folder.ParentFolderID, &folder.CreatedAt,
     )
     if err != nil {
-        return nil, fmt.Errorf("Failed to get bookmark folder by name: %v", err)
+        return nil, fmt.Errorf("failed to get bookmark folder by name: %w", err)
     }
 
     return folder, nil
