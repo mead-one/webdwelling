@@ -13,6 +13,7 @@ import (
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 
+	"github.com/labstack/echo/v4"
 	"github.com/mead-one/webdwelling/internal/auth"
 	"github.com/mead-one/webdwelling/internal/database"
 )
