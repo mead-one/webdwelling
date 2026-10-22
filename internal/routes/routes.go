@@ -393,7 +393,7 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 
 	e.POST("/login", auth.Login)
 
-	e.GET("/logout", auth.Logout)
+	e.POST("/logout", auth.Logout)
 
 	// Blacklisted template names
 	var blacklist []string = []string{"header", "footer", "error", "home", "bookmarks"}

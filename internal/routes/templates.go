@@ -41,6 +41,7 @@ type NavItem struct {
 	Name   string
 	URL    string
 	Weight int
+	Method string // Empty means an ordinary GET link
 }
 
 func GetNavItems(templatesDir string, isAuthenticated bool) []NavItem {
@@ -99,6 +100,7 @@ func buildNavItems(files []string, isAuthenticated bool) []NavItem {
 			Name:   "Logout",
 			URL:    "/logout",
 			Weight: 100,
+			Method: "POST",
 		})
 	}
 

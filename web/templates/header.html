@@ -18,7 +18,16 @@
             <ul class="hamburger-menu-list">
                 {{ $basePath := .basePath }}
                 {{ range .NavItems }}
-                <li><a href="{{ $basePath }}{{ .URL }}" class="hamburger-menu-item">{{ .Name }}</a></li>
+                <li>
+                    {{ if eq .Method "POST" }}
+                    <form action="{{ $basePath }}{{ .URL }}" method="post">
+                        <input type="hidden" name="_csrf" value="{{ $.CSRFToken }}">
+                        <button type="submit" class="hamburger-menu-item">{{ .Name }}</button>
+                    </form>
+                    {{ else }}
+                    <a href="{{ $basePath }}{{ .URL }}" class="hamburger-menu-item">{{ .Name }}</a>
+                    {{ end }}
+                </li>
                 {{ end }}
             </ul>
         </nav>

@@ -110,6 +110,15 @@ main {
     background-color: var(--color-background3);
 }
 
+button.hamburger-menu-item {
+    width: 100%;
+    border: none;
+    background: none;
+    font-family: inherit;
+    text-align: inherit;
+    cursor: pointer;
+}
+
 /* --- Bookmarks --- */
 div#bookmarks-elements {
     border: 1px solid black;
