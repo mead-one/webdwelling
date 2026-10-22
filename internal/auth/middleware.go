@@ -58,6 +58,7 @@ func Login(c echo.Context) error {
 	cookie.Expires = time.Now().Add(time.Hour * 24 * 14)
 	cookie.Path = "/"
 	cookie.HttpOnly = true
+	cookie.SameSite = http.SameSiteLaxMode
 	c.SetCookie(cookie)
 
 	// Redirect to home page

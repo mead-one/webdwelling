@@ -5,7 +5,7 @@ Findings from a code review on 2026-10-21, ordered by priority. File references 
 ## 1. Fix First
 
 - [x] **Replace the hardcoded JWT secret** (`internal/auth/middleware.go:15`). The repo is public, so anyone can sign a token for any `user_id`. Load the secret from an environment variable or a root-only file (systemd `EnvironmentFile`), refuse to start if it's missing or shorter than 32 bytes, and rotate it. Rotating logs everyone out.
-- [ ] **Add CSRF protection.** Set `SameSite=Strict` (or `Lax`) on the `jwt` cookie and add Echo's `middleware.CSRF()`. Send the token from `bookmarks.ts` and include it in the login form.
+- [x] **Add CSRF protection.** Set `SameSite=Strict` (or `Lax`) on the `jwt` cookie and add Echo's `middleware.CSRF()`. Send the token from `bookmarks.ts` and include it in the login form.
 - [ ] **Make logout a POST** (`routes.go:400`). As a GET, an `<img>` tag on any site can log you out.
 - [ ] **Set `Secure` on the cookie** whenever the app is served over HTTPS. Use one helper for setting and clearing the cookie, since the same code appears three times in `middleware.go`.
 - [ ] **Check folder ownership in `AddBookmark` and `EditBookmark`** (`sqlite.go:283`, `:347`). Right now any `folder_id` is accepted, including other users' folders and folders that don't exist. That makes `GetBookmarksByUserID` crash on a nil map entry (`sqlite.go:274`), and the user's pages return 500 until someone edits the database. Also make `GetBookmarksByUserID` skip orphaned entries rather than panic.

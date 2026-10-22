@@ -109,6 +109,15 @@ function addBasePath(url: string) {
     return `${normalisedPath}${url}`;
 }
 
+// Headers for form POSTs, including the CSRF token from the page's meta tag
+function postHeaders(): HeadersInit {
+    const csrfMeta: HTMLMetaElement | null = document.querySelector('meta[name="csrf-token"]');
+    return {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "X-CSRF-Token": csrfMeta !== null ? csrfMeta.content : "",
+    };
+}
+
 // Expand all folders
 function expandAllFolders() {
     const folderDetails: NodeListOf<HTMLDetailsElement> = document.querySelectorAll("details.folder-details");
@@ -373,9 +382,7 @@ function submitAddBookmarkForm(event: SubmitEvent) {
 
     fetch(addBasePath("/bookmarks/add-bookmark"), {
         method: "POST",
-        headers: {
-            "Content-Type": "application/x-www-form-urlencoded"
-        },
+        headers: postHeaders(),
         body: `title=${title}&url=${url}&tags=${tags}&public=${isPublic}&folder_id=${folderID}`
     }).then(function(response) {
         if (!response.ok) {
@@ -477,9 +484,7 @@ function openEditBookmarkModal(event: MouseEvent) {
 function moveBookmarkToFolder(bookmarkID: string, folderID: string) {
     fetch(addBasePath("/bookmarks/move-bookmark"), {
         method: "POST",
-        headers: {
-            "Content-Type": "application/x-www-form-urlencoded"
-        },
+        headers: postHeaders(),
         body: `bookmark_id=${bookmarkID}&folder_id=${folderID}`
     }).then(function(response) {
         if (!response.ok) {
@@ -510,9 +515,7 @@ function moveBookmarkToFolder(bookmarkID: string, folderID: string) {
 function moveBookmarkFolderToFolder(folderID: string, parentFolderID: string | null) {
     fetch(addBasePath("/bookmarks/move-folder"), {
         method: "POST",
-        headers: {
-            "Content-Type": "application/x-www-form-urlencoded"
-        },
+        headers: postHeaders(),
         body: `folder_id=${folderID}&parent_folder_id=${parentFolderID}`
     }).then(function(response) {
         if (!response.ok) {
@@ -573,9 +576,7 @@ function submitEditBookmarkForm(event: SubmitEvent) {
 
     fetch(addBasePath("/bookmarks/edit-bookmark"), {
         method: "POST",
-        headers: {
-            "Content-Type": "application/x-www-form-urlencoded"
-        },
+        headers: postHeaders(),
         body: `bookmark_id=${bookmarkID}&title=${title}&url=${url}&tags=${tags}&public=${isPublic}&folder_id=${folderID}`
     }).then(function(response) {
         if (!response.ok) {
@@ -645,9 +646,7 @@ function submitDeleteBookmark(event: Event) {
 
     fetch(addBasePath("/bookmarks/delete-bookmark"), {
         method: "POST",
-        headers: {
-            "Content-Type": "application/x-www-form-urlencoded"
-        },
+        headers: postHeaders(),
         body: `bookmark_id=${bookmarkID}`
     }).then(function(response) {
         if (!response.ok) {
@@ -723,9 +722,7 @@ function submitAddFolderForm(event: SubmitEvent) {
 
     fetch(addBasePath("/bookmarks/add-folder"), {
         method: "POST",
-        headers: {
-            "Content-Type": "application/x-www-form-urlencoded"
-        },
+        headers: postHeaders(),
         body: `name=${name}&public=${isPublic}&parent_folder_id=${parentFolderID}`
     }).then(function(response) {
         if (!response.ok) {
@@ -809,9 +806,7 @@ function submitRenameFolderForm(event: SubmitEvent) {
 
     fetch(addBasePath("/bookmarks/rename-folder"), {
         method: "POST",
-        headers: {
-            "Content-Type": "application/x-www-form-urlencoded"
-        },
+        headers: postHeaders(),
         body: `folder_id=${folderID}&name=${folderName}`
     }).then(function(response) {
         if (!response.ok) {
@@ -879,9 +874,7 @@ function submitDeleteFolder(event: MouseEvent) {
 
     fetch(addBasePath("/bookmarks/delete-folder"), {
         method: "POST",
-        headers: {
-            "Content-Type": "application/x-www-form-urlencoded"
-        },
+        headers: postHeaders(),
         body: `folder_id=${folderID}`
     }).then(function(response) {
         if (!response.ok) {

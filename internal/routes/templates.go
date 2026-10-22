@@ -23,6 +23,11 @@ type Template struct {
 }
 
 func (t *Template) Render(w io.Writer, name string, data interface{}, c echo.Context) error {
+	// Give every template the CSRF token set by the CSRF middleware
+	if m, ok := data.(map[string]interface{}); ok {
+		m["CSRFToken"] = c.Get("csrf")
+	}
+
 	return t.templates.ExecuteTemplate(w, name, data)
 }
 
