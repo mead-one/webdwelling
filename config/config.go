@@ -19,15 +19,15 @@ const JWTSecretEnv = "JWT_SECRET"
 const minJWTSecretLength = 32
 
 type Config struct {
-	Port int `yaml:"port"`
-	BasePath string `yaml:"base_path"`
+	Port      int    `yaml:"port"`
+	BasePath  string `yaml:"base_path"`
 	JWTSecret []byte `yaml:"-"` // Not in yaml file, loaded from environment
 }
 
 // Defaults for any option that is commented out or missing from the config file
 func defaultConfig() Config {
 	return Config{
-		Port: 1323,
+		Port:     1323,
 		BasePath: "",
 	}
 }
