@@ -27,7 +27,7 @@ Findings from a code review on 2026-10-21, ordered by priority. File references 
 - [ ] **Pin the JWT signing method** with `jwt.WithValidMethods([]string{"HS256"})`. Consider shorter token lifetimes or a way to revoke tokens, e.g. a per-user `token_version` claim.
 - [x] **Make usernames unique on their own.** `UNIQUE(username, email, public_slug)` allows duplicate usernames whenever `email` is NULL. Add `UNIQUE(username)`, plus `UNIQUE(email)` and `UNIQUE(public_slug)` if those should be unique too.
 - [ ] **Reconsider the `prevent_username_public_slug_clash` trigger** (`sqlite.go:100-112`). The public page column exists so that loading a public page doesn't reveal whether a username exists. The trigger undoes that: when someone picks a public page name, `'Public slug taken by existing username'` tells them that name is a username. If public pages are only ever addressed by this column and usernames never appear in URLs, the two namespaces never meet, so the trigger can go. The column then just needs its own `UNIQUE`. If a clash rule really is needed, return a generic "name unavailable" error. The trigger also only runs on `INSERT`, so it doesn't apply when the value is changed later.
-- [ ] **Delete `web/static/bookmarks.js.bak`.** It's committed and served publicly by `e.Static`.
+- [x] **Delete `web/static/bookmarks.js.bak`.** It's committed and served publicly by `e.Static`.
 
 ## 3. Correctness
 
