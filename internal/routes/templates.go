@@ -139,7 +139,7 @@ func parseNavComment(line string) (include bool, weight int, requireAuth bool, h
 
 	// Extract metadata
 	if strings.Contains(line, "nav:") {
-		line = strings.TrimSpace(strings.Trim(line, "<!-- -->"))
+		line = strings.TrimSpace(strings.TrimSuffix(strings.TrimPrefix(line, "<!--"), "-->"))
 		for len(line) > 0 {
 			var part string
 			part, line, _ = strings.Cut(line, ",")

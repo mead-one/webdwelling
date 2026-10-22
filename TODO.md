@@ -77,7 +77,7 @@ Findings from a code review on 2026-10-21, ordered by priority. File references 
 
   Do this through the migration mechanism above (`ALTER TABLE users RENAME COLUMN subdirectory TO public_slug`). SQLite 3.25+ updates the trigger body automatically.
 - [x] **Replace `SELECT *` in `GetUserByUsername`** with an explicit column list, so that adding or renaming columns doesn't silently break the `Scan`.
-- [ ] **Run `gofmt` and `go vet`, and add `staticcheck`.** Specifics:
+- [x] **Run `gofmt` and `go vet`, and add `staticcheck`.** Specifics:
   - ~~merge the two `import` blocks in `routes.go`~~
   - ~~start error strings in lowercase~~
   - ~~wrap errors with `%w`~~

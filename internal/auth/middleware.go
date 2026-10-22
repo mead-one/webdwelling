@@ -69,11 +69,7 @@ func Login(c echo.Context) error {
 
 func IsUserAuthenticated(c echo.Context) bool {
 	err := checkCookie(c)
-	if err != nil {
-		return false
-	}
-
-	return true
+	return err == nil
 }
 
 // Check if a user is logged in
@@ -127,13 +123,13 @@ func checkCookie(c echo.Context) error {
 		cookie.HttpOnly = true
 		c.SetCookie(cookie)
 
-		return errors.New("Invalid JWT token")
+		return errors.New("invalid JWT token")
 	}
 
 	// Get claims
 	claims, ok := token.Claims.(*JWTCustomClaims)
 	if !ok {
-		return errors.New("Invalid JWT claims")
+		return errors.New("invalid JWT claims")
 	}
 
 	// Set user info in context
