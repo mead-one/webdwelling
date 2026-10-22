@@ -8,7 +8,7 @@ Findings from a code review on 2026-10-21, ordered by priority. File references 
 - [x] **Add CSRF protection.** Set `SameSite=Strict` (or `Lax`) on the `jwt` cookie and add Echo's `middleware.CSRF()`. Send the token from `bookmarks.ts` and include it in the login form.
 - [x] **Make logout a POST** (`routes.go:400`). As a GET, an `<img>` tag on any site can log you out.
 - [ ] **Set `Secure` on the cookie** whenever the app is served over HTTPS. Use one helper for setting and clearing the cookie, since the same code appears three times in `middleware.go`.
-- [ ] **Check folder ownership in `AddBookmark` and `EditBookmark`** (`sqlite.go:283`, `:347`). Right now any `folder_id` is accepted, including other users' folders and folders that don't exist. That makes `GetBookmarksByUserID` crash on a nil map entry (`sqlite.go:274`), and the user's pages return 500 until someone edits the database. Also make `GetBookmarksByUserID` skip orphaned entries rather than panic.
+- [x] **Check folder ownership in `AddBookmark` and `EditBookmark`** (`sqlite.go:283`, `:347`). Right now any `folder_id` is accepted, including other users' folders and folders that don't exist. That makes `GetBookmarksByUserID` crash on a nil map entry (`sqlite.go:274`), and the user's pages return 500 until someone edits the database. Also make `GetBookmarksByUserID` skip orphaned entries rather than panic.
 - [ ] **Fix the `folder-tree` template name clash.** `bookmarks.html` and `home.html` both define `folder-tree`, and `home.html` is parsed last, so its read-only version is used on `/bookmarks` too. Server-rendered folders lose their action buttons and `data-id`. Rename them, e.g. `folder-tree-edit` and `folder-tree-view`.
 - [ ] **Fix the edit dialog loading the wrong bookmark** (`bookmarks.ts:430-431`). It looks up `a.bookmark-title` and `span.bookmark-tags` on `parentFolder` instead of `bookmarkLi`, so it loads the folder's first bookmark, and saving overwrites the clicked one.
 
@@ -42,8 +42,8 @@ Findings from a code review on 2026-10-21, ordered by priority. File references 
   - Add `created_at` to `bookmarks`.
   - Select and honour folder `public` in `GetBookmarksByUserID`. It's never selected now, so it's always `false`.
 - [ ] **Add a schema migration mechanism**, e.g. `PRAGMA user_version` plus ordered migration steps. `CREATE TABLE IF NOT EXISTS` never changes an existing database, so none of the schema fixes, and none of the renames below, will reach a deployed DB without it.
-- [ ] **Return folders in a stable order** (`sqlite.go:242`). The tree is built by ranging over a map. Add `ORDER BY name` and build the tree in query order.
-- [ ] **Handle rows properly:** `defer rows.Close()` and check `rows.Err()` everywhere.
+- [x] **Return folders in a stable order** (`sqlite.go:242`). The tree is built by ranging over a map. Add `ORDER BY name` and build the tree in query order.
+- [x] **Handle rows properly:** `defer rows.Close()` and check `rows.Err()` everywhere.
 - [ ] **Make `DeleteBookmarkFolder` one transaction** (`sqlite.go:526-582`), ideally a single recursive CTE. It currently deletes child bookmarks twice and can leave a half-deleted tree.
 - [ ] **Make ownership checks atomic.** Replace each SELECT-then-UPDATE with `UPDATE … WHERE id = ? AND user_id = ?` and check `RowsAffected`. In `MoveBookmarkFolder`, check ownership before `FolderIsDescendant` runs.
 - [ ] **Return correct status codes:** 400 for bad input, 403/404 for other users' records. For JSON endpoints, return 401 JSON rather than redirecting to the login page.

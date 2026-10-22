@@ -2,6 +2,7 @@ package database
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -151,10 +152,13 @@ func CreateUser(username string, password string, email *string, public_slug *st
 	}
 
 	// Write user to database
-	_, err = DB.Exec(
-		"INSERT INTO users (username,password,email,public_slug,admin) VALUES (?,?,?,?,?)",
-		username, string(hashedPassword), email, public_slug, admin,
-	)
+	_, err = DB.Exec(`
+	INSERT INTO users (username,password,email,public_slug,admin)
+	VALUES (:username, :password, :email, :public_slug, :admin)
+	`, sql.Named("username", username), sql.Named("password", string(hashedPassword)),
+		sql.Named("email", email), sql.Named("public_slug", public_slug),
+		sql.Named("admin", admin))
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to write user to database: %w", err)
 	}
@@ -173,7 +177,10 @@ func CreateUser(username string, password string, email *string, public_slug *st
 
 func GetUserByUsername(username string) (*User, error) {
 	user := &User{}
-	err := DB.QueryRow("SELECT id,username,password,email,public_slug,admin,created_at,last_login FROM users WHERE username = ?", username).Scan(
+	err := DB.QueryRow(`
+	SELECT id,username,password,email,public_slug,admin,created_at,last_login
+	FROM users
+	WHERE username = :username`, sql.Named("username", username)).Scan(
 		&user.ID, &user.Username, &user.Password, &user.Email, &user.PublicSlug, &user.Admin, &user.CreatedAt, &user.LastLogin,
 	)
 	if err != nil {
@@ -201,7 +208,8 @@ func AuthenticateUser(username string, password string) (*User, error) {
 	}
 
 	// Update last login time
-	_, err = DB.Exec("UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE username = ?", username)
+	_, err = DB.Exec(`
+	UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE username = :username`, sql.Named("username", username))
 	if err != nil {
 		log.Printf("Failed to update last login time: %v", err)
 	}
@@ -214,12 +222,19 @@ func AuthenticateUser(username string, password string) (*User, error) {
 func GetBookmarksByUserID(userID int, includePrivate bool) (BookmarkFolder, error) {
 	bookmarks := BookmarkFolder{}
 	folderMap := make(map[int]*BookmarkFolder)
+	var folders []*BookmarkFolder
 
 	// Get bookmark folders
-	rows, err := DB.Query("SELECT id,name,parent_folder_id,created_at FROM bookmark_folders WHERE user_id = ?", userID)
+	rows, err := DB.Query(`
+	SELECT id,name,parent_folder_id,created_at
+	FROM bookmark_folders
+	WHERE user_id = :user_id
+	ORDER BY name COLLATE NOCASE
+	`, sql.Named("user_id", userID))
 	if err != nil {
 		return bookmarks, fmt.Errorf("failed to get bookmark folders: %w", err)
 	}
+	defer rows.Close()
 
 	// Iterate over rows
 	for rows.Next() {
@@ -235,22 +250,32 @@ func GetBookmarksByUserID(userID int, includePrivate bool) (BookmarkFolder, erro
 		folder.ParentFolderID = parentFolderID
 
 		folderMap[folder.ID] = &folder
+		folders = append(folders, &folder)
 	}
-	rows.Close()
+	if err := rows.Err(); err != nil {
+		return bookmarks, fmt.Errorf("failed to scan bookmark folder: %w", err)
+	}
 
-	for _, folder := range folderMap {
-		if folder.ParentFolderID == nil {
-			bookmarks.ChildFolders = append(bookmarks.ChildFolders, folder)
-		} else {
-			folderMap[*folder.ParentFolderID].ChildFolders = append(folderMap[*folder.ParentFolderID].ChildFolders, folder)
+	for _, folder := range folders {
+		parent := &bookmarks
+		if folder.ParentFolderID != nil {
+			if p, ok := folderMap[*folder.ParentFolderID]; ok {
+				parent = p
+			}
 		}
+		parent.ChildFolders = append(parent.ChildFolders, folder)
 	}
 
 	// Get bookmarks
-	rows, err = DB.Query("SELECT id,title,url,tags,folder_id,public FROM bookmarks WHERE user_id = ?", userID)
+	rows, err = DB.Query(`
+	SELECT id,title,url,tags,folder_id,public
+	FROM bookmarks
+	WHERE user_id = :user_id
+	`, sql.Named("user_id", userID))
 	if err != nil {
 		return bookmarks, fmt.Errorf("failed to get bookmarks: %w", err)
 	}
+	defer rows.Close()
 
 	// Iterate over rows
 	for rows.Next() {
@@ -267,13 +292,19 @@ func GetBookmarksByUserID(userID int, includePrivate bool) (BookmarkFolder, erro
 
 		if !bookmark.Public && !includePrivate {
 			continue
-		} else if bookmark.FolderID == nil {
-			bookmarks.ChildBookmarks = append(bookmarks.ChildBookmarks, &bookmark)
-		} else {
-			folderMap[*bookmark.FolderID].ChildBookmarks = append(folderMap[*bookmark.FolderID].ChildBookmarks, &bookmark)
 		}
+
+		parent := &bookmarks
+		if bookmark.FolderID != nil {
+			if f, ok := folderMap[*bookmark.FolderID]; ok {
+				parent = f
+			}
+		}
+		parent.ChildBookmarks = append(parent.ChildBookmarks, &bookmark)
 	}
-	rows.Close()
+	if err := rows.Err(); err != nil {
+		return bookmarks, fmt.Errorf("failed to scan bookmark: %w", err)
+	}
 
 	return bookmarks, nil
 }
@@ -283,10 +314,18 @@ func AddBookmark(userID int, title string, url string, tags string, folderID *in
 	lastID := 0
 
 	// Write bookmark to database
-	err := DB.QueryRow(
-		"INSERT INTO bookmarks (user_id,title,url,tags,folder_id,public) VALUES (?,?,?,?,?,?) RETURNING id",
-		userID, title, url, tags, folderID, public,
+	err := DB.QueryRow(`
+		INSERT INTO bookmarks (user_id,title,url,tags,folder_id,public)
+		SELECT :user_id, :title, :url, :tags, :folder_id, :public
+		WHERE :folder_id IS NULL
+			OR EXISTS (SELECT 1 FROM bookmark_folders WHERE id = :folder_id AND user_id = :user_id)
+		RETURNING id`,
+		sql.Named("user_id", userID), sql.Named("title", title), sql.Named("url", url),
+		sql.Named("tags", tags), sql.Named("folder_id", folderID), sql.Named("public", public),
 	).Scan(&lastID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, errors.New("folder_id is not a valid folder")
+	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to create bookmark: %w", err)
 	}
@@ -310,7 +349,9 @@ func MoveBookmark(userID int, bookmarkID int, folderID *int) error {
 	fmt.Println("Moving bookmark", bookmarkID, "to folder", folderID)
 	// Check if the user is the owner of the bookmark
 	bookmarkUserID := 0
-	err := DB.QueryRow("SELECT user_id FROM bookmarks WHERE id = ?", bookmarkID).Scan(&bookmarkUserID)
+	err := DB.QueryRow(`
+	SELECT user_id FROM bookmarks WHERE id = :bookmark_id
+	`, sql.Named("bookmark_id", bookmarkID)).Scan(&bookmarkUserID)
 	if err != nil {
 		return fmt.Errorf("failed to get bookmark user ID: %w", err)
 	}
@@ -321,7 +362,9 @@ func MoveBookmark(userID int, bookmarkID int, folderID *int) error {
 	if folderID != nil {
 		// Check if the user is the owner of the folder
 		folderUserID := 0
-		err = DB.QueryRow("SELECT user_id FROM bookmark_folders WHERE id = ?", folderID).Scan(&folderUserID)
+		err = DB.QueryRow(`
+		SELECT user_id FROM bookmark_folders WHERE id = :folder_id
+		`, sql.Named("folder_id", folderID)).Scan(&folderUserID)
 		if err != nil {
 			return fmt.Errorf("failed to get folder user ID: %w", err)
 		}
@@ -331,9 +374,9 @@ func MoveBookmark(userID int, bookmarkID int, folderID *int) error {
 	}
 
 	// Write bookmark to database
-	_, err = DB.Exec(
-		"UPDATE bookmarks SET folder_id = ? WHERE id = ?",
-		folderID, bookmarkID,
+	_, err = DB.Exec(`
+	UPDATE bookmarks SET folder_id = :folder_id WHERE id = :bookmark_id
+	`, sql.Named("folder_id", folderID), sql.Named("bookmark_id", bookmarkID),
 	)
 	if err != nil {
 		return fmt.Errorf("failed to move bookmark: %w", err)
@@ -344,22 +387,20 @@ func MoveBookmark(userID int, bookmarkID int, folderID *int) error {
 
 // Edit a bookmark
 func EditBookmark(userID int, bookmarkID int, title string, url string, tags string, folderID *int, public bool) (*Bookmark, error) {
-	// Check if the user is the owner of the bookmark
-	var bookmarkUserID int
-	err := DB.QueryRow("SELECT user_id FROM bookmarks WHERE id = ?", bookmarkID).Scan(&bookmarkUserID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get bookmark user ID: %w", err)
-	}
-	if bookmarkUserID != userID {
-		return nil, fmt.Errorf("user is not authorized to edit this bookmark")
-	}
-
-	// Write bookmark to database
-	_, err = DB.Exec(
-		"UPDATE bookmarks SET title = ?, url = ?, tags = ?, folder_id = ?, public = ? WHERE id = ?",
-		title, url, tags, folderID, public, bookmarkID,
-	)
-	if err != nil {
+	var lastID int
+	err := DB.QueryRow(`
+		UPDATE bookmarks SET title = :title, url = :url, tags = :tags, folder_id = :folder_id, public = :public
+		WHERE id = :bookmark_id AND user_id = :user_id
+		AND (:folder_id IS NULL
+			OR EXISTS (SELECT 1 FROM bookmark_folders WHERE id = :folder_id AND user_id = :user_id))
+		RETURNING id
+	`, sql.Named("user_id", userID), sql.Named("bookmark_id", bookmarkID),
+		sql.Named("title", title), sql.Named("url", url),
+		sql.Named("tags", tags), sql.Named("folder_id", folderID),
+		sql.Named("public", public)).Scan(&lastID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, errors.New("bookmark or folder not found")
+	} else if err != nil {
 		return nil, fmt.Errorf("failed to edit bookmark: %w", err)
 	}
 
@@ -380,7 +421,9 @@ func EditBookmark(userID int, bookmarkID int, title string, url string, tags str
 // Delete a bookmark
 func DeleteBookmark(userID int, bookmarkID int) error {
 	bookmarkUserID := 0
-	err := DB.QueryRow("SELECT user_id FROM bookmarks WHERE id = ?", bookmarkID).Scan(&bookmarkUserID)
+	err := DB.QueryRow(`
+	SELECT user_id FROM bookmarks WHERE id = :bookmark_id
+	`, sql.Named("bookmark_id", bookmarkID)).Scan(&bookmarkUserID)
 	if err != nil {
 		return fmt.Errorf("failed to get bookmark user ID: %w", err)
 	}
@@ -388,7 +431,9 @@ func DeleteBookmark(userID int, bookmarkID int) error {
 		return fmt.Errorf("user is not authorized to delete this bookmark")
 	}
 
-	_, err = DB.Exec("DELETE FROM bookmarks WHERE id = ?", bookmarkID)
+	_, err = DB.Exec(`
+	DELETE FROM bookmarks WHERE id = :bookmark_id
+	`, sql.Named("bookmark_id", bookmarkID))
 	if err != nil {
 		return fmt.Errorf("failed to delete bookmark: %w", err)
 	}
@@ -403,7 +448,9 @@ func AddBookmarkFolder(userID int, name string, parentFolderID *int, public bool
 	if parentFolderID != nil {
 		// Check if the user is the owner of the parent folder
 		var parentFolderUserID int
-		err := DB.QueryRow("SELECT user_id FROM bookmark_folders WHERE id = ?", parentFolderID).Scan(&parentFolderUserID)
+		err := DB.QueryRow(`
+		SELECT user_id FROM bookmark_folders WHERE id = :parent_folder_id
+		`, sql.Named("parent_folder_id", parentFolderID)).Scan(&parentFolderUserID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get parent folder user ID: %w", err)
 		}
@@ -414,9 +461,9 @@ func AddBookmarkFolder(userID int, name string, parentFolderID *int, public bool
 	}
 
 	// Create folder
-	err := DB.QueryRow(
-		"INSERT INTO bookmark_folders (user_id,name,parent_folder_id,public) VALUES (?,?,?,?) RETURNING id",
-		userID, name, parentFolderID, public,
+	err := DB.QueryRow(`
+		INSERT INTO bookmark_folders (user_id,name,parent_folder_id,public) VALUES (:user_id, :name, :parent_folder_id, :public) RETURNING id
+		`, sql.Named("user_id", userID), sql.Named("name", name), sql.Named("parent_folder_id", parentFolderID), sql.Named("public", public),
 	).Scan(&lastID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create bookmark folder: %w", err)
@@ -444,7 +491,9 @@ func MoveBookmarkFolder(userID int, folderID int, destinationFolderID *int) erro
 
 	// Check if the user is the owner of the folder
 	var storedFolderID int
-	err := DB.QueryRow("SELECT user_id FROM bookmark_folders WHERE id = ?", folderID).Scan(&storedFolderID)
+	err := DB.QueryRow(`
+	SELECT user_id FROM bookmark_folders WHERE id = :folder_id
+	`, sql.Named("folder_id", folderID)).Scan(&storedFolderID)
 	if err != nil {
 		return fmt.Errorf("failed to get bookmark folder user ID: %w", err)
 	}
@@ -455,7 +504,9 @@ func MoveBookmarkFolder(userID int, folderID int, destinationFolderID *int) erro
 	// Check if the user is the owner of the destination folder
 	if destinationFolderID != nil {
 		var storedParentFolderUserID *int
-		err = DB.QueryRow("SELECT user_id FROM bookmark_folders WHERE id = ?", *destinationFolderID).Scan(&storedParentFolderUserID)
+		err = DB.QueryRow(`
+		SELECT user_id FROM bookmark_folders WHERE id = :destination_folder_id
+		`, sql.Named("destination_folder_id", *destinationFolderID)).Scan(&storedParentFolderUserID)
 		if err != nil {
 			return fmt.Errorf("failed to get parent folder user ID: %w", err)
 		}
@@ -465,9 +516,9 @@ func MoveBookmarkFolder(userID int, folderID int, destinationFolderID *int) erro
 	}
 
 	// Write folder to database
-	_, err = DB.Exec(
-		"UPDATE bookmark_folders SET parent_folder_id = ? WHERE id = ?",
-		destinationFolderID, folderID,
+	_, err = DB.Exec(`
+	UPDATE bookmark_folders SET parent_folder_id = :destination_folder_id WHERE id = :folder_id
+		`, sql.Named("destination_folder_id", destinationFolderID), sql.Named("folder_id", folderID),
 	)
 	if err != nil {
 		return fmt.Errorf("failed to move bookmark folder: %w", err)
@@ -501,7 +552,9 @@ func FolderIsDescendant(folderID int, destinationFolderID *int) bool {
 
 func RenameBookmarkFolder(userID int, folderID int, name string) (*BookmarkFolder, error) {
 	folderUserID := 0
-	err := DB.QueryRow("SELECT user_id FROM bookmark_folders WHERE id = ?", folderID).Scan(&folderUserID)
+	err := DB.QueryRow(`
+	SELECT user_id FROM bookmark_folders WHERE id = :folder_id
+	`, sql.Named("folder_id", folderID)).Scan(&folderUserID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get bookmark folder user ID: %w", err)
 	}
@@ -511,9 +564,9 @@ func RenameBookmarkFolder(userID int, folderID int, name string) (*BookmarkFolde
 
 	folder := &BookmarkFolder{}
 
-	err = DB.QueryRow(
-		"UPDATE bookmark_folders SET name = ? WHERE id = ? RETURNING id,name,parent_folder_id,public,created_at",
-		name, folderID,
+	err = DB.QueryRow(`
+	UPDATE bookmark_folders SET name = :name WHERE id = :folder_id RETURNING id,name,parent_folder_id,public,created_at
+		`, sql.Named("name", name), sql.Named("folder_id", folderID),
 	).Scan(&folder.ID, &folder.Name, &folder.ParentFolderID, &folder.Public, &folder.CreatedAt)
 	if err != nil {
 		return nil, fmt.Errorf("failed to rename bookmark folder: %w", err)
@@ -524,7 +577,9 @@ func RenameBookmarkFolder(userID int, folderID int, name string) (*BookmarkFolde
 
 func DeleteBookmarkFolder(userID int, folderID int) error {
 	folderUserID := 0
-	err := DB.QueryRow("SELECT user_id FROM bookmark_folders WHERE id = ?", folderID).Scan(&folderUserID)
+	err := DB.QueryRow(`
+	SELECT user_id FROM bookmark_folders WHERE id = :folder_id
+	`, sql.Named("folder_id", folderID)).Scan(&folderUserID)
 	if err != nil {
 		return fmt.Errorf("failed to get bookmark folder user ID: %w", err)
 	}
@@ -533,17 +588,22 @@ func DeleteBookmarkFolder(userID int, folderID int) error {
 	}
 
 	// Delete all bookmarks in this folder
-	_, err = DB.Exec("DELETE FROM bookmarks WHERE folder_id = ?", folderID)
+	_, err = DB.Exec(`
+	DELETE FROM bookmarks WHERE folder_id = :folder_id
+	`, sql.Named("folder_id", folderID))
 	if err != nil {
 		return fmt.Errorf("failed to delete bookmarks: %w", err)
 	}
 
 	// Recursively delete all descendant folders
 	// Get all child folders
-	rows, err := DB.Query("SELECT id FROM bookmark_folders WHERE parent_folder_id = ?", folderID)
+	rows, err := DB.Query(`
+	SELECT id FROM bookmark_folders WHERE parent_folder_id = :folder_id
+	`, sql.Named("folder_id", folderID))
 	if err != nil {
 		return fmt.Errorf("failed to get child folders: %w", err)
 	}
+	defer rows.Close()
 
 	// Iterate over rows, storing child folder IDs
 	var childFolderIDs []int
@@ -555,11 +615,15 @@ func DeleteBookmarkFolder(userID int, folderID int) error {
 
 		childFolderIDs = append(childFolderIDs, childFolderID)
 	}
-	rows.Close()
+	if err := rows.Err(); err != nil {
+		return fmt.Errorf("failed to scan child folder ID: %w", err)
+	}
 
 	for _, childFolderID := range childFolderIDs {
 		// Delete child bookmarks
-		_, err = DB.Exec("DELETE FROM bookmarks WHERE folder_id = ?", childFolderID)
+		_, err = DB.Exec(`
+		DELETE FROM bookmarks WHERE folder_id = :child_folder_id
+		`, sql.Named("child_folder_id", childFolderID))
 		if err != nil {
 			return fmt.Errorf("failed to delete child bookmarks: %w", err)
 		}
@@ -572,7 +636,9 @@ func DeleteBookmarkFolder(userID int, folderID int) error {
 	}
 
 	// Delete the folder
-	_, err = DB.Exec("DELETE FROM bookmark_folders WHERE id = ?", folderID)
+	_, err = DB.Exec(`
+	DELETE FROM bookmark_folders WHERE id = :folder_id
+	`, sql.Named("folder_id", folderID))
 	if err != nil {
 		return fmt.Errorf("failed to delete bookmark folder: %w", err)
 	}
@@ -583,7 +649,9 @@ func DeleteBookmarkFolder(userID int, folderID int) error {
 // Get a bookmark folder by name
 func GetBookmarkFolderByID(folderID int) (*BookmarkFolder, error) {
 	folder := &BookmarkFolder{}
-	err := DB.QueryRow("SELECT id,name,parent_folder_id,created_at FROM bookmark_folders WHERE id = ?", folderID).Scan(
+	err := DB.QueryRow(`
+	SELECT id,name,parent_folder_id,created_at FROM bookmark_folders WHERE id = :folder_id
+	`, sql.Named("folder_id", folderID)).Scan(
 		&folder.ID, &folder.Name, &folder.ParentFolderID, &folder.CreatedAt,
 	)
 	if err != nil {
