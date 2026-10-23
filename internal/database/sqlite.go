@@ -17,6 +17,11 @@ import (
 // Database connection
 var DB *sql.DB
 
+// A dummy hash to check passwords against, so attempted logins to non-existent
+// users take as long to process as real users to mitigate against brute force
+// attacks
+var dummyHash, _ = bcrypt.GenerateFromPassword([]byte("b7$MQ4lIIp"), bcrypt.DefaultCost)
+
 // Initialise the database connection
 func InitDB() {
 	// Ensure data directory exists
@@ -192,12 +197,11 @@ func GetUserByUsername(username string) (*User, error) {
 
 func AuthenticateUser(username string, password string) (*User, error) {
 	user, err := GetUserByUsername(username)
-	if err != nil {
-		return nil, err
-	}
-	if user == nil {
-		// User not found
+	if errors.Is(err, sql.ErrNoRows) {
+		bcrypt.CompareHashAndPassword([]byte(dummyHash), []byte(password))
 		return nil, nil
+	} else if err != nil {
+		return nil, err
 	}
 
 	// Compare passwords

@@ -2,6 +2,7 @@ package auth
 
 import (
 	"errors"
+	"log"
 	"net/http"
 	"time"
 
@@ -36,10 +37,11 @@ func Login(c echo.Context) error {
 
 	user, err := database.AuthenticateUser(username, password)
 	if err != nil {
+		log.Printf("Failed to authenticate user: %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to authenticate user")
 	}
 	if user == nil {
-		return echo.NewHTTPError(http.StatusUnauthorized, "Invalid username or password")
+		return echo.NewHTTPError(http.StatusUnauthorized, "Invalid username or password.")
 	}
 
 	// Create claims
