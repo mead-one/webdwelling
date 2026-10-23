@@ -28,6 +28,8 @@ func main() {
 	auth.SecureCookies = cfg.SecureCookies
 
 	e := echo.New()
+	// Prevent spoofing IP addresses using X-Forwarded-For header
+	e.IPExtractor = echo.ExtractIPFromXFFHeader()
 
 	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {

@@ -9,7 +9,9 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"time"
 
+	"github.com/labstack/echo/v4/middleware"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 
@@ -391,7 +393,13 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 
 	e.Static("/", staticDir)
 
-	e.POST("/login", auth.Login)
+	e.POST("/login", auth.Login, middleware.RateLimiter(
+		middleware.NewRateLimiterMemoryStoreWithConfig(
+			middleware.RateLimiterMemoryStoreConfig{
+				Rate: 1.0 / 12, Burst: 5, ExpiresIn: 10 * time.Minute,
+			},
+		),
+	))
 
 	e.POST("/logout", auth.Logout)
 
