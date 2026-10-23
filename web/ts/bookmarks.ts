@@ -432,8 +432,8 @@ function openEditBookmarkModal(event: MouseEvent) {
     const folderSelectWrapper: HTMLDivElement | null = document.getElementById("edit-bookmark-folder-select-wrapper") as HTMLDivElement;
     const folderSelect: HTMLDivElement | null = document.getElementById("folder-select") as HTMLDivElement;
     const bookmarkID: string | undefined = bookmarkLi.dataset.id;
-    const bookmarkTitle: HTMLAnchorElement | null = parentFolder.querySelector("a.bookmark-title") as HTMLAnchorElement;
-    const bookmarkTags: HTMLSpanElement | null = parentFolder.querySelector("span.bookmark-tags") as HTMLSpanElement;
+    const bookmarkTitle: HTMLAnchorElement | null = bookmarkLi.querySelector("a.bookmark-title") as HTMLAnchorElement;
+    const bookmarkTags: HTMLSpanElement | null = bookmarkLi.querySelector("span.bookmark-tags") as HTMLSpanElement;
 
     // Include the folder select sub-form
     folderSelectWrapper.appendChild(folderSelect);
