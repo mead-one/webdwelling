@@ -134,7 +134,7 @@ func getNavComment(f *os.File) (line string, err error) {
 		}
 	}
 
-	return "", errors.New("No nav comment found in file: " + f.Name())
+	return "", errors.New("no nav comment found in file: " + f.Name())
 }
 
 func parseNavComment(line string) (include bool, weight int, requireAuth bool, hideIfAuth bool) {
