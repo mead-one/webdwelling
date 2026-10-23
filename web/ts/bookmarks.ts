@@ -772,15 +772,35 @@ function openRenameFolderForm(event: MouseEvent) {
 
     renameFolderForm.setAttribute("id", `rename-folder-form-${folderID}`);
     renameFolderForm.classList.add("rename-folder-form");
-    renameFolderForm.innerHTML = `
-        <span class="folder-rename-span"><input type="text" name="name" placeholder="Folder name" value="${folderName}" required></span>
-        <span class="folder-actions">
-            <button type="submit" onsubmit="submitRenameFolderForm(event)">Rename folder</button>
-            <button type="button" id="cancel-rename-folder-${folderID}" class="cancel-rename-folder" onclick="closeRenameFolderForm(event)" data-id=${folderID}>Cancel</button>
-        </span>
-    `;
 
-    const folderNameInput: HTMLInputElement | null = renameFolderForm.elements.namedItem("name") as HTMLInputElement;
+    // Build the form with DOM methods so the folder name is always treated as text, never HTML
+    const folderRenameSpan: HTMLSpanElement = document.createElement("span");
+    folderRenameSpan.classList.add("folder-rename-span");
+    const folderNameInput: HTMLInputElement = document.createElement("input");
+    folderNameInput.type = "text";
+    folderNameInput.name = "name";
+    folderNameInput.placeholder = "Folder name";
+    folderNameInput.value = folderName;
+    folderNameInput.required = true;
+    folderRenameSpan.appendChild(folderNameInput);
+
+    const renameActions: HTMLSpanElement = document.createElement("span");
+    renameActions.classList.add("folder-actions");
+    const submitRenameButton: HTMLButtonElement = document.createElement("button");
+    submitRenameButton.type = "submit";
+    submitRenameButton.innerText = "Rename folder";
+    const cancelRenameButton: HTMLButtonElement = document.createElement("button");
+    cancelRenameButton.type = "button";
+    cancelRenameButton.setAttribute("id", `cancel-rename-folder-${folderID}`);
+    cancelRenameButton.classList.add("cancel-rename-folder");
+    cancelRenameButton.dataset.id = folderID;
+    cancelRenameButton.innerText = "Cancel";
+    cancelRenameButton.addEventListener("click", closeRenameFolderForm);
+    renameActions.appendChild(submitRenameButton);
+    renameActions.appendChild(cancelRenameButton);
+
+    renameFolderForm.appendChild(folderRenameSpan);
+    renameFolderForm.appendChild(renameActions);
 
     folderSpan.style.display = "none";
     folderActions.style.display = "none";
@@ -1117,22 +1137,30 @@ function updateFolderSelectTreeWithFolder(folder: BookmarkFolder) {
     if (folderSelectLi !== null) {
         const folderSelectLabel: HTMLLabelElement | null = folderSelectLi.querySelector("label") as HTMLLabelElement;
         // Set name
-        folderSelectLabel.innerText = folder.Name;
+        folderSelectLabel.innerText = `📁 ${folder.Name}`;
     } else {
         folderSelectLi = document.createElement("li");
         folderSelectLi.setAttribute("id", `folder-select-item-${folder.ID}`);
         folderSelectLi.classList.add("folder-select");
-        folderSelectLi.innerHTML = `
-            <input type="radio" name="folder-select" id="folder-select-${folder.ID}" value="${folder.ID}">
-            <label for="folder-select-${folder.ID}">📁 ${folder.Name}</label>
-        `;
 
-        const folderSelectTree: HTMLUListElement | null = document.createElement("ul");
+        // Build the item with DOM methods so the folder name is always treated as text, never HTML
+        const folderSelectRadio: HTMLInputElement = document.createElement("input");
+        folderSelectRadio.type = "radio";
+        folderSelectRadio.name = "folder-select";
+        folderSelectRadio.setAttribute("id", `folder-select-${folder.ID}`);
+        folderSelectRadio.value = folder.ID;
+        const folderSelectLabel: HTMLLabelElement = document.createElement("label");
+        folderSelectLabel.htmlFor = `folder-select-${folder.ID}`;
+        folderSelectLabel.innerText = `📁 ${folder.Name}`;
+
+        // Child folders go in a list inside this item, matching folder-select-tree in bookmarks.html
+        const folderSelectTree: HTMLUListElement = document.createElement("ul");
         folderSelectTree.setAttribute("id", `folder-select-tree-${folder.ID}`);
         folderSelectTree.classList.add("folder-select-tree");
-        folderSelectTree.appendChild(folderSelectLi);
 
-        parentDiv.appendChild(folderSelectTree);
+        folderSelectLi.appendChild(folderSelectRadio);
+        folderSelectLi.appendChild(folderSelectLabel);
+        folderSelectLi.appendChild(folderSelectTree);
     }
 
     try {
