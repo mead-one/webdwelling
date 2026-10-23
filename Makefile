@@ -14,6 +14,7 @@ build_ts:
 
 test:
 	go test -v cmd/server/main.go
+	go vet ./...
 
 build:
 	go build -o $(BINARY_PATH) cmd/server/main.go
