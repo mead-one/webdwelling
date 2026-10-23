@@ -65,7 +65,7 @@ func createTables() {
         username TEXT UNIQUE NOT NULL,
         password TEXT NOT NULL,
         email TEXT,
-        public_slug TEXT,
+        public_slug TEXT UNIQUE NOT NULL,
         admin BOOLEAN NOT NULL DEFAULT FALSE,
         created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
         last_login TEXT
