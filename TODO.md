@@ -14,7 +14,7 @@ Findings from a code review on 2026-10-21, ordered by priority. File references 
 
 ## 2. Security
 
-- [ ] **Rate-limit `/login`.** `middleware.RateLimiter` is enough to start with.
+- [x] **Rate-limit `/login`.** `middleware.RateLimiter` is enough to start with.
 - [ ] **Remove the `innerHTML` interpolation** (`bookmarks.ts:778`, `:1132`). Folder names are inserted unescaped. Build these elements with `createElement` and `textContent`, as the rest of the file does. This becomes stored XSS once public pages show folders to other people.
 - [ ] **Validate bookmark URLs on the server.** Accept only `http` and `https`. Without this, a `javascript:` URL set via `href` in JS runs before the page is reloaded.
 - [ ] **Stop returning `err.Error()` to clients** (`routes.go:61`, `:124`, `:242`, `:310`). Log the detail and send a generic message.
