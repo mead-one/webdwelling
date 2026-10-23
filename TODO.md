@@ -9,7 +9,7 @@ Findings from a code review on 2026-10-21, ordered by priority. File references 
 - [x] **Make logout a POST** (`routes.go:400`). As a GET, an `<img>` tag on any site can log you out.
 - [x] **Set `Secure` on the cookie** whenever the app is served over HTTPS. Use one helper for setting and clearing the cookie, since the same code appears three times in `middleware.go`.
 - [x] **Check folder ownership in `AddBookmark` and `EditBookmark`** (`sqlite.go:283`, `:347`). Right now any `folder_id` is accepted, including other users' folders and folders that don't exist. That makes `GetBookmarksByUserID` crash on a nil map entry (`sqlite.go:274`), and the user's pages return 500 until someone edits the database. Also make `GetBookmarksByUserID` skip orphaned entries rather than panic.
-- [ ] **Fix the `folder-tree` template name clash.** `bookmarks.html` and `home.html` both define `folder-tree`, and `home.html` is parsed last, so its read-only version is used on `/bookmarks` too. Server-rendered folders lose their action buttons and `data-id`. Rename them, e.g. `folder-tree-edit` and `folder-tree-view`.
+- [x] **Fix the `folder-tree` template name clash.** `bookmarks.html` and `home.html` both define `folder-tree`, and `home.html` is parsed last, so its read-only version is used on `/bookmarks` too. Server-rendered folders lose their action buttons and `data-id`. Rename them, e.g. `folder-tree-edit` and `folder-tree-view`.
 - [ ] **Fix the edit dialog loading the wrong bookmark** (`bookmarks.ts:430-431`). It looks up `a.bookmark-title` and `span.bookmark-tags` on `parentFolder` instead of `bookmarkLi`, so it loads the folder's first bookmark, and saving overwrites the clicked one.
 
 ## 2. Security

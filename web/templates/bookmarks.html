@@ -1,5 +1,5 @@
 <!-- nav: include, weight: 5, auth: require -->
-{{define "folder-tree"}}
+{{define "folder-tree-edit"}}
 <li id="folder-{{.ID}}" class="folder" data-id="{{.ID}}">
 <details class="folder-details">
     <summary>
@@ -16,7 +16,7 @@
     <ul id="folders-list-{{.ID}}" class="folders">
     {{ if .ChildFolders }}
         {{ range .ChildFolders }}
-            {{ template "folder-tree" . }}
+            {{ template "folder-tree-edit" . }}
         {{ end }}
     {{ end }}
     </ul>
@@ -68,7 +68,7 @@
         <ul id="folders-list-root" class="folders">
         {{ if .Bookmarks.ChildFolders }}
             {{ range .Bookmarks.ChildFolders }}
-                {{ template "folder-tree" .}}
+                {{ template "folder-tree-edit" .}}
             {{ end }}
         {{ end }}
         </ul>
