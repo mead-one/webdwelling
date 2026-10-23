@@ -13,6 +13,15 @@ import (
 // Secret used to sign JWT tokens, set from config at startup
 var JWTSecret []byte
 
+// Whether cookies are marked Secure (HTTPS only), set from config at startup
+var SecureCookies bool
+
+// How long a login lasts before the user must log in again
+const SessionLength = 14 * 24 * time.Hour
+
+// Name of the cookie holding the user's JWT token
+const authCookieName = "jwt"
+
 // Custom claims for JWT tokens
 type JWTCustomClaims struct {
 	UserID   int    `json:"user_id"`
@@ -38,7 +47,7 @@ func Login(c echo.Context) error {
 		user.ID,
 		user.Username,
 		jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 24 * 14)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(SessionLength)),
 		},
 	}
 
@@ -51,21 +60,37 @@ func Login(c echo.Context) error {
 		return err
 	}
 
-	// Set cookie
-	cookie := new(http.Cookie)
-	cookie.Name = "jwt"
-	cookie.Value = tk
-	cookie.Expires = time.Now().Add(time.Hour * 24 * 14)
-	cookie.Path = "/"
-	cookie.HttpOnly = true
-	cookie.SameSite = http.SameSiteLaxMode
-	c.SetCookie(cookie)
+	setAuthCookie(c, tk)
 
 	// Redirect to home page
 	basePath := c.Get("basePath").(string)
 	var homePath string = basePath + "/"
 
 	return c.Redirect(http.StatusSeeOther, homePath)
+}
+
+// Build the auth cookie, so setting and clearing it always use the same attributes
+func newAuthCookie(value string, maxAge int) *http.Cookie {
+	return &http.Cookie{
+		Name:     authCookieName,
+		Value:    value,
+		Path:     "/",
+		MaxAge:   maxAge,
+		HttpOnly: true,
+		Secure:   SecureCookies,
+		SameSite: http.SameSiteLaxMode,
+	}
+}
+
+// Give the user a cookie holding their JWT token
+func setAuthCookie(c echo.Context, token string) {
+	c.SetCookie(newAuthCookie(token, int(SessionLength.Seconds())))
+}
+
+// Delete the user's auth cookie
+func clearAuthCookie(c echo.Context) {
+	// A negative MaxAge tells the browser to delete the cookie now
+	c.SetCookie(newAuthCookie("", -1))
 }
 
 func IsUserAuthenticated(c echo.Context) bool {
@@ -100,7 +125,7 @@ func RequireNoAuth(next echo.HandlerFunc) echo.HandlerFunc {
 }
 
 func checkCookie(c echo.Context) error {
-	cookie, err := c.Cookie("jwt")
+	cookie, err := c.Cookie(authCookieName)
 	if err != nil {
 		return err
 	}
@@ -110,20 +135,9 @@ func checkCookie(c echo.Context) error {
 		return JWTSecret, nil
 	})
 
-	if err != nil {
-		return err
-	}
-
-	if !token.Valid {
-		// Clear invalid cookie
-		cookie := new(http.Cookie)
-		cookie.Name = "jwt"
-		cookie.Value = ""
-		cookie.Expires = time.Now().Add(-time.Hour)
-		cookie.Path = "/"
-		cookie.HttpOnly = true
-		c.SetCookie(cookie)
-
+	// ParseWithClaims returns an error for any invalid token (bad signature, expired, etc.)
+	if err != nil || !token.Valid {
+		clearAuthCookie(c)
 		return errors.New("invalid JWT token")
 	}
 
@@ -141,13 +155,7 @@ func checkCookie(c echo.Context) error {
 }
 
 func Logout(c echo.Context) error {
-	cookie := new(http.Cookie)
-	cookie.Name = "jwt"
-	cookie.Value = ""
-	cookie.Expires = time.Now().Add(-time.Hour)
-	cookie.Path = "/"
-	cookie.HttpOnly = true
-	c.SetCookie(cookie)
+	clearAuthCookie(c)
 
 	var loginPath string = c.Get("basePath").(string) + "/login"
 

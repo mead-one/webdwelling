@@ -6,3 +6,6 @@
 
 # Base path for the web app
 #base_path: ''
+
+# Mark cookies Secure (HTTPS only). Turn off only for local development over plain HTTP.
+#secure_cookies: true

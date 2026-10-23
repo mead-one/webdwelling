@@ -6,7 +6,6 @@ import (
 	"log"
 	"net/http"
 	"path/filepath"
-	"time"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -26,6 +25,7 @@ func main() {
 		log.Fatalf("Error loading config: %v", err)
 	}
 	auth.JWTSecret = cfg.JWTSecret
+	auth.SecureCookies = cfg.SecureCookies
 
 	e := echo.New()
 
@@ -45,7 +45,8 @@ func main() {
 	e.Use(middleware.CSRFWithConfig(middleware.CSRFConfig{
 		TokenLookup:    "header:X-CSRF-Token,form:_csrf",
 		CookiePath:     "/",
-		CookieMaxAge:   int((14 * 24 * time.Hour).Seconds()),
+		CookieMaxAge:   int(auth.SessionLength.Seconds()),
+		CookieSecure:   cfg.SecureCookies,
 		CookieHTTPOnly: true,
 		CookieSameSite: http.SameSiteLaxMode,
 	}))
