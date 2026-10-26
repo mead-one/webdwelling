@@ -18,7 +18,7 @@ Findings from a code review on 2026-10-21, ordered by priority. File references 
 - [x] **Rate-limit `/login`.** `middleware.RateLimiter` is enough to start with.
 - [x] **Remove the `innerHTML` interpolation** (`bookmarks.ts:778`, `:1132`). Folder names are inserted unescaped. Build these elements with `createElement` and `textContent`, as the rest of the file does. This becomes stored XSS once public pages show folders to other people.
 - [x] **Validate bookmark URLs on the server.** Accept only `http` and `https`. Without this, a `javascript:` URL set via `href` in JS runs before the page is reloaded.
-- [ ] **Stop returning `err.Error()` to clients** (`routes.go:61`, `:124`, `:242`, `:310`). Log the detail and send a generic message.
+- [x] **Stop returning `err.Error()` to clients** (`routes.go:61`, `:124`, `:242`, `:310`). Log the detail and send a generic message.
 - [ ] **Remove the debug prints** that log user data (`routes.go:235-236`, `sqlite.go:311`, `sqlite.go:488`).
 - [ ] **Add hardening middleware:**
   - `middleware.BodyLimit`
@@ -56,7 +56,7 @@ Findings from a code review on 2026-10-21, ordered by priority. File references 
   - Remove `onsubmit` from the `<button>`.
   - Remove the `=== null` checks on `input.value`, which can never be true.
   - Include `basePath` in the `<form action>` attributes.
-  - Pass `basePath` when rendering `error.html`.
+  - ~~Pass `basePath` when rendering `error.html`.~~ (done)
 
 ## 4. Duplication and Simplification
 

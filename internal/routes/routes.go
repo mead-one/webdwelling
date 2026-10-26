@@ -4,6 +4,7 @@ package routes
 import (
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -54,11 +55,13 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 		}
 
 		if err != nil {
+			log.Printf("Failed to get bookmarks: %v", err)
 			return c.Render(http.StatusInternalServerError, "error.html", map[string]interface{}{
+				"BasePath":     basePath,
 				"Title":        "Error",
 				"NavItems":     navItems,
 				"ErrorCode":    http.StatusInternalServerError,
-				"ErrorMessage": err.Error(),
+				"ErrorMessage": "Failed to get bookmarks",
 			})
 		}
 
@@ -79,11 +82,13 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 		bookmarks, err := database.GetBookmarksByUserID(userID, true)
 
 		if err != nil {
+			log.Printf("Failed to get bookmarks: %v", err)
 			return c.Render(http.StatusInternalServerError, "error.html", map[string]interface{}{
+				"BasePath":     basePath,
 				"Title":        "Error",
 				"NavItems":     navItems,
 				"ErrorCode":    http.StatusInternalServerError,
-				"ErrorMessage": err.Error(),
+				"ErrorMessage": "Failed to get bookmarks",
 			})
 		}
 
@@ -104,6 +109,7 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 
 		rawURL, err := normaliseBookmarkURL(rawURL)
 		if err != nil {
+			log.Printf("Failed to normalise bookmark URL: %v", err)
 			return c.JSON(http.StatusBadRequest, map[string]interface{}{
 				"error":      "Invalid URL",
 				"error_code": http.StatusBadRequest,
@@ -116,6 +122,7 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 			folderID = new(int)
 			*folderID, err = strconv.Atoi(c.FormValue("folder_id"))
 			if err != nil {
+				log.Printf("Failed to parse folder ID: %v", err)
 				return c.JSON(http.StatusBadRequest, map[string]interface{}{
 					"error":      "Invalid folder ID",
 					"error_code": http.StatusBadRequest,
@@ -127,9 +134,9 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 
 		newBookmark, err := database.AddBookmark(userID, title, rawURL, tags, folderID, public)
 		if err != nil {
-			// Serve JSON error response
+			log.Printf("Failed to add bookmark: %v", err)
 			return c.JSON(http.StatusInternalServerError, map[string]interface{}{
-				"error":      err.Error(),
+				"error":      "Failed to add bookmark",
 				"error_code": http.StatusInternalServerError,
 			})
 		}
@@ -252,9 +259,9 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 
 		newBookmark, err := database.EditBookmark(userID, bookmarkID, title, rawURL, tags, folderID, public)
 		if err != nil {
-			// Serve JSON error response
+			log.Printf("Failed to edit bookmark: %v", err)
 			return c.JSON(http.StatusInternalServerError, map[string]interface{}{
-				"error":      err.Error(),
+				"error":      "Failed to edit bookmark",
 				"error_code": http.StatusInternalServerError,
 			})
 		}
@@ -320,9 +327,9 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 
 		newFolder, err := database.AddBookmarkFolder(userID, name, parentFolderID, public)
 		if err != nil {
-			// Serve JSON error response
+			log.Printf("Failed to add folder: %v", err)
 			return c.JSON(http.StatusInternalServerError, map[string]interface{}{
-				"error":      err.Error(),
+				"error":      "Failed to add folder",
 				"error_code": http.StatusInternalServerError,
 			})
 		}

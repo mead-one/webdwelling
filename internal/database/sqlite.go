@@ -350,7 +350,6 @@ func AddBookmark(userID int, title string, url string, tags string, folderID *in
 
 // Move a bookmark to a folder
 func MoveBookmark(userID int, bookmarkID int, folderID *int) error {
-	fmt.Println("Moving bookmark", bookmarkID, "to folder", folderID)
 	// Check if the user is the owner of the bookmark
 	bookmarkUserID := 0
 	err := DB.QueryRow(`
@@ -539,7 +538,6 @@ func FolderIsDescendant(folderID int, destinationFolderID *int) bool {
 
 	destinationFolder, err := GetBookmarkFolderByID(*destinationFolderID)
 	if err != nil {
-		fmt.Println("Failed to get destination folder:", err)
 		return false
 	}
 
