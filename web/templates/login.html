@@ -2,7 +2,7 @@
 {{ template "header.html" . }}
 <section>
     <h1>Login</h1>
-    <form action="{{ .basePath }}/login" method="post">
+    <form action="{{ .BasePath }}/login" method="post">
         <input type="hidden" name="_csrf" value="{{ .CSRFToken }}">
         <label for="username">Username</label>
         <input type="text" name="username" id="username" required>

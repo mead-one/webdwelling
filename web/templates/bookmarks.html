@@ -1,55 +1,55 @@
 <!-- nav: include, weight: 5, auth: require -->
-{{define "folder-tree-edit"}}
-<li id="folder-{{.ID}}" class="folder" data-id="{{.ID}}">
-<details class="folder-details">
+{{- /* Bookmark edit view. Its class names and ids are also the hooks bookmarks.js uses,
+       so the bookmark view on the home page (home.html) has its own bookmark-view-* names. */ -}}
+{{define "bookmark-edit-bookmark"}}
+<li id="bookmark-edit-bookmark-{{.ID}}" class="bookmark-edit-bookmark" data-id="{{.ID}}">
+    <span class="bookmark-edit-bookmark-title" draggable="false">
+        <a href="{{.URL}}" target="_blank" class="bookmark-edit-bookmark-link">{{.Title}}</a>
+    </span>
+    <span class="bookmark-edit-bookmark-tags">{{if .Tags}}{{.Tags}}{{end}}</span>
+    <span class="bookmark-edit-bookmark-actions">
+        <button class="edit-bookmark">Edit</button>
+        <button class="delete-bookmark">Delete</button>
+    </span>
+</li>
+{{end}}
+
+{{define "bookmark-edit-folder"}}
+<li id="bookmark-edit-folder-{{.ID}}" class="bookmark-edit-folder" data-id="{{.ID}}">
+<details class="bookmark-edit-folder-details">
     <summary>
         <span class="folder-icon-closed">📁</span>
         <span class="folder-icon-open">📂</span>
-        <span id="folder-name-{{.ID}}" class="folder-name">{{.Name}}</span>
-        <span id="folder-actions-{{.ID}}" class="folder-actions" data-id="{{.ID}}">
+        <span id="bookmark-edit-folder-name-{{.ID}}" class="bookmark-edit-folder-name">{{.Name}}</span>
+        <span id="bookmark-edit-folder-actions-{{.ID}}" class="bookmark-edit-folder-actions" data-id="{{.ID}}">
             <button class="add-bookmark">+ Bookmark</button>
             <button class="add-folder">+ Folder</button>
             <button class="rename-folder">Rename</button>
             <button class="delete-folder">Delete</button>
         </span>
     </summary>
-    <ul id="folders-list-{{.ID}}" class="folders">
-    {{ if .ChildFolders }}
-        {{ range .ChildFolders }}
-            {{ template "folder-tree-edit" . }}
-        {{ end }}
+    <ul id="bookmark-edit-folder-list-{{.ID}}" class="bookmark-edit-folder-list">
+    {{ range .ChildFolders }}
+        {{ template "bookmark-edit-folder" . }}
     {{ end }}
     </ul>
-    {{- /* Bookmarks within this folder */ -}}
-    <ul id="bookmarks-{{.ID}}" class="bookmarks">
-    {{if .ChildBookmarks}}
-        {{range .ChildBookmarks}}
-        <li id="bookmark-{{.ID}}" class="bookmark" data-id="{{.ID}}">
-            <span class="bookmark-title-span" draggable="false">
-                <a href="{{.URL}}" target="_blank" class="bookmark-title">{{.Title}}</a>
-            </span>
-            <span class="bookmark-tags">{{if .Tags}}{{.Tags}}{{end}}</span>
-            <span class="bookmark-actions">
-                <button class="edit-bookmark">Edit</button>
-                <button class="delete-bookmark">Delete</button>
-            </span>
-        </li>
-        {{end}}
-    {{end}}
+    <ul id="bookmark-edit-bookmark-list-{{.ID}}" class="bookmark-edit-bookmark-list">
+    {{ range .ChildBookmarks }}
+        {{ template "bookmark-edit-bookmark" . }}
+    {{ end }}
     </ul>
 </details>
 </li>
 {{end}}
 
-{{define "folder-select-tree"}}
-<li id="folder-select-item-{{.ID}}" class="folder-select">
-        <input type="radio" name="folder-select" id="folder-select-{{.ID}}" value="{{.ID}}">
-        <label for="folder-select-{{.ID}}">📁 {{.Name}}</label>
-    <ul id="folder-select-tree-{{.ID}}" class="folder-select-tree">
-    {{ if .ChildFolders }}
-        {{ range .ChildFolders }}
-            {{ template "folder-select-tree" . }}
-        {{ end }}
+{{- /* Folder select: the folder picker in the add and edit forms */ -}}
+{{define "folder-select-folder"}}
+<li id="folder-select-folder-{{.ID}}" class="folder-select-folder">
+    <input type="radio" name="folder-select" id="folder-select-radio-{{.ID}}" value="{{.ID}}">
+    <label for="folder-select-radio-{{.ID}}">📁 {{.Name}}</label>
+    <ul id="folder-select-folder-list-{{.ID}}" class="folder-select-folder-list">
+    {{ range .ChildFolders }}
+        {{ template "folder-select-folder" . }}
     {{ end }}
     </ul>
 </li>
@@ -58,33 +58,22 @@
 {{ template "header.html" . }}
 <section>
     <h1>Your bookmarks</h1>
-    <div id="bookmarks-elements" class="folder" data-id="">
-        <span class="folder-actions" data-id="{{.Bookmarks.ID}}">
-            <button id="expand-all-folders">Expand all</button>
-            <button id="collapse-all-folders">Collapse all</button>
+    <div id="bookmark-edit-folder-root" class="bookmark-edit bookmark-edit-folder" data-id="" data-folder-tree>
+        <span class="bookmark-edit-folder-actions" data-id="{{.Bookmarks.ID}}">
+            <button data-expand-all>Expand all</button>
+            <button data-collapse-all>Collapse all</button>
             <button class="add-bookmark">+ Bookmark</button>
             <button class="add-folder">+ Folder</button>
         </span>
-        <ul id="folders-list-root" class="folders">
-        {{ if .Bookmarks.ChildFolders }}
-            {{ range .Bookmarks.ChildFolders }}
-                {{ template "folder-tree-edit" .}}
-            {{ end }}
+        <ul id="bookmark-edit-folder-list-root" class="bookmark-edit-folder-list">
+        {{ range .Bookmarks.ChildFolders }}
+            {{ template "bookmark-edit-folder" . }}
         {{ end }}
         </ul>
-        <ul id="bookmarks-root" class="bookmarks">
-            {{range .Bookmarks.ChildBookmarks}}
-            <li id="bookmark-{{.ID}}" class="bookmark" data-id="{{.ID}}">
-                <span class="bookmark-title-span" draggable="false">
-                    <a href="{{.URL}}" target="_blank" class="bookmark-title">{{.Title}}</a>
-                </span>
-                <span class="bookmark-tags">{{if .Tags}}{{.Tags}}{{end}}</span>
-                <span class="bookmark-actions">
-                    <button class="edit-bookmark">Edit</button>
-                    <button class="delete-bookmark">Delete</button>
-                </span>
-            </li>
-            {{end}}
+        <ul id="bookmark-edit-bookmark-list-root" class="bookmark-edit-bookmark-list">
+        {{ range .Bookmarks.ChildBookmarks }}
+            {{ template "bookmark-edit-bookmark" . }}
+        {{ end }}
         </ul>
     </div>
 </section>
@@ -95,8 +84,8 @@
         <input type="text" name="title" placeholder="Bookmark title" required>
         <input type="text" name="url" placeholder="Bookmark URL" required>
         <input type="text" name="tags" placeholder="Bookmark tags">
-        <input type="checkbox" name="public" id="new-bookmark-public-checkbox" checked>
-        <label for="new-bookmark-public-checkbox">Public</label>
+        <input type="checkbox" name="public" id="add-bookmark-public-checkbox" checked>
+        <label for="add-bookmark-public-checkbox">Public</label>
         <h3>Parent folder:</h3>
         <div id="add-bookmark-folder-select-wrapper"></div>
         <button type="submit">Add bookmark</button>
@@ -118,28 +107,27 @@
     <form id="add-folder-form" class="modal-form" method="POST" action="/bookmarks/add-folder">
         <h2>Add a folder</h2>
         <input type="text" name="name" placeholder="Folder name" required>
-        <input type="checkbox" name="public" id="new-folder-public-checkbox" checked>
-        <label for="new-folder-public-checkbox">Public</label>
+        <input type="checkbox" name="public" id="add-folder-public-checkbox" checked>
+        <label for="add-folder-public-checkbox">Public</label>
         <h3>Parent folder:</h3>
         <div id="add-folder-folder-select-wrapper"></div>
         <button type="submit">Add folder</button>
         <button type="button" id="cancel-add-folder">Cancel</button>
     </form>
     <div id="folder-select">
-        <ul id="folder-select-tree-root" class="folder-select-tree">
-            <li class="folder-select">
-                <input type="radio" name="folder-select" id="folder-select-0" value="0">
-                <label for="folder-select-0">📁 All bookmarks</label>
+        <ul id="folder-select-folder-list-root" class="folder-select-folder-list">
+            <li class="folder-select-folder">
+                <input type="radio" name="folder-select" id="folder-select-radio-0" value="0">
+                <label for="folder-select-radio-0">📁 All bookmarks</label>
             </li>
-            {{ if .Bookmarks.ChildFolders }}
-                {{ range .Bookmarks.ChildFolders }}
-                    {{ template "folder-select-tree" . }}
-                {{ end }}
+            {{ range .Bookmarks.ChildFolders }}
+                {{ template "folder-select-folder" . }}
             {{ end }}
         </ul>
     </div>
 </div>
 
 {{ template "footer.html" . }}
-<script>window.basePath = {{.basePath}}</script>
-<script src="{{.basePath}}/bookmarks.js"></script>
+<script>window.BasePath = {{.BasePath}}</script>
+<script src="{{.BasePath}}/folders.js"></script>
+<script src="{{.BasePath}}/bookmarks.js"></script>

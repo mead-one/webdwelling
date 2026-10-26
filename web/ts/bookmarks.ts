@@ -1,8 +1,6 @@
 document.addEventListener("DOMContentLoaded", function() {
-    const expandAllFoldersButton: HTMLButtonElement | null = document.getElementById("expand-all-folders") as HTMLButtonElement;
-    const collapseAllFoldersButton: HTMLButtonElement | null = document.getElementById("collapse-all-folders") as HTMLButtonElement;
-    const bookmarkLIs: NodeListOf<HTMLLIElement> = document.querySelectorAll("li.bookmark");
-    const folderLIs: NodeListOf<HTMLLIElement> = document.querySelectorAll("li.folder");
+    const bookmarkLIs: NodeListOf<HTMLLIElement> = document.querySelectorAll("li.bookmark-edit-bookmark");
+    const folderLIs: NodeListOf<HTMLLIElement> = document.querySelectorAll("li.bookmark-edit-folder");
     const bookmarkButtons: NodeListOf<HTMLButtonElement> = document.querySelectorAll("button.add-bookmark");
     const editBookmarkButtons: NodeListOf<HTMLButtonElement> = document.querySelectorAll("button.edit-bookmark");
     const deleteBookmarkButtons: NodeListOf<HTMLButtonElement> = document.querySelectorAll("button.delete-bookmark");
@@ -16,14 +14,11 @@ document.addEventListener("DOMContentLoaded", function() {
     const cancelEditBookmarkButton: HTMLButtonElement | null = document.getElementById("cancel-edit-bookmark") as HTMLButtonElement;
     const cancelAddFolderButton: HTMLButtonElement | null = document.getElementById("cancel-add-folder") as HTMLButtonElement;
 
-    if (expandAllFoldersButton !== null) expandAllFoldersButton.addEventListener("click", expandAllFolders);
-    if (collapseAllFoldersButton !== null) collapseAllFoldersButton.addEventListener("click", collapseAllFolders);
-
     // Drag and drop
     bookmarkLIs.forEach(li => {
         li.setAttribute("draggable", "true");
         // Disable dragging of anchor element
-        const link: HTMLAnchorElement | null = li.querySelector("a.bookmark-title") as HTMLAnchorElement;
+        const link: HTMLAnchorElement | null = li.querySelector("a.bookmark-edit-bookmark-link") as HTMLAnchorElement;
         if (link !== null) link.draggable = false;
 
         li.addEventListener("dragstart", dragStartBookmark);
@@ -34,11 +29,9 @@ document.addEventListener("DOMContentLoaded", function() {
         li.addEventListener("dragstart", dragStartFolder);
     });
 
-    // folderLIs.forEach(li => {
     document.addEventListener("dragover", dragOverFolder);
     document.addEventListener("dragleave", dragLeaveFolder);
     document.addEventListener("drop", dropOnFolder);
-    // });
 
     // Add bookmark buttons
     bookmarkButtons.forEach(button => {
@@ -118,22 +111,6 @@ function postHeaders(): HeadersInit {
     };
 }
 
-// Expand all folders
-function expandAllFolders() {
-    const folderDetails: NodeListOf<HTMLDetailsElement> = document.querySelectorAll("details.folder-details");
-    folderDetails.forEach(d => {
-        d.setAttribute("open", "");
-    });
-}
-
-// Collapse all folders
-function collapseAllFolders() {
-    const folderDetails: NodeListOf<HTMLDetailsElement> = document.querySelectorAll("details.folder-details");
-    folderDetails.forEach(d => {
-        d.removeAttribute("open");
-    });
-}
-
 // Drag start event for dragging a bookmark
 function dragStartBookmark(event: DragEvent) {
     event.stopPropagation();
@@ -203,11 +180,11 @@ function dragOverFolder(event: DragEvent) {
     switch (draggedType) {
     case "folder":
         const draggedFolderID: string | undefined = event.dataTransfer.getData("folder-id");
-        draggedLi = document.getElementById(`folder-${draggedFolderID}`) as HTMLLIElement;
+        draggedLi = document.getElementById(`bookmark-edit-folder-${draggedFolderID}`) as HTMLLIElement;
         break;
     case "bookmark":
         const draggedBookmarkID: string | undefined = event.dataTransfer.getData("bookmark-id");
-        draggedLi = document.getElementById(`bookmark-${draggedBookmarkID}`) as HTMLLIElement;
+        draggedLi = document.getElementById(`bookmark-edit-bookmark-${draggedBookmarkID}`) as HTMLLIElement;
         break;
     default:
         draggedLi = null;
@@ -216,10 +193,10 @@ function dragOverFolder(event: DragEvent) {
     const targetElement: HTMLElement | null = event.target as HTMLElement;
 
     let folderLi: HTMLLIElement | null;
-    if (targetElement.classList.contains("folder")) {
+    if (targetElement.classList.contains("bookmark-edit-folder")) {
         folderLi = targetElement as HTMLLIElement;
-    } else if (targetElement.closest(".folder") !== null) {
-        folderLi = targetElement.closest(".folder") as HTMLLIElement;
+    } else if (targetElement.closest(".bookmark-edit-folder") !== null) {
+        folderLi = targetElement.closest(".bookmark-edit-folder") as HTMLLIElement;
     } else {
         console.error("Target is not a folder");
         return;
@@ -241,10 +218,10 @@ function dragLeaveFolder(event: DragEvent) {
     const targetElement: HTMLElement | null = event.target as HTMLElement;
 
     let folderLi: HTMLLIElement | null;
-    if (targetElement.classList.contains("folder")) {
+    if (targetElement.classList.contains("bookmark-edit-folder")) {
         folderLi = targetElement as HTMLLIElement;
-    } else if (targetElement.closest(".folder") !== null) {
-        folderLi = targetElement.closest(".folder") as HTMLLIElement;
+    } else if (targetElement.closest(".bookmark-edit-folder") !== null) {
+        folderLi = targetElement.closest(".bookmark-edit-folder") as HTMLLIElement;
     } else {
         console.error("Target is null");
         return;
@@ -263,10 +240,10 @@ function dropOnFolder(event: DragEvent) {
     const targetElement: HTMLElement | null = event.target as HTMLElement;
 
     let folderLi: HTMLLIElement | null;
-    if (targetElement.classList.contains("folder")) {
+    if (targetElement.classList.contains("bookmark-edit-folder")) {
         folderLi = targetElement as HTMLLIElement;
-    } else if (targetElement.closest(".folder") !== null) {
-        folderLi = targetElement.closest(".folder") as HTMLLIElement;
+    } else if (targetElement.closest(".bookmark-edit-folder") !== null) {
+        folderLi = targetElement.closest(".bookmark-edit-folder") as HTMLLIElement;
     } else {
         console.error("Target is not a folder");
         return;
@@ -307,7 +284,7 @@ function dropOnFolder(event: DragEvent) {
         break;
     case "folder":
         const draggedFolderID: string | undefined = event.dataTransfer.getData("folder-id");
-        const draggedLi: HTMLLIElement | null = document.getElementById(`folder-${draggedFolderID}`) as HTMLLIElement;
+        const draggedLi: HTMLLIElement | null = document.getElementById(`bookmark-edit-folder-${draggedFolderID}`) as HTMLLIElement;
 
         if (draggedFolderID === undefined) {
             console.error("Folder ID is undefined");
@@ -327,7 +304,7 @@ function dropOnFolder(event: DragEvent) {
 
 // Open the add bookmark modal
 function openAddBookmarkModal(event: MouseEvent) {
-    const parentFolder: HTMLDivElement | null = (event.target as HTMLFormElement).closest(".folder");
+    const parentFolder: HTMLDivElement | null = (event.target as HTMLFormElement).closest(".bookmark-edit-folder");
     if (parentFolder === null) {
         console.error("No parent folder found");
         return;
@@ -399,7 +376,7 @@ function submitAddBookmarkForm(event: SubmitEvent) {
             FolderID: data.folder_id,
             CreatedAt: data.created_at,
         };
-        // Add the bookmark to the folder tree and folder-select-tree
+        // Add the bookmark to the bookmark edit view and folder select
         updateNewBookmark(bookmark);
         closeAddBookmarkModal();
     }).catch(function(error) {
@@ -419,8 +396,8 @@ function closeAddBookmarkModal() {
 
 // Open the edit bookmark modal
 function openEditBookmarkModal(event: MouseEvent) {
-    const parentFolder: HTMLDivElement | null = (event.target as HTMLButtonElement).closest(".folder");
-    const bookmarkLi: HTMLLIElement | null = (event.target as HTMLButtonElement).closest(".bookmark") as HTMLLIElement;
+    const parentFolder: HTMLDivElement | null = (event.target as HTMLButtonElement).closest(".bookmark-edit-folder");
+    const bookmarkLi: HTMLLIElement | null = (event.target as HTMLButtonElement).closest(".bookmark-edit-bookmark") as HTMLLIElement;
     if (parentFolder === null || bookmarkLi === null) {
         console.error("No parent folder found");
         return;
@@ -432,8 +409,8 @@ function openEditBookmarkModal(event: MouseEvent) {
     const folderSelectWrapper: HTMLDivElement | null = document.getElementById("edit-bookmark-folder-select-wrapper") as HTMLDivElement;
     const folderSelect: HTMLDivElement | null = document.getElementById("folder-select") as HTMLDivElement;
     const bookmarkID: string | undefined = bookmarkLi.dataset.id;
-    const bookmarkTitle: HTMLAnchorElement | null = bookmarkLi.querySelector("a.bookmark-title") as HTMLAnchorElement;
-    const bookmarkTags: HTMLSpanElement | null = bookmarkLi.querySelector("span.bookmark-tags") as HTMLSpanElement;
+    const bookmarkTitle: HTMLAnchorElement | null = bookmarkLi.querySelector("a.bookmark-edit-bookmark-link") as HTMLAnchorElement;
+    const bookmarkTags: HTMLSpanElement | null = bookmarkLi.querySelector("span.bookmark-edit-bookmark-tags") as HTMLSpanElement;
 
     // Include the folder select sub-form
     folderSelectWrapper.appendChild(folderSelect);
@@ -471,7 +448,7 @@ function openEditBookmarkModal(event: MouseEvent) {
     bookmarkRadio.value = bookmarkID;
     bookmarkTitleInput.value = bookmarkTitle.innerText;
     bookmarkUrlInput.value = bookmarkTitle.href;
-    if (bookmarkLi.querySelector("span.bookmark-tags") != null) {
+    if (bookmarkLi.querySelector("span.bookmark-edit-bookmark-tags") != null) {
         bookmarkTagsInput.value = bookmarkTags.innerText;
     }
     folderRadio.value = parentFolderID;
@@ -494,14 +471,14 @@ function moveBookmarkToFolder(bookmarkID: string, folderID: string) {
     }).then(function(data) {
         if (data.success === true) {
             // Update the folder tree and folder select tree
-            const bookmarkLi: HTMLLIElement | null = document.getElementById(`bookmark-${bookmarkID}`) as HTMLLIElement;
+            const bookmarkLi: HTMLLIElement | null = document.getElementById(`bookmark-edit-bookmark-${bookmarkID}`) as HTMLLIElement;
             let bookmarkFolder: HTMLLIElement | null, bookmarkUl: HTMLUListElement | null;
             if (folderID === null || folderID === "") {
-                bookmarkFolder = document.getElementById(`bookmarks-elements`) as HTMLLIElement;
-                bookmarkUl = document.getElementById("bookmarks-root") as HTMLUListElement;
+                bookmarkFolder = document.getElementById(`bookmark-edit-folder-root`) as HTMLLIElement;
+                bookmarkUl = document.getElementById("bookmark-edit-bookmark-list-root") as HTMLUListElement;
             } else {
-                bookmarkFolder = document.getElementById(`folder-${folderID}`) as HTMLLIElement;
-                bookmarkUl = bookmarkFolder.querySelector(":scope > details.folder-details > ul.bookmarks") as HTMLUListElement;
+                bookmarkFolder = document.getElementById(`bookmark-edit-folder-${folderID}`) as HTMLLIElement;
+                bookmarkUl = bookmarkFolder.querySelector(":scope > details.bookmark-edit-folder-details > ul.bookmark-edit-bookmark-list") as HTMLUListElement;
             }
             bookmarkUl.appendChild(bookmarkLi);
         } else {
@@ -525,15 +502,15 @@ function moveBookmarkFolderToFolder(folderID: string, parentFolderID: string | n
     }).then(function(data) {
         if (data.success === true) {
             // Update the folder tree and folder select tree
-            const folderLi: HTMLLIElement | null = document.getElementById(`folder-${folderID}`) as HTMLLIElement;
-            const folderSelectLi: HTMLLIElement | null = document.getElementById(`folder-select-item-${folderID}`) as HTMLLIElement;
+            const folderLi: HTMLLIElement | null = document.getElementById(`bookmark-edit-folder-${folderID}`) as HTMLLIElement;
+            const folderSelectLi: HTMLLIElement | null = document.getElementById(`folder-select-folder-${folderID}`) as HTMLLIElement;
             let folderParent: HTMLLIElement | null, folderSelectParent: HTMLLIElement | null;
             if (parentFolderID === null || parentFolderID === "") {
-                folderParent = document.getElementById(`folders-list-root`) as HTMLLIElement;
-                folderSelectParent = document.getElementById(`folder-select-tree-root`) as HTMLLIElement;
+                folderParent = document.getElementById(`bookmark-edit-folder-list-root`) as HTMLLIElement;
+                folderSelectParent = document.getElementById(`folder-select-folder-list-root`) as HTMLLIElement;
             } else {
-                folderParent = document.getElementById(`folders-list-${parentFolderID}`) as HTMLLIElement;
-                folderSelectParent = document.getElementById(`folder-select-tree-${parentFolderID}`) as HTMLLIElement;
+                folderParent = document.getElementById(`bookmark-edit-folder-list-${parentFolderID}`) as HTMLLIElement;
+                folderSelectParent = document.getElementById(`folder-select-folder-list-${parentFolderID}`) as HTMLLIElement;
             }
             folderParent.appendChild(folderLi);
             folderSelectParent.appendChild(folderSelectLi);
@@ -585,17 +562,17 @@ function submitEditBookmarkForm(event: SubmitEvent) {
         return response.json();
     }).then(function(data) {
         // Update the bookmark li element from the editBookmarkForm
-        const bookmarkLi: HTMLLIElement | null = document.getElementById(`bookmark-${data.id}`) as HTMLLIElement;
-        const bookmarkTitle: HTMLAnchorElement | null = bookmarkLi.querySelector("a.bookmark-title") as HTMLAnchorElement;
-        const bookmarkTags: HTMLSpanElement | null = bookmarkLi.querySelector("span.bookmark-tags") as HTMLSpanElement;
+        const bookmarkLi: HTMLLIElement | null = document.getElementById(`bookmark-edit-bookmark-${data.id}`) as HTMLLIElement;
+        const bookmarkTitle: HTMLAnchorElement | null = bookmarkLi.querySelector("a.bookmark-edit-bookmark-link") as HTMLAnchorElement;
+        const bookmarkTags: HTMLSpanElement | null = bookmarkLi.querySelector("span.bookmark-edit-bookmark-tags") as HTMLSpanElement;
 
         let parentFolder: HTMLDivElement | null, parentDiv: HTMLDivElement | null;
         if (data.folder_id === null || data.folder_id === undefined || data.folder_id === "") {
-            parentFolder = document.getElementById("bookmarks-elements") as HTMLDivElement;
-            parentDiv = parentFolder.querySelector(":scope > ul.bookmarks");
+            parentFolder = document.getElementById("bookmark-edit-folder-root") as HTMLDivElement;
+            parentDiv = parentFolder.querySelector(":scope > ul.bookmark-edit-bookmark-list");
         } else {
-            parentFolder = document.getElementById(`folder-${data.folder_id}`) as HTMLDivElement;
-            parentDiv = parentFolder.querySelector(":scope > details.folder-details > ul.bookmarks");
+            parentFolder = document.getElementById(`bookmark-edit-folder-${data.folder_id}`) as HTMLDivElement;
+            parentDiv = parentFolder.querySelector(":scope > details.bookmark-edit-folder-details > ul.bookmark-edit-bookmark-list");
         }
         bookmarkTitle.innerText = data.title;
         bookmarkTitle.href = data.url;
@@ -626,7 +603,7 @@ function submitDeleteBookmark(event: Event) {
         return;
     }
 
-    const bookmarkLi: HTMLLIElement | null = button.closest("li.bookmark") as HTMLLIElement;
+    const bookmarkLi: HTMLLIElement | null = button.closest("li.bookmark-edit-bookmark") as HTMLLIElement;
     if (bookmarkLi === null) {
         console.error("Parent LI is null");
         return;
@@ -638,7 +615,7 @@ function submitDeleteBookmark(event: Event) {
         return;
     }
 
-    const bookmarkTitle: HTMLAnchorElement | null = bookmarkLi.querySelector("a.bookmark-title") as HTMLAnchorElement;
+    const bookmarkTitle: HTMLAnchorElement | null = bookmarkLi.querySelector("a.bookmark-edit-bookmark-link") as HTMLAnchorElement;
     const bookmarkName = bookmarkTitle.innerText;
     if (!confirm(`Are you sure you want to delete the bookmark "${bookmarkName}"?`)) {
         return;
@@ -656,7 +633,7 @@ function submitDeleteBookmark(event: Event) {
     }).then(function(data) {
         if (data.success === true) {
             // Remove the boomark li element from the folder tree
-            const bookmarkLi: HTMLLIElement | null = document.getElementById(`bookmark-${bookmarkID}`) as HTMLLIElement;
+            const bookmarkLi: HTMLLIElement | null = document.getElementById(`bookmark-edit-bookmark-${bookmarkID}`) as HTMLLIElement;
             if (bookmarkLi !== null) bookmarkLi.remove();
         } else {
             alert(`Failed to delete bookmark: ${data.error}`);
@@ -669,7 +646,7 @@ function submitDeleteBookmark(event: Event) {
 // Open the add folder modal
 function openAddFolderModal(event: Event) {
     const openButton: HTMLButtonElement | null = event.target as HTMLButtonElement;
-    const parentFolder: HTMLDivElement | null = openButton.closest(".folder") as HTMLDivElement;
+    const parentFolder: HTMLDivElement | null = openButton.closest(".bookmark-edit-folder") as HTMLDivElement;
     let parentFolderID: string | undefined = parentFolder.dataset.id;
     const modalContainer: HTMLDivElement | null = document.getElementById("modal-container") as HTMLDivElement;
     const addFolderForm: HTMLFormElement | null = document.getElementById("add-folder-form") as HTMLFormElement;
@@ -730,7 +707,7 @@ function submitAddFolderForm(event: SubmitEvent) {
         }
         return response.json();
     }).then(function(data) {
-        // Add the folder to the folder tree and folder-select-tree
+        // Add the folder to the bookmark edit view and folder select
         const folder: BookmarkFolder = {
             ID: data.id,
             Name: data.name,
@@ -757,11 +734,11 @@ function closeAddFolderModal() {
 
 function openRenameFolderForm(event: MouseEvent) {
     const button: HTMLButtonElement | null = event.target as HTMLButtonElement;
-    const parentFolder: HTMLDivElement | null = button.closest(".folder") as HTMLDivElement;
+    const parentFolder: HTMLDivElement | null = button.closest(".bookmark-edit-folder") as HTMLDivElement;
     const folderID: string | undefined = parentFolder.dataset.id;
-    const folderSummary: HTMLElement | null = document.querySelector(`#folder-${folderID} > details.folder-details > summary`) as HTMLElement;
-    const folderSpan: HTMLSpanElement | null = document.getElementById(`folder-name-${folderID}`) as HTMLSpanElement;
-    const folderActions: HTMLSpanElement | null = document.getElementById(`folder-actions-${folderID}`) as HTMLSpanElement;
+    const folderSummary: HTMLElement | null = document.querySelector(`#bookmark-edit-folder-${folderID} > details.bookmark-edit-folder-details > summary`) as HTMLElement;
+    const folderSpan: HTMLSpanElement | null = document.getElementById(`bookmark-edit-folder-name-${folderID}`) as HTMLSpanElement;
+    const folderActions: HTMLSpanElement | null = document.getElementById(`bookmark-edit-folder-actions-${folderID}`) as HTMLSpanElement;
     const folderName: string = folderSpan.innerText;
     const renameFolderForm: HTMLFormElement | null = document.createElement("form");
 
@@ -775,7 +752,7 @@ function openRenameFolderForm(event: MouseEvent) {
 
     // Build the form with DOM methods so the folder name is always treated as text, never HTML
     const folderRenameSpan: HTMLSpanElement = document.createElement("span");
-    folderRenameSpan.classList.add("folder-rename-span");
+    folderRenameSpan.classList.add("rename-folder-field");
     const folderNameInput: HTMLInputElement = document.createElement("input");
     folderNameInput.type = "text";
     folderNameInput.name = "name";
@@ -785,7 +762,7 @@ function openRenameFolderForm(event: MouseEvent) {
     folderRenameSpan.appendChild(folderNameInput);
 
     const renameActions: HTMLSpanElement = document.createElement("span");
-    renameActions.classList.add("folder-actions");
+    renameActions.classList.add("bookmark-edit-folder-actions");
     const submitRenameButton: HTMLButtonElement = document.createElement("button");
     submitRenameButton.type = "submit";
     submitRenameButton.innerText = "Rename folder";
@@ -811,16 +788,16 @@ function openRenameFolderForm(event: MouseEvent) {
 
 function submitRenameFolderForm(event: SubmitEvent) {
     const form: HTMLFormElement = event.target as HTMLFormElement;
-    const parentFolder: HTMLDivElement | null = form.closest(".folder") as HTMLDivElement;
+    const parentFolder: HTMLDivElement | null = form.closest(".bookmark-edit-folder") as HTMLDivElement;
     const folderID = parentFolder.dataset.id;
-    const folderNameSpan: HTMLSpanElement | null = document.getElementById(`folder-name-${folderID}`) as HTMLSpanElement;
+    const folderNameSpan: HTMLSpanElement | null = document.getElementById(`bookmark-edit-folder-name-${folderID}`) as HTMLSpanElement;
     const folderNameInput: HTMLInputElement | null = form.elements.namedItem("name") as HTMLInputElement;
     const folderName: string | undefined = folderNameInput.value;
     if (folderNameInput === null || folderName === undefined) {
         console.error("Missing elements");
         return;
     }
-    const folderActions: HTMLSpanElement | null = document.getElementById(`folder-actions-${folderID}`) as HTMLSpanElement;
+    const folderActions: HTMLSpanElement | null = document.getElementById(`bookmark-edit-folder-actions-${folderID}`) as HTMLSpanElement;
 
     event.preventDefault();
 
@@ -860,8 +837,8 @@ function closeRenameFolderForm(event: MouseEvent) {
     const button: HTMLButtonElement | null = event.target as HTMLButtonElement;
     const folderID: string | undefined = button.dataset.id;
     const form: HTMLFormElement | null = document.getElementById(`rename-folder-form-${folderID}`) as HTMLFormElement;
-    const folderName: HTMLSpanElement | null = document.getElementById(`folder-name-${folderID}`) as HTMLSpanElement;
-    const folderActions: HTMLSpanElement | null = document.getElementById(`folder-actions-${folderID}`) as HTMLSpanElement;
+    const folderName: HTMLSpanElement | null = document.getElementById(`bookmark-edit-folder-name-${folderID}`) as HTMLSpanElement;
+    const folderActions: HTMLSpanElement | null = document.getElementById(`bookmark-edit-folder-actions-${folderID}`) as HTMLSpanElement;
 
     form.remove();
     folderName.style.display = "inline";
@@ -870,7 +847,7 @@ function closeRenameFolderForm(event: MouseEvent) {
 
 function submitDeleteFolder(event: MouseEvent) {
     const form: HTMLFormElement = event.target as HTMLFormElement;
-    const parentFolder: HTMLDivElement | null = form.closest(".folder") as HTMLDivElement;
+    const parentFolder: HTMLDivElement | null = form.closest(".bookmark-edit-folder") as HTMLDivElement;
     if (parentFolder === null) {
         console.error(`Parent folder is null`);
         return;
@@ -881,13 +858,13 @@ function submitDeleteFolder(event: MouseEvent) {
         return;
     }
 
-    const folderDiv: HTMLDivElement | null = document.getElementById(`folder-${folderID}`) as HTMLDivElement;
+    const folderDiv: HTMLDivElement | null = document.getElementById(`bookmark-edit-folder-${folderID}`) as HTMLDivElement;
     if (folderDiv === null) {
         console.error(`Folder does not exist: folder-${folderID}`);
         return;
     }
 
-    const folderName: string = (folderDiv.querySelector(`:scope > details.folder-details > summary > span.folder-name`) as HTMLSpanElement).innerText;
+    const folderName: string = (folderDiv.querySelector(`:scope > details.bookmark-edit-folder-details > summary > span.bookmark-edit-folder-name`) as HTMLSpanElement).innerText;
     if (!confirm(`Are you sure you want to delete the folder "${folderName}"?`)) {
         return;
     }
@@ -902,8 +879,8 @@ function submitDeleteFolder(event: MouseEvent) {
         }
         return response.json();
     }).then(function(data) {
-        const folderLi: HTMLLIElement | null = document.getElementById(`folder-${folderID}`) as HTMLLIElement;
-        const folderSelectLi: HTMLLIElement | null = document.getElementById(`folder-select-item-${folderID}`) as HTMLLIElement;
+        const folderLi: HTMLLIElement | null = document.getElementById(`bookmark-edit-folder-${folderID}`) as HTMLLIElement;
+        const folderSelectLi: HTMLLIElement | null = document.getElementById(`folder-select-folder-${folderID}`) as HTMLLIElement;
         // Remove the folder details element from the folder tree
         folderLi.remove();
         // Remove the folder from the folder select tree
@@ -921,9 +898,9 @@ function updateNewBookmark(bookmark: Bookmark) {
 function updateFolderTreeWithBookmark(bookmark: Bookmark) {
     let parentFolder: HTMLDivElement | null;
     if (bookmark.FolderID === null || bookmark.FolderID === undefined || bookmark.FolderID === "") {
-        parentFolder = document.getElementById("bookmarks-root") as HTMLDivElement;
+        parentFolder = document.getElementById("bookmark-edit-bookmark-list-root") as HTMLDivElement;
     } else {
-        parentFolder = document.getElementById(`bookmarks-${bookmark.FolderID}`) as HTMLDivElement;
+        parentFolder = document.getElementById(`bookmark-edit-bookmark-list-${bookmark.FolderID}`) as HTMLDivElement;
     }
 
     if (parentFolder === null) {
@@ -931,10 +908,10 @@ function updateFolderTreeWithBookmark(bookmark: Bookmark) {
         return;
     }
 
-    let bookmarkLi = document.getElementById(`bookmark-${bookmark.ID}`) as HTMLLIElement;
+    let bookmarkLi = document.getElementById(`bookmark-edit-bookmark-${bookmark.ID}`) as HTMLLIElement;
     if (bookmarkLi !== null) {
-        const bookmarkTitle: HTMLAnchorElement | null = bookmarkLi.querySelector("a.bookmark-title") as HTMLAnchorElement;
-        const bookmarkTags: HTMLSpanElement | null = bookmarkLi.querySelector("span.bookmark-tags") as HTMLSpanElement;
+        const bookmarkTitle: HTMLAnchorElement | null = bookmarkLi.querySelector("a.bookmark-edit-bookmark-link") as HTMLAnchorElement;
+        const bookmarkTags: HTMLSpanElement | null = bookmarkLi.querySelector("span.bookmark-edit-bookmark-tags") as HTMLSpanElement;
         // Set name
         bookmarkTitle.innerText = bookmark.Title;
 
@@ -953,32 +930,32 @@ function updateFolderTreeWithBookmark(bookmark: Bookmark) {
         bookmarkLi = document.createElement("li");
         bookmarkLi.dataset.id = bookmark.ID.toString();
         bookmarkLi.addEventListener("dragstart", dragStartBookmark);
-        bookmarkLi.setAttribute("id", `bookmark-${bookmark.ID}`);
-        bookmarkLi.classList.add("bookmark");
+        bookmarkLi.setAttribute("id", `bookmark-edit-bookmark-${bookmark.ID}`);
+        bookmarkLi.classList.add("bookmark-edit-bookmark");
         bookmarkLi.dataset.id = bookmark.ID.toString();
         bookmarkLi.setAttribute("draggable", "true");
 
         const bookmarkTitleSpan: HTMLSpanElement | null = document.createElement("span");
-        bookmarkTitleSpan.classList.add("bookmark-title-span");
+        bookmarkTitleSpan.classList.add("bookmark-edit-bookmark-title");
         bookmarkTitleSpan.setAttribute("draggable", "false");
         bookmarkLi.appendChild(bookmarkTitleSpan);
 
         const bookmarkTitle: HTMLAnchorElement | null = document.createElement("a");
         bookmarkTitle.href = bookmark.URL;
         bookmarkTitle.target = "_blank";
-        bookmarkTitle.classList.add("bookmark-title");
+        bookmarkTitle.classList.add("bookmark-edit-bookmark-link");
         bookmarkTitle.innerText = bookmark.Title;
         bookmarkTitleSpan.appendChild(bookmarkTitle);
 
         const bookmarkTags: HTMLSpanElement | null = document.createElement("span");
         if (typeof bookmark.Tags !== "undefined" && bookmark.Tags !== null) {
-            bookmarkTags.classList.add("bookmark-tags");
+            bookmarkTags.classList.add("bookmark-edit-bookmark-tags");
             bookmarkTags.innerText = bookmark.Tags;
         }
         bookmarkLi.appendChild(bookmarkTags);
 
         const bookmarkActions: HTMLSpanElement | null = document.createElement("span");
-        bookmarkActions.classList.add("bookmark-actions");
+        bookmarkActions.classList.add("bookmark-edit-bookmark-actions");
         const editBookmarkButton: HTMLButtonElement | null = document.createElement("button");
         editBookmarkButton.classList.add("edit-bookmark");
         editBookmarkButton.innerText = "Edit";
@@ -1011,9 +988,9 @@ function updateFolder(folder: BookmarkFolder) {
 function updateFolderTreeWithFolder(folder: BookmarkFolder) {
     let parentFolder: HTMLDivElement | null;
     if (folder.ParentFolderID === null || folder.ParentFolderID === undefined || folder.ParentFolderID === "") {
-        parentFolder = document.getElementById(`folders-list-root`) as HTMLDivElement;
+        parentFolder = document.getElementById(`bookmark-edit-folder-list-root`) as HTMLDivElement;
     } else {
-        parentFolder = document.getElementById(`folders-list-${folder.ParentFolderID}`) as HTMLDivElement;
+        parentFolder = document.getElementById(`bookmark-edit-folder-list-${folder.ParentFolderID}`) as HTMLDivElement;
     }
 
     if (parentFolder === null) {
@@ -1021,9 +998,9 @@ function updateFolderTreeWithFolder(folder: BookmarkFolder) {
         return;
     }
 
-    let folderLi: HTMLLIElement | null = document.getElementById(`folder-${folder.ID}`) as HTMLLIElement;
+    let folderLi: HTMLLIElement | null = document.getElementById(`bookmark-edit-folder-${folder.ID}`) as HTMLLIElement;
     if (folderLi !== null) {
-        const folderName: HTMLSpanElement | null = folderLi.querySelector("span.folder-name") as HTMLSpanElement;
+        const folderName: HTMLSpanElement | null = folderLi.querySelector("span.bookmark-edit-folder-name") as HTMLSpanElement;
         if (folderName === null) {
             console.error(`Folder name is null`);
             return;
@@ -1035,8 +1012,8 @@ function updateFolderTreeWithFolder(folder: BookmarkFolder) {
         folderLi.dataset.id = folder.ID.toString();
         folderLi.setAttribute("draggable", "true");
         folderLi.addEventListener("dragstart", dragStartFolder);
-        folderLi.setAttribute("id", `folder-${folder.ID}`);
-        folderLi.classList.add("folder");
+        folderLi.setAttribute("id", `bookmark-edit-folder-${folder.ID}`);
+        folderLi.classList.add("bookmark-edit-folder");
         folderLi.dataset.id = folder.ID;
 
         const folderDetails: HTMLDetailsElement | null = document.createElement("details");
@@ -1060,16 +1037,16 @@ function updateFolderTreeWithFolder(folder: BookmarkFolder) {
 
         // Set folder name
         folderName.innerText = folder.Name;
-        folderName.setAttribute("id", `folder-name-${folder.ID}`);
-        folderName.classList.add("folder-name");
+        folderName.setAttribute("id", `bookmark-edit-folder-name-${folder.ID}`);
+        folderName.classList.add("bookmark-edit-folder-name");
 
         // Set folder data-id
-        folderDetails.classList.add("folder-details");
+        folderDetails.classList.add("bookmark-edit-folder-details");
         folderDetails.dataset.id = folder.ID;
 
         // Set folder actions
-        folderActions.setAttribute("id", `folder-actions-${folder.ID}`);
-        folderActions.classList.add("folder-actions");
+        folderActions.setAttribute("id", `bookmark-edit-folder-actions-${folder.ID}`);
+        folderActions.classList.add("bookmark-edit-folder-actions");
 
         addBookmarkButton.classList.add("add-bookmark");
         addBookmarkButton.innerText = "+ Bookmark";
@@ -1092,12 +1069,12 @@ function updateFolderTreeWithFolder(folder: BookmarkFolder) {
         folderActions.appendChild(deleteFolderButton);
 
         // Set folder ul class
-        folderUl.setAttribute("id", `folders-list-${folder.ID}`);
-        folderUl.classList.add("folders");
+        folderUl.setAttribute("id", `bookmark-edit-folder-list-${folder.ID}`);
+        folderUl.classList.add("bookmark-edit-folder-list");
 
         // Set bookmarks ul class
-        bookmarksUl.setAttribute("id", `bookmarks-${folder.ID}`);
-        bookmarksUl.classList.add("bookmarks");
+        bookmarksUl.setAttribute("id", `bookmark-edit-bookmark-list-${folder.ID}`);
+        bookmarksUl.classList.add("bookmark-edit-bookmark-list");
 
         // Set folder summary
         folderSummary.appendChild(closedFolderIcon);
@@ -1123,11 +1100,11 @@ function updateFolderTreeWithFolder(folder: BookmarkFolder) {
 function updateFolderSelectTreeWithFolder(folder: BookmarkFolder) {
     let parentDiv: HTMLDivElement | null;
     if (folder.ParentFolderID === null || folder.ParentFolderID === undefined || folder.ParentFolderID === "") {
-        parentDiv = document.getElementById("folder-select-tree-root") as HTMLDivElement
+        parentDiv = document.getElementById("folder-select-folder-list-root") as HTMLDivElement
     } else {
-        parentDiv = document.getElementById(`folder-select-tree-${folder.ParentFolderID}`) as HTMLDivElement;
+        parentDiv = document.getElementById(`folder-select-folder-list-${folder.ParentFolderID}`) as HTMLDivElement;
     }
-    let folderSelectLi: HTMLLIElement | null = document.getElementById(`folder-select-item-${folder.ID}`) as HTMLLIElement;
+    let folderSelectLi: HTMLLIElement | null = document.getElementById(`folder-select-folder-${folder.ID}`) as HTMLLIElement;
 
     if (parentDiv === null) {
         console.error(`Folder does not exist: folder-select-tree-${folder.ParentFolderID}`);
@@ -1140,23 +1117,23 @@ function updateFolderSelectTreeWithFolder(folder: BookmarkFolder) {
         folderSelectLabel.innerText = `📁 ${folder.Name}`;
     } else {
         folderSelectLi = document.createElement("li");
-        folderSelectLi.setAttribute("id", `folder-select-item-${folder.ID}`);
-        folderSelectLi.classList.add("folder-select");
+        folderSelectLi.setAttribute("id", `folder-select-folder-${folder.ID}`);
+        folderSelectLi.classList.add("folder-select-folder");
 
         // Build the item with DOM methods so the folder name is always treated as text, never HTML
         const folderSelectRadio: HTMLInputElement = document.createElement("input");
         folderSelectRadio.type = "radio";
         folderSelectRadio.name = "folder-select";
-        folderSelectRadio.setAttribute("id", `folder-select-${folder.ID}`);
+        folderSelectRadio.setAttribute("id", `folder-select-radio-${folder.ID}`);
         folderSelectRadio.value = folder.ID;
         const folderSelectLabel: HTMLLabelElement = document.createElement("label");
-        folderSelectLabel.htmlFor = `folder-select-${folder.ID}`;
+        folderSelectLabel.htmlFor = `folder-select-radio-${folder.ID}`;
         folderSelectLabel.innerText = `📁 ${folder.Name}`;
 
-        // Child folders go in a list inside this item, matching folder-select-tree in bookmarks.html
+        // Child folders go in a list inside this item, matching the folder-select-folder template in bookmarks.html
         const folderSelectTree: HTMLUListElement = document.createElement("ul");
-        folderSelectTree.setAttribute("id", `folder-select-tree-${folder.ID}`);
-        folderSelectTree.classList.add("folder-select-tree");
+        folderSelectTree.setAttribute("id", `folder-select-folder-list-${folder.ID}`);
+        folderSelectTree.classList.add("folder-select-folder-list");
 
         folderSelectLi.appendChild(folderSelectRadio);
         folderSelectLi.appendChild(folderSelectLabel);

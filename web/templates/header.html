@@ -5,18 +5,18 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <meta name="csrf-token" content="{{ .CSRFToken }}">
-        <title>{{ .title }}</title>
-        <link rel="icon" href="{{ .basePath }}/favicon.ico">
-        <link rel="stylesheet" href="{{ .basePath }}/style.css">
+        <title>{{ .Title }}</title>
+        <link rel="icon" href="{{ .BasePath }}/favicon.ico">
+        <link rel="stylesheet" href="{{ .BasePath }}/style.css">
     </head>
     <body>
         <nav class="hamburger-menu">
             <input type="checkbox" id="hamburger-menu-checkbox">
-            <label for="hamburger-menu-checkbox" id="hamburger-menu-btn">
+            <label for="hamburger-menu-checkbox" id="hamburger-menu-button">
                 <span></span>
             </label>
             <ul class="hamburger-menu-list">
-                {{ $basePath := .basePath }}
+                {{ $basePath := .BasePath }}
                 {{ range .NavItems }}
                 <li>
                     {{ if eq .Method "POST" }}

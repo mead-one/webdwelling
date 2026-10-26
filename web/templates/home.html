@@ -1,31 +1,32 @@
 <!-- nav: include, weight: 0 -->
-{{define "folder-tree-view"}}
-<li id="folder-{{.ID}}" class="folder">
-<details class="folder-details">
+{{- /* Bookmark view: the read-only bookmark tree on the home page. It has its own
+       bookmark-view-* names because the bookmark edit view's names (bookmarks.html) are
+       hooks for bookmarks.js. It needs no ids. */ -}}
+{{define "bookmark-view-bookmark"}}
+<li class="bookmark-view-bookmark">
+    {{- /* The link fills the title area; tags stay separate so they can be made clickable later */}}
+    <a href="{{.URL}}" target="_blank" class="bookmark-view-bookmark-link">{{.Title}}</a>
+    <span class="bookmark-view-bookmark-tags">{{if .Tags}}{{.Tags}}{{end}}</span>
+</li>
+{{end}}
+
+{{define "bookmark-view-folder"}}
+<li class="bookmark-view-folder">
+<details class="bookmark-view-folder-details">
     <summary>
         <span class="folder-icon-closed">📁</span>
         <span class="folder-icon-open">📂</span>
-        <span id="folder-name-{{.ID}}" class="folder-name">{{.Name}}</span>
+        <span class="bookmark-view-folder-name">{{.Name}}</span>
     </summary>
-    <ul id="folders-list-{{.ID}}" class="folders">
-    {{ if .ChildFolders }}
-        {{ range .ChildFolders }}
-            {{ template "folder-tree-view" . }}
-        {{ end }}
+    <ul class="bookmark-view-folder-list">
+    {{ range .ChildFolders }}
+        {{ template "bookmark-view-folder" . }}
     {{ end }}
     </ul>
-    {{- /* Bookmarks within this folder */ -}}
-    <ul id="bookmarks-{{.ID}}" class="bookmarks">
-    {{if .ChildBookmarks}}
-        {{range .ChildBookmarks}}
-        <li id="bookmark-{{.ID}}" class="bookmark" data-id="{{.ID}}">
-            <span class="bookmark-title-span" draggable="false">
-                <a href="{{.URL}}" target="_blank" class="bookmark-title">{{.Title}}</a>
-            </span>
-            <span class="bookmark-tags">{{if .Tags}}{{.Tags}}{{end}}</span>
-        </li>
-        {{end}}
-    {{end}}
+    <ul class="bookmark-view-bookmark-list">
+    {{ range .ChildBookmarks }}
+        {{ template "bookmark-view-bookmark" . }}
+    {{ end }}
     </ul>
 </details>
 </li>
@@ -34,37 +35,35 @@
 {{ template "header.html" . }}
 <section>
     {{ if .IsAuthenticated }}
-    <h1>Welcome Back, {{ .Username }}!</h1>
-    <div id="home-elements">
-        <h2>Your Bookmarks</h2>
-        <div id="bookmarks-elements" class="folder">
-            <span class="folder-actions">
-                <button id="expand-all-folders">Expand all</button>
-                <button id="collapse-all-folders">Collapse all</button>
-                <a class="fake-button" href="{{ .basePath }}/bookmarks">Manage bookmarks</a>
-            </span>
-            {{ if .Bookmarks.ChildFolders }}
-                {{ range .Bookmarks.ChildFolders }}
-                    {{ template "folder-tree-view" .}}
-                {{ end }}
+    <h1>Welcome back, {{ .Username }}!</h1>
+    <div class="home-modules">
+        {{- /* Each home module shares the home-module frame, so future modules (calendar, RSS) match */}}
+        <section class="home-module bookmark-view" data-folder-tree>
+            <div class="home-module-header">
+                <h2 class="home-module-title">Your bookmarks</h2>
+                <span class="home-module-actions">
+                    <button data-expand-all>Expand all</button>
+                    <button data-collapse-all>Collapse all</button>
+                    <a class="fake-button" href="{{ .BasePath }}/bookmarks">Manage bookmarks</a>
+                </span>
+            </div>
+            <ul class="bookmark-view-folder-list">
+            {{ range .Bookmarks.ChildFolders }}
+                {{ template "bookmark-view-folder" . }}
             {{ end }}
-            <ul id="bookmarks-root" class="bookmarks">
-                {{range .Bookmarks.ChildBookmarks}}
-                <li id="bookmark-{{.ID}}" class="bookmark" data-id="{{.ID}}">
-                    <span class="bookmark-title-span" draggable="false">
-                        <a href="{{.URL}}" target="_blank" class="bookmark-title">{{.Title}}</a>
-                    </span>
-                    <span class="bookmark-tags">{{if .Tags}}{{.Tags}}{{end}}</span>
-                </li>
-                {{end}}
             </ul>
-        </div>
+            <ul class="bookmark-view-bookmark-list">
+            {{ range .Bookmarks.ChildBookmarks }}
+                {{ template "bookmark-view-bookmark" . }}
+            {{ end }}
+            </ul>
+        </section>
     </div>
     {{ else }}
     <h1>Welcome to Webdwelling!</h1>
     <p>Your digital home is waiting for you.</p>
-    <p>To get started, please <a href="{{ .basePath }}/login">login</a>.</p>
+    <p>To get started, please <a href="{{ .BasePath }}/login">login</a>.</p>
     {{ end }}
 </section>
 {{ template "footer.html" . }}
-<script src="{{.basePath}}/bookmarks.js"></script>
+<script src="{{.BasePath}}/folders.js"></script>

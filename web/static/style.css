@@ -119,41 +119,80 @@ button.hamburger-menu-item {
     cursor: pointer;
 }
 
-/* --- Bookmarks --- */
-div#bookmarks-elements {
+/* --- Home page modules --- */
+.home-module {
+    border: 1px solid black;
+    border-radius: 0.5em;
+    background-color: var(--color-background2);
+    margin-bottom: 1em;
+    overflow: hidden;
+}
+
+.home-module-header {
+    display: flex;
+    align-items: center;
+    padding: 0.3em 0.3em 0 0.75em;
+}
+
+.home-module-title {
+    flex: 1;
+    margin: 0;
+    font-size: 1.2em;
+}
+
+.home-module-actions {
+    padding: 0.1em 0.3em;
+}
+
+/* --- Folder icons, shown in any folder's <summary> --- */
+details > summary > span.folder-icon-open,
+details > summary > span.folder-icon-closed {
+    padding: 0.1em 0 0.1em 0.75em;
+}
+
+details[open] > summary > span.folder-icon-closed,
+details:not([open]) > summary > span.folder-icon-open,
+details:not([open]) > summary:hover > span.folder-icon-closed {
+    display: none;
+}
+
+details:not([open]) > summary:hover > span.folder-icon-open {
+    display: inline;
+}
+
+/* --- Bookmark trees --- */
+/* Shared look for the bookmark edit view (bookmarks.html, bookmark-edit-*) and the bookmark
+   view (home.html, bookmark-view-*). Each rule lists both, so the two stay in step. */
+div.bookmark-edit {
     border: 1px solid black;
     border-radius: 0.5em;
     background-color: var(--color-background2);
     margin-bottom: 1em;
 }
 
-div#bookmarks-elements > span.folder-actions {
+div.bookmark-edit > span.bookmark-edit-folder-actions {
     display: flex;
     justify-content: flex-end;
     padding: 0.3em 0.3em 0 0;
 }
 
-span.folder-actions, span.bookmark-actions {
+span.bookmark-edit-folder-actions, span.bookmark-edit-bookmark-actions {
     padding: 0.1em 0.3em;
 }
 
-ul.folders {
+ul.bookmark-edit-folder-list,
+ul.bookmark-view-folder-list {
     padding: 0;
     margin: 0;
 }
 
-li.folder {
+li.bookmark-edit-folder,
+li.bookmark-view-folder {
     list-style-type: none;
-    cursor: grab;
 }
 
-li.folder.dragover {
-    margin: 0.1em 0 0.1em 0.5em;
-    border: 2px solid darkgrey;
-    border-radius: 0.5em 0 0 0.5em;
-}
-
-details.folder-details {
+details.bookmark-edit-folder-details,
+details.bookmark-view-folder-details {
     background-color: white;
     margin: 0.4em 0 0.4em 0.7em;
     border-width: 1px 0 1px 1px;
@@ -162,7 +201,8 @@ details.folder-details {
     border-radius: 0.6em 0 0 0.6em;
 }
 
-details.folder-details > summary {
+details.bookmark-edit-folder-details > summary,
+details.bookmark-view-folder-details > summary {
     display: flex;
     cursor: pointer;
     background-color: var(--color-background4);
@@ -170,79 +210,83 @@ details.folder-details > summary {
     padding: 0;
 }
 
-details.folder-details > summary:hover {
+details.bookmark-edit-folder-details > summary:hover,
+details.bookmark-view-folder-details > summary:hover {
     background-color: var(--color-background5);
 }
 
-details.folder-details > summary > span.folder-icon-open,
-details.folder-details > summary > span.folder-icon-closed {
-    padding: 0.1em 0 0.1em 0.75em;
-}
-
-details.folder-details[open] > summary > span.folder-icon-closed {
-    display: none;
-}
-
-details.folder-details:not([open]) > summary > span.folder-icon-open {
-    display: none;
-}
-
-details.folder-details:not([open]) > summary:hover > span.folder-icon-open {
-    display: inline;
-}
-
-details.folder-details:not([open]) > summary:hover > span.folder-icon-closed {
-    display: none;
-}
-
-span.folder-name {
+span.bookmark-edit-folder-name,
+span.bookmark-view-folder-name {
     flex: 1;
     user-select: none;
     padding: 0.1em 0.5em;
 }
 
-ul.bookmarks {
+ul.bookmark-edit-bookmark-list,
+ul.bookmark-view-bookmark-list {
     margin: 0.4em 0 0 0;
     padding-left: 0em;
 }
 
-div#bookmarks-elements li.bookmark {
+li.bookmark-edit-bookmark,
+li.bookmark-view-bookmark {
     display: flex;
     padding: 0.1em 0 0.1em 1em;
+}
+
+li.bookmark-edit-bookmark:nth-child(odd),
+li.bookmark-view-bookmark:nth-child(odd) {
+    background-color: #E9E9E9;
+}
+
+details.bookmark-edit-folder-details > ul.bookmark-edit-bookmark-list > li.bookmark-edit-bookmark:last-child,
+details.bookmark-view-folder-details > ul.bookmark-view-bookmark-list > li.bookmark-view-bookmark:last-child {
+    border-radius: 0 0 0 0.5em;
+}
+
+.bookmark-edit-bookmark-title,
+.bookmark-view-bookmark-link {
+    flex: 1;
+}
+
+.bookmark-edit-bookmark-link,
+.bookmark-view-bookmark-link {
+    text-decoration: none;
+    color: black;
+}
+
+.bookmark-edit-bookmark-tags,
+.bookmark-view-bookmark-tags {
+    width: 8em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Bookmark edit view only: folders and bookmarks can be dragged */
+li.bookmark-edit-folder,
+li.bookmark-edit-bookmark {
     cursor: grab;
 }
 
-li.bookmark:hover {
+li.bookmark-edit-folder.dragover {
+    margin: 0.1em 0 0.1em 0.5em;
+    border: 2px solid darkgrey;
+    border-radius: 0.5em 0 0 0.5em;
+}
+
+li.bookmark-edit-bookmark:hover {
     border-width: 1px 0;
     border-style: solid;
     border-color: var(--color-background4);
 }
 
-li.bookmark:nth-child(odd) {
-    background-color: #E9E9E9;
-}
-
-div#bookmarks-elements > ul.bookmarks > li.bookmark:last-child {
+div.bookmark-edit > ul.bookmark-edit-bookmark-list > li.bookmark-edit-bookmark:last-child {
     border-radius: 0 0 0.5em 0.5em;
 }
 
-details.folder-details > ul.bookmarks > li.bookmark:last-child {
-    border-radius: 0 0 0 0.5em;
-}
-
-.bookmark-title-span {
-    flex: 1;
-}
-
-.bookmark-title {
-    text-decoration: none;
-    color: black;
-}
-
-.bookmark-tags {
-    width: 8em;
-    overflow: hidden;
-    text-overflow: ellipsis;
+/* Bookmark view only: the link shows it can be followed */
+.bookmark-view-bookmark-link:hover {
+    text-decoration: underline;
 }
 
 /* --- Modal --- */
@@ -286,31 +330,31 @@ form.rename-folder-form {
     margin-left: 0.4em;
 }
 
-form.rename-folder-form span.folder-rename-span {
+form.rename-folder-form span.rename-folder-field {
     flex: 1;
 }
 
-/* --- Folder select --- */
+/* --- Folder select: the folder picker in the add and edit forms --- */
 #folder-select {
     border: 1px solid black;
     background-color: white;
     user-select: none;
 }
 
-#folder-select ul.folder-select-tree {
+#folder-select ul.folder-select-folder-list {
     padding-left: 1em;
     margin: 0.4em 0 0.4em 0;
 }
 
-#folder-select ul.folder-select-tree li.folder-select {
+#folder-select ul.folder-select-folder-list li.folder-select-folder {
     list-style-type: none;
 }
 
-ul.folder-select-tree li.folder-select input[type="radio"] {
+ul.folder-select-folder-list li.folder-select-folder input[type="radio"] {
     display: none;
 }
 
-#folder-select ul.folder-select-tree li.folder-select input[type="radio"]:checked+label {
+#folder-select ul.folder-select-folder-list li.folder-select-folder input[type="radio"]:checked+label {
     background-color: #E1AD01;
     color: white;
     border: 1px solid black;
