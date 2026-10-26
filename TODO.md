@@ -50,7 +50,7 @@ Findings from a code review on 2026-10-21, ordered by priority. File references 
 - [ ] **Fix `EditBookmark` returning `CreatedAt` as the current time.**
 - [x] **Fix the folder-select tree for new or moved folders** (`bookmarks.ts:1128-1144`). The `<ul>` and `<li>` are nested in the reverse of the template's structure, and `moveBookmarkFolderToFolder` leaves the child `<ul>` behind.
 - [ ] **Smaller frontend fixes:**
-  - Don't turn on drag and drop on the read-only home page.
+  - ~~Don't turn on drag and drop on the read-only home page.~~ (done)
   - Check `data.success` in `submitDeleteFolder`.
   - Add a `.catch` to the rename request.
   - Remove `onsubmit` from the `<button>`.

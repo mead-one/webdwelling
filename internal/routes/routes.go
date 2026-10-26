@@ -53,7 +53,7 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 
 		if err != nil {
 			return c.Render(http.StatusInternalServerError, "error.html", map[string]interface{}{
-				"title":        "Error",
+				"Title":        "Error",
 				"NavItems":     navItems,
 				"ErrorCode":    http.StatusInternalServerError,
 				"ErrorMessage": err.Error(),
@@ -61,8 +61,8 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 		}
 
 		return c.Render(http.StatusOK, "home.html", map[string]interface{}{
-			"basePath":        basePath,
-			"title":           "Home",
+			"BasePath":        basePath,
+			"Title":           "Home",
 			"NavItems":        navItems,
 			"IsAuthenticated": isAuthenticated,
 			"Username":        username,
@@ -78,7 +78,7 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 
 		if err != nil {
 			return c.Render(http.StatusInternalServerError, "error.html", map[string]interface{}{
-				"title":        "Error",
+				"Title":        "Error",
 				"NavItems":     navItems,
 				"ErrorCode":    http.StatusInternalServerError,
 				"ErrorMessage": err.Error(),
@@ -86,8 +86,8 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 		}
 
 		return c.Render(http.StatusOK, "bookmarks.html", map[string]interface{}{
-			"basePath":  basePath,
-			"title":     "Bookmarks",
+			"BasePath":  basePath,
+			"Title":     "Bookmarks",
 			"NavItems":  navItems,
 			"Bookmarks": bookmarks,
 		})
@@ -441,8 +441,8 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 				var isAuthenticated bool = auth.IsUserAuthenticated(c)
 				navItems := GetNavItems(templatesDir, isAuthenticated)
 				return c.Render(http.StatusOK, name+".html", map[string]interface{}{
-					"basePath": basePath,
-					"title":    caser.String(name),
+					"BasePath": basePath,
+					"Title":    caser.String(name),
 					"NavItems": navItems,
 				})
 			}))
@@ -451,8 +451,8 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 				var isAuthenticated bool = auth.IsUserAuthenticated(c)
 				navItems := GetNavItems(templatesDir, isAuthenticated)
 				return c.Render(http.StatusOK, name+".html", map[string]interface{}{
-					"basePath": basePath,
-					"title":    caser.String(name),
+					"BasePath": basePath,
+					"Title":    caser.String(name),
 					"NavItems": navItems,
 				})
 			}))
@@ -461,8 +461,8 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 				var isAuthenticated bool = auth.IsUserAuthenticated(c)
 				navItems := GetNavItems(templatesDir, isAuthenticated)
 				return c.Render(http.StatusOK, name+".html", map[string]interface{}{
-					"basePath": basePath,
-					"title":    caser.String(name),
+					"BasePath": basePath,
+					"Title":    caser.String(name),
 					"NavItems": navItems,
 				})
 			})
