@@ -2,8 +2,10 @@
 package routes
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"slices"
@@ -96,10 +98,18 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 	e.POST("/bookmarks/add-bookmark", auth.RequireAuth(func(c echo.Context) error {
 		userID := c.Get("user_id").(int)
 		title := c.FormValue("title")
-		url := c.FormValue("url")
+		rawURL := c.FormValue("url")
 		tags := c.FormValue("tags")
 		var folderID *int
-		var err error
+
+		rawURL, err := normaliseBookmarkURL(rawURL)
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, map[string]interface{}{
+				"error":      "Invalid URL",
+				"error_code": http.StatusBadRequest,
+			})
+		}
+
 		if c.FormValue("folder_id") == "null" || c.FormValue("folder_id") == "" {
 			folderID = nil
 		} else {
@@ -115,7 +125,7 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 
 		var public bool = c.FormValue("public") == "true"
 
-		newBookmark, err := database.AddBookmark(userID, title, url, tags, folderID, public)
+		newBookmark, err := database.AddBookmark(userID, title, rawURL, tags, folderID, public)
 		if err != nil {
 			// Serve JSON error response
 			return c.JSON(http.StatusInternalServerError, map[string]interface{}{
@@ -216,8 +226,17 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 		}
 
 		title := c.FormValue("title")
-		url := c.FormValue("url")
+		rawURL := c.FormValue("url")
 		tags := c.FormValue("tags")
+
+		rawURL, err = normaliseBookmarkURL(rawURL)
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, map[string]interface{}{
+				"error":      "Invalid URL",
+				"error_code": http.StatusBadRequest,
+			})
+		}
+
 		var folderID *int
 		if c.FormValue("folder_id") == "null" || c.FormValue("folder_id") == "" {
 			folderID = nil
@@ -230,10 +249,8 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 		}
 
 		var public bool = c.FormValue("public") == "true"
-		fmt.Println("Form values:", c.FormValue("title"), c.FormValue("url"), c.FormValue("tags"), c.FormValue("folder_id"), c.FormValue("public"))
-		fmt.Println("Parameter values:", title, url, tags, folderID, public)
 
-		newBookmark, err := database.EditBookmark(userID, bookmarkID, title, url, tags, folderID, public)
+		newBookmark, err := database.EditBookmark(userID, bookmarkID, title, rawURL, tags, folderID, public)
 		if err != nil {
 			// Serve JSON error response
 			return c.JSON(http.StatusInternalServerError, map[string]interface{}{
@@ -468,4 +485,23 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 			})
 		}
 	}
+}
+
+func normaliseBookmarkURL(raw string) (string, error) {
+	raw = strings.TrimSpace(raw)
+	addedScheme := !strings.Contains(raw, "://")
+	if addedScheme {
+		raw = "https://" + raw
+	}
+
+	parsed, err := url.Parse(raw)
+	if err != nil || (parsed.Scheme != "http" && parsed.Scheme != "https") || parsed.User != nil || parsed.Host == "" {
+		return "", errors.New("invalid bookmark URL")
+	}
+
+	if addedScheme && parsed.Hostname() == "localhost" {
+		parsed.Scheme = "http"
+	}
+
+	return parsed.String(), nil
 }

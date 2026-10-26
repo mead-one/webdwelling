@@ -17,7 +17,7 @@ Findings from a code review on 2026-10-21, ordered by priority. File references 
 - [x] **Stop revealing which usernames exist through login** (`sqlite.go:175-195`, `middleware.go:29-35`). An unknown username returns 500 and a wrong password returns 401. Treat `sql.ErrNoRows` as invalid credentials, run bcrypt against a dummy hash when the user doesn't exist so the timing matches, and return the same 401 in both cases.
 - [x] **Rate-limit `/login`.** `middleware.RateLimiter` is enough to start with.
 - [x] **Remove the `innerHTML` interpolation** (`bookmarks.ts:778`, `:1132`). Folder names are inserted unescaped. Build these elements with `createElement` and `textContent`, as the rest of the file does. This becomes stored XSS once public pages show folders to other people.
-- [ ] **Validate bookmark URLs on the server.** Accept only `http` and `https`. Without this, a `javascript:` URL set via `href` in JS runs before the page is reloaded.
+- [x] **Validate bookmark URLs on the server.** Accept only `http` and `https`. Without this, a `javascript:` URL set via `href` in JS runs before the page is reloaded.
 - [ ] **Stop returning `err.Error()` to clients** (`routes.go:61`, `:124`, `:242`, `:310`). Log the detail and send a generic message.
 - [ ] **Remove the debug prints** that log user data (`routes.go:235-236`, `sqlite.go:311`, `sqlite.go:488`).
 - [ ] **Add hardening middleware:**
