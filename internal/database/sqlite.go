@@ -100,21 +100,6 @@ func createTables() {
     )`); err != nil {
 		log.Fatalf("Failed to create bookmarks table: %v", err)
 	}
-
-	// Create trigger to ensure no clash between users' usernames and subdirectories
-	if _, err := DB.Exec(`CREATE TRIGGER IF NOT EXISTS prevent_username_public_slug_clash
-    BEFORE INSERT ON users
-    FOR EACH ROW
-    BEGIN
-        SELECT RAISE(ABORT, 'Username taken by existing public_slug')
-        FROM users WHERE public_slug = NEW.username;
-
-        SELECT RAISE(ABORT, 'Public slug taken by existing username')
-        FROM users WHERE username = NEW.public_slug;
-    END
-    `); err != nil {
-		log.Fatalf("Failed to create prevent_username_public_slug_clash trigger: %v", err)
-	}
 }
 
 // ### Database types ###
