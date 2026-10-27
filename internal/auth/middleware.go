@@ -133,9 +133,12 @@ func checkCookie(c echo.Context) error {
 	}
 
 	// Parse JWT token
-	token, err := jwt.ParseWithClaims(cookie.Value, &JWTCustomClaims{}, func(token *jwt.Token) (interface{}, error) {
-		return JWTSecret, nil
-	})
+	token, err := jwt.ParseWithClaims(cookie.Value, &JWTCustomClaims{},
+		func(token *jwt.Token) (interface{}, error) {
+			return JWTSecret, nil
+		},
+		jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Alg()}),
+	)
 
 	// ParseWithClaims returns an error for any invalid token (bad signature, expired, etc.)
 	if err != nil || !token.Valid {

@@ -14,6 +14,7 @@ Findings from a code review on 2026-10-21, ordered by priority. File references 
 
 ## 2. Security
 
+- [ ] **Switch to plain sessions** Stateless JWT cookies are currently irrevocable and must be short-lived; plain sessions, with tokens stored in a `sessions` table would be more flexible, and allow per-session revocation, e.g. for a stolen cookie.
 - [x] **Stop revealing which usernames exist through login** (`sqlite.go:175-195`, `middleware.go:29-35`). An unknown username returns 500 and a wrong password returns 401. Treat `sql.ErrNoRows` as invalid credentials, run bcrypt against a dummy hash when the user doesn't exist so the timing matches, and return the same 401 in both cases.
 - [x] **Rate-limit `/login`.** `middleware.RateLimiter` is enough to start with.
 - [x] **Remove the `innerHTML` interpolation** (`bookmarks.ts:778`, `:1132`). Folder names are inserted unescaped. Build these elements with `createElement` and `textContent`, as the rest of the file does. This becomes stored XSS once public pages show folders to other people.
@@ -24,7 +25,7 @@ Findings from a code review on 2026-10-21, ordered by priority. File references 
   - ~~`middleware.BodyLimit`~~ (done, 16K)
   - ~~maximum lengths for title, URL, tags and folder name~~ (done, `readBookmarkFields` and `readFolderFields`)
   - ~~`middleware.Secure()` and a CSP header~~
-- [ ] **Pin the JWT signing method** with `jwt.WithValidMethods([]string{"HS256"})`. Consider shorter token lifetimes or a way to revoke tokens, e.g. a per-user `token_version` claim.
+- [x] **Pin the JWT signing method** with `jwt.WithValidMethods([]string{"HS256"})`. Consider shorter token lifetimes or a way to revoke tokens, e.g. a per-user `token_version` claim.
 - [x] **Make usernames unique on their own.** `UNIQUE(username, email, public_slug)` allows duplicate usernames whenever `email` is NULL. Add `UNIQUE(username)`, plus `UNIQUE(email)` and `UNIQUE(public_slug)` if those should be unique too.
 - [x] **Reconsider the `prevent_username_public_slug_clash` trigger** (`sqlite.go:100-112`). The public page column exists so that loading a public page doesn't reveal whether a username exists. The trigger undoes that: when someone picks a public page name, `'Public slug taken by existing username'` tells them that name is a username. If public pages are only ever addressed by this column and usernames never appear in URLs, the two namespaces never meet, so the trigger can go. The column then just needs its own `UNIQUE`. If a clash rule really is needed, return a generic "name unavailable" error. The trigger also only runs on `INSERT`, so it doesn't apply when the value is changed later.
 - [x] **Delete `web/static/bookmarks.js.bak`.** It's committed and served publicly by `e.Static`.
