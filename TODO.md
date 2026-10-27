@@ -20,10 +20,10 @@ Findings from a code review on 2026-10-21, ordered by priority. File references 
 - [x] **Validate bookmark URLs on the server.** Accept only `http` and `https`. Without this, a `javascript:` URL set via `href` in JS runs before the page is reloaded.
 - [x] **Stop returning `err.Error()` to clients** (`routes.go:61`, `:124`, `:242`, `:310`). Log the detail and send a generic message.
 - [x] **Remove the debug prints** that log user data (`routes.go:235-236`, `sqlite.go:311`, `sqlite.go:488`).
-- [ ] **Add hardening middleware:**
-  - `middleware.BodyLimit`
-  - maximum lengths for title, URL, tags and folder name
-  - `middleware.Secure()` and a CSP header
+- [x] **Add hardening middleware:**
+  - ~~`middleware.BodyLimit`~~ (done, 16K)
+  - ~~maximum lengths for title, URL, tags and folder name~~ (done, `readBookmarkFields` and `readFolderFields`)
+  - ~~`middleware.Secure()` and a CSP header~~
 - [ ] **Pin the JWT signing method** with `jwt.WithValidMethods([]string{"HS256"})`. Consider shorter token lifetimes or a way to revoke tokens, e.g. a per-user `token_version` claim.
 - [x] **Make usernames unique on their own.** `UNIQUE(username, email, public_slug)` allows duplicate usernames whenever `email` is NULL. Add `UNIQUE(username)`, plus `UNIQUE(email)` and `UNIQUE(public_slug)` if those should be unique too.
 - [ ] **Reconsider the `prevent_username_public_slug_clash` trigger** (`sqlite.go:100-112`). The public page column exists so that loading a public page doesn't reveal whether a username exists. The trigger undoes that: when someone picks a public page name, `'Public slug taken by existing username'` tells them that name is a username. If public pages are only ever addressed by this column and usernames never appear in URLs, the two namespaces never meet, so the trigger can go. The column then just needs its own `UNIQUE`. If a clash rule really is needed, return a generic "name unavailable" error. The trigger also only runs on `INSERT`, so it doesn't apply when the value is changed later.

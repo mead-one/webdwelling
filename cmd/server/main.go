@@ -31,6 +31,17 @@ func main() {
 	// Prevent spoofing IP addresses using X-Forwarded-For header
 	e.IPExtractor = echo.ExtractIPFromXFFHeader()
 
+	// Maximum 16KB request bodies
+	e.Use(middleware.BodyLimit("16K"))
+	// Protection against XSS, content type sniffing, clickjacking, etc.
+	e.Use(middleware.SecureWithConfig(middleware.SecureConfig{
+		ContentTypeNosniff:    "nosniff",
+		XFrameOptions:         "DENY",
+		ContentSecurityPolicy: "default-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'",
+		// Don't tell bookmarked sites the address of this app
+		ReferrerPolicy: "same-origin",
+	}))
+
 	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			c.Set("basePath", cfg.BasePath)

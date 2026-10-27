@@ -91,12 +91,9 @@ type BookmarkFolder = {
 
 // Add base path to URLs
 function addBasePath(url: string) {
-    let basePath: string;
-    if (typeof (<any>window).basePath === "string") {
-        basePath = (<any>window).basePath;
-    } else {
-        basePath = "";
-    }
+    // Set from config in header.html, like the CSRF token
+    const basePathMeta: HTMLMetaElement | null = document.querySelector('meta[name="base-path"]');
+    const basePath: string = basePathMeta !== null ? basePathMeta.content : "";
     const normalisedPath = basePath.startsWith("/") || basePath === "" ? basePath : `/${basePath}`;
 
     return `${normalisedPath}${url}`;

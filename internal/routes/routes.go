@@ -13,6 +13,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/labstack/echo/v4/middleware"
 	"golang.org/x/text/cases"
@@ -23,6 +24,13 @@ import (
 	"github.com/mead-one/webdwelling/internal/database"
 )
 
+const (
+	maxBookmarkTitleLength = 256
+	maxBookmarkURLLength   = 2048
+	maxBookmarkTagsLength  = 256
+	maxFolderNameLength    = 64
+)
+
 // Bookmark folder response type
 type BookmarkFolderResponse struct {
 	ID             int    `json:"id"`
@@ -30,6 +38,18 @@ type BookmarkFolderResponse struct {
 	ParentFolderID *int   `json:"parent_folder_id,omitempty"`
 	Public         bool   `json:"public"`
 	CreatedAt      string `json:"created_at"`
+}
+
+// Bookmark-related form values
+type bookmarkFields struct {
+	Title string
+	URL   string
+	Tags  string
+}
+
+// Folder-related form values
+type folderFields struct {
+	Name string
 }
 
 func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDir string) {
@@ -102,16 +122,13 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 
 	e.POST("/bookmarks/add-bookmark", auth.RequireAuth(func(c echo.Context) error {
 		userID := c.Get("user_id").(int)
-		title := c.FormValue("title")
-		rawURL := c.FormValue("url")
-		tags := c.FormValue("tags")
 		var folderID *int
 
-		rawURL, err := normaliseBookmarkURL(rawURL)
+		fields, err := readBookmarkFields(c)
 		if err != nil {
-			log.Printf("Failed to normalise bookmark URL: %v", err)
+			log.Printf("Invalid bookmark fields: %v", err)
 			return c.JSON(http.StatusBadRequest, map[string]interface{}{
-				"error":      "Invalid URL",
+				"error":      err.Error(),
 				"error_code": http.StatusBadRequest,
 			})
 		}
@@ -132,7 +149,7 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 
 		var public bool = c.FormValue("public") == "true"
 
-		newBookmark, err := database.AddBookmark(userID, title, rawURL, tags, folderID, public)
+		newBookmark, err := database.AddBookmark(userID, fields.Title, fields.URL, fields.Tags, folderID, public)
 		if err != nil {
 			log.Printf("Failed to add bookmark: %v", err)
 			return c.JSON(http.StatusInternalServerError, map[string]interface{}{
@@ -232,14 +249,11 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 			return err
 		}
 
-		title := c.FormValue("title")
-		rawURL := c.FormValue("url")
-		tags := c.FormValue("tags")
-
-		rawURL, err = normaliseBookmarkURL(rawURL)
+		fields, err := readBookmarkFields(c)
 		if err != nil {
+			log.Printf("Invalid bookmark fields: %v", err)
 			return c.JSON(http.StatusBadRequest, map[string]interface{}{
-				"error":      "Invalid URL",
+				"error":      err.Error(),
 				"error_code": http.StatusBadRequest,
 			})
 		}
@@ -257,7 +271,7 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 
 		var public bool = c.FormValue("public") == "true"
 
-		newBookmark, err := database.EditBookmark(userID, bookmarkID, title, rawURL, tags, folderID, public)
+		newBookmark, err := database.EditBookmark(userID, bookmarkID, fields.Title, fields.URL, fields.Tags, folderID, public)
 		if err != nil {
 			log.Printf("Failed to edit bookmark: %v", err)
 			return c.JSON(http.StatusInternalServerError, map[string]interface{}{
@@ -310,9 +324,17 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 
 	e.POST("/bookmarks/add-folder", auth.RequireAuth(func(c echo.Context) error {
 		userID := c.Get("user_id").(int)
-		name := c.FormValue("name")
 		var parentFolderID *int
-		var err error
+
+		fields, err := readFolderFields(c)
+		if err != nil {
+			log.Printf("Invalid folder fields: %v", err)
+			return c.JSON(http.StatusBadRequest, map[string]interface{}{
+				"error":      err.Error(),
+				"error_code": http.StatusBadRequest,
+			})
+		}
+
 		if c.FormValue("parent_folder_id") == "null" || c.FormValue("parent_folder_id") == "" {
 			parentFolderID = nil
 		} else {
@@ -325,7 +347,7 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 
 		var public bool = c.FormValue("public") == "true"
 
-		newFolder, err := database.AddBookmarkFolder(userID, name, parentFolderID, public)
+		newFolder, err := database.AddBookmarkFolder(userID, fields.Name, parentFolderID, public)
 		if err != nil {
 			log.Printf("Failed to add folder: %v", err)
 			return c.JSON(http.StatusInternalServerError, map[string]interface{}{
@@ -381,9 +403,16 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 			return err
 		}
 
-		name := c.FormValue("name")
+		fields, err := readFolderFields(c)
+		if err != nil {
+			log.Printf("Invalid folder fields: %v", err)
+			return c.JSON(http.StatusBadRequest, map[string]interface{}{
+				"error":      err.Error(),
+				"error_code": http.StatusBadRequest,
+			})
+		}
 
-		newFolder, err := database.RenameBookmarkFolder(userID, folderID, name)
+		newFolder, err := database.RenameBookmarkFolder(userID, folderID, fields.Name)
 		if err != nil {
 			return err
 		}
@@ -511,4 +540,42 @@ func normaliseBookmarkURL(raw string) (string, error) {
 	}
 
 	return parsed.String(), nil
+}
+
+// Trim form values, validate the URL and ensure acceptable lengths for new values
+func readBookmarkFields(c echo.Context) (bookmarkFields, error) {
+	fields := bookmarkFields{
+		Title: strings.TrimSpace(c.FormValue("title")),
+		Tags:  strings.TrimSpace(c.FormValue("tags")),
+	}
+
+	if length := utf8.RuneCountInString(fields.Title); length == 0 || length > maxBookmarkTitleLength {
+		return fields, fmt.Errorf("title must be 1 to %d characters", maxBookmarkTitleLength)
+	}
+	if utf8.RuneCountInString(fields.Tags) > maxBookmarkTagsLength {
+		return fields, fmt.Errorf("tags must be at most %d characters", maxBookmarkTagsLength)
+	}
+
+	bookmarkURL, err := normaliseBookmarkURL(c.FormValue("url"))
+	if err != nil {
+		return fields, errors.New("URL must be valid, and start with http:// or https://, or omit the scheme entirely")
+	}
+	if utf8.RuneCountInString(bookmarkURL) > maxBookmarkURLLength {
+		return fields, fmt.Errorf("URL must be 1 to %d characters", maxBookmarkURLLength)
+	}
+	fields.URL = bookmarkURL
+
+	return fields, nil
+}
+
+func readFolderFields(c echo.Context) (folderFields, error) {
+	fields := folderFields{
+		Name: strings.TrimSpace(c.FormValue("name")),
+	}
+
+	if length := utf8.RuneCountInString(fields.Name); length == 0 || length > maxFolderNameLength {
+		return fields, fmt.Errorf("name must be 1 to %d characters", maxFolderNameLength)
+	}
+
+	return fields, nil
 }

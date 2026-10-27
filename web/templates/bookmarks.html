@@ -81,9 +81,9 @@
 <div id="modal-container">
     <form id="add-bookmark-form" class="modal-form" method="POST" action="/bookmarks/add-bookmark">
         <h2>Add a bookmark</h2>
-        <input type="text" name="title" placeholder="Bookmark title" required>
-        <input type="text" name="url" placeholder="Bookmark URL" required>
-        <input type="text" name="tags" placeholder="Bookmark tags">
+        <input type="text" name="title" placeholder="Bookmark title" maxlength="256" required>
+        <input type="text" name="url" placeholder="Bookmark URL" maxlength="2048" required>
+        <input type="text" name="tags" placeholder="Bookmark tags" maxlength="256">
         <input type="checkbox" name="public" id="add-bookmark-public-checkbox" checked>
         <label for="add-bookmark-public-checkbox">Public</label>
         <h3>Parent folder:</h3>
@@ -94,9 +94,9 @@
     <form id="edit-bookmark-form" class="modal-form" method="POST" action="/bookmarks/edit-bookmark">
         <h2>Edit a bookmark</h2>
         <input type="hidden" name="bookmark_id" value="">
-        <input type="text" name="title" placeholder="Bookmark title" required>
-        <input type="text" name="url" placeholder="Bookmark URL" required>
-        <input type="text" name="tags" placeholder="Bookmark tags">
+        <input type="text" name="title" placeholder="Bookmark title" maxlength="256" required>
+        <input type="text" name="url" placeholder="Bookmark URL" maxlength="2048" required>
+        <input type="text" name="tags" placeholder="Bookmark tags" maxlength="256">
         <input type="checkbox" name="public" id="edit-bookmark-public-checkbox" checked>
         <label for="edit-bookmark-public-checkbox">Public</label>
         <h3>Parent folder:</h3>
@@ -106,7 +106,7 @@
     </form>
     <form id="add-folder-form" class="modal-form" method="POST" action="/bookmarks/add-folder">
         <h2>Add a folder</h2>
-        <input type="text" name="name" placeholder="Folder name" required>
+        <input type="text" name="name" placeholder="Folder name" maxlength="64" required>
         <input type="checkbox" name="public" id="add-folder-public-checkbox" checked>
         <label for="add-folder-public-checkbox">Public</label>
         <h3>Parent folder:</h3>
@@ -128,6 +128,5 @@
 </div>
 
 {{ template "footer.html" . }}
-<script>window.BasePath = {{.BasePath}}</script>
 <script src="{{.BasePath}}/folders.js"></script>
 <script src="{{.BasePath}}/bookmarks.js"></script>
