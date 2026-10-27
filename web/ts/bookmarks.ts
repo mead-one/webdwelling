@@ -757,6 +757,7 @@ function openRenameFolderForm(event: MouseEvent) {
     folderNameInput.type = "text";
     folderNameInput.name = "name";
     folderNameInput.placeholder = "Folder name";
+    folderNameInput.maxLength = 64;
     folderNameInput.value = folderName;
     folderNameInput.required = true;
     folderRenameSpan.appendChild(folderNameInput);
