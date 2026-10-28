@@ -26,3 +26,6 @@ run:
 clean:
 	go clean
 	rm -rf $(BINARY_DIR)
+
+registeruser:
+	go run cmd/registeruser/main.go $(ARGS)
