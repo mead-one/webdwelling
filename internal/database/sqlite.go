@@ -32,7 +32,7 @@ func InitDB() {
 		}
 	}
 
-	dbPath := filepath.Join(dataDir, "webdwelling.db")
+	dbPath := filepath.Join(dataDir, "webdwelling.db?_foreign_keys=on")
 	db, err := sql.Open("sqlite3", dbPath)
 	if err != nil {
 		log.Fatalf("Failed to open database: %v", err)
@@ -59,8 +59,9 @@ func CloseDB() {
 // ### Database schema ###
 // Create tables if they don't exist
 func createTables() {
-	// Create table if it doesn't exist
-	if _, err := DB.Exec(`CREATE TABLE IF NOT EXISTS users (
+	var err error
+
+	if _, err = DB.Exec(`CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT UNIQUE NOT NULL,
         password TEXT NOT NULL,
@@ -73,7 +74,7 @@ func createTables() {
 		log.Fatalf("Failed to create users table: %v", err)
 	}
 
-	if _, err := DB.Exec(`CREATE TABLE IF NOT EXISTS bookmark_folders (
+	if _, err = DB.Exec(`CREATE TABLE IF NOT EXISTS bookmark_folders (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER NOT NULL,
         name TEXT NOT NULL,
@@ -81,13 +82,17 @@ func createTables() {
         public INTEGER NOT NULL DEFAULT 1,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY(user_id) REFERENCES users(id),
-        FOREIGN KEY(parent_folder_id) REFERENCES folders(id) ON DELETE CASCADE,
-        UNIQUE(user_id, name)
+        FOREIGN KEY(parent_folder_id) REFERENCES bookmark_folders(id) ON DELETE CASCADE,
+        UNIQUE(user_id, parent_folder_id, name)
     )`); err != nil {
-		log.Fatalf("Failed to create folders table: %v", err)
+		log.Fatalf("Failed to create bookmark_folders table: %v", err)
+	}
+	if _, err = DB.Exec(`CREATE UNIQUE INDEX IF NOT EXISTS bookmark_folders_unique_root_name
+	ON bookmark_folders(user_id, name) WHERE parent_folder_id IS NULL`); err != nil {
+		log.Fatalf("Failed to create unique index on top-level folders: %v", err)
 	}
 
-	if _, err := DB.Exec(`CREATE TABLE IF NOT EXISTS bookmarks (
+	if _, err = DB.Exec(`CREATE TABLE IF NOT EXISTS bookmarks (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER NOT NULL,
         title TEXT,
@@ -95,8 +100,9 @@ func createTables() {
         tags TEXT,
         folder_id INTEGER,
         public INTEGER NOT NULL DEFAULT 1,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY(user_id) REFERENCES users(id),
-        FOREIGN KEY(folder_id) REFERENCES folders(id) ON DELETE CASCADE
+        FOREIGN KEY(folder_id) REFERENCES bookmark_folders(id) ON DELETE CASCADE
     )`); err != nil {
 		log.Fatalf("Failed to create bookmarks table: %v", err)
 	}
@@ -215,11 +221,12 @@ func GetBookmarksByUserID(userID int, includePrivate bool) (BookmarkFolder, erro
 
 	// Get bookmark folders
 	rows, err := DB.Query(`
-	SELECT id,name,parent_folder_id,created_at
+	SELECT id,name,parent_folder_id,public,created_at
 	FROM bookmark_folders
-	WHERE user_id = :user_id
+	WHERE user_id = :user_id AND (public = true OR :include_private)
 	ORDER BY name COLLATE NOCASE
-	`, sql.Named("user_id", userID))
+	`, sql.Named("user_id", userID), sql.Named("include_private", includePrivate),
+	)
 	if err != nil {
 		return bookmarks, fmt.Errorf("failed to get bookmark folders: %w", err)
 	}
@@ -231,7 +238,7 @@ func GetBookmarksByUserID(userID int, includePrivate bool) (BookmarkFolder, erro
 		var parentFolderID *int
 
 		if err := rows.Scan(
-			&folder.ID, &folder.Name, &parentFolderID, &folder.CreatedAt,
+			&folder.ID, &folder.Name, &parentFolderID, &folder.Public, &folder.CreatedAt,
 		); err != nil {
 			return bookmarks, fmt.Errorf("failed to scan bookmark folder: %w", err)
 		}
@@ -248,9 +255,11 @@ func GetBookmarksByUserID(userID int, includePrivate bool) (BookmarkFolder, erro
 	for _, folder := range folders {
 		parent := &bookmarks
 		if folder.ParentFolderID != nil {
-			if p, ok := folderMap[*folder.ParentFolderID]; ok {
-				parent = p
+			p, ok := folderMap[*folder.ParentFolderID]
+			if !ok {
+				continue // Parent is private or missing
 			}
+			parent = p
 		}
 		parent.ChildFolders = append(parent.ChildFolders, folder)
 	}
@@ -259,8 +268,9 @@ func GetBookmarksByUserID(userID int, includePrivate bool) (BookmarkFolder, erro
 	rows, err = DB.Query(`
 	SELECT id,title,url,tags,folder_id,public
 	FROM bookmarks
-	WHERE user_id = :user_id
-	`, sql.Named("user_id", userID))
+	WHERE user_id = :user_id AND (public = true OR :include_private)
+	ORDER BY title COLLATE NOCASE
+	`, sql.Named("user_id", userID), sql.Named("include_private", includePrivate))
 	if err != nil {
 		return bookmarks, fmt.Errorf("failed to get bookmarks: %w", err)
 	}
@@ -279,15 +289,13 @@ func GetBookmarksByUserID(userID int, includePrivate bool) (BookmarkFolder, erro
 
 		bookmark.FolderID = folderID
 
-		if !bookmark.Public && !includePrivate {
-			continue
-		}
-
 		parent := &bookmarks
 		if bookmark.FolderID != nil {
-			if f, ok := folderMap[*bookmark.FolderID]; ok {
-				parent = f
+			f, ok := folderMap[*bookmark.FolderID]
+			if !ok {
+				continue // Folder is private or missing
 			}
+			parent = f
 		}
 		parent.ChildBookmarks = append(parent.ChildBookmarks, &bookmark)
 	}

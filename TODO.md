@@ -36,12 +36,12 @@ Findings from a code review on 2026-10-21, ordered by priority. File references 
 - [ ] **Fix the shared `cases.Caser` data race** (`routes.go:41`). It isn't safe to use from several goroutines. Compute page titles once at startup.
 - [ ] **URL-encode request bodies in `bookmarks.ts`.** Use `new URLSearchParams({...})`. Currently URLs containing `&` or `#` get cut off and `+` turns into a space.
 - [ ] **Stop the edit dialog rewriting relative URLs** (`bookmarks.ts:466`). Read `getAttribute("href")` instead of `.href`, which the browser has already resolved, so `example.com` doesn't come back as `https://host/example.com`.
-- [ ] **Fix the schema** (`sqlite.go:57-97`):
-  - The foreign keys reference a table `folders` that doesn't exist; it should be `bookmark_folders`.
-  - Enable `PRAGMA foreign_keys = ON`, e.g. with `?_foreign_keys=on` in the DSN.
-  - `UNIQUE(user_id, name)` on folders blocks same-named folders under different parents. Change it to `UNIQUE(user_id, parent_folder_id, name)` and remember that NULL parents are distinct from each other.
-  - Add `created_at` to `bookmarks`.
-  - Select and honour folder `public` in `GetBookmarksByUserID`. It's never selected now, so it's always `false`.
+- [x] **Fix the schema** (`sqlite.go:57-97`):
+  - ~~The foreign keys reference a table `folders` that doesn't exist; it should be `bookmark_folders`.~~
+  - ~~Enable `PRAGMA foreign_keys = ON`, e.g. with `?_foreign_keys=on` in the DSN.~~
+  - ~~`UNIQUE(user_id, name)` on folders blocks same-named folders under different parents. Change it to `UNIQUE(user_id, parent_folder_id, name)` and remember that NULL parents are distinct from each other.~~
+  - ~~Add `created_at` to `bookmarks`.~~
+  - ~~Select and honour folder `public` in `GetBookmarksByUserID`. It's never selected now, so it's always `false`.~~
 - [ ] **Add a schema migration mechanism**, e.g. `PRAGMA user_version` plus ordered migration steps. `CREATE TABLE IF NOT EXISTS` never changes an existing database, so none of the schema fixes, and none of the renames below, will reach a deployed DB without it.
 - [x] **Return folders in a stable order** (`sqlite.go:242`). The tree is built by ranging over a map. Add `ORDER BY name` and build the tree in query order.
 - [x] **Handle rows properly:** `defer rows.Close()` and check `rows.Err()` everywhere.
