@@ -368,34 +368,6 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 		return c.JSON(http.StatusOK, response)
 	}))
 
-	e.POST("/bookmarks/move-folder", auth.RequireAuth(func(c echo.Context) error {
-		userID := c.Get("user_id").(int)
-		folderID, err := strconv.Atoi(c.FormValue("folder_id"))
-		if err != nil {
-			return err
-		}
-
-		var parentFolderID *int
-		if c.FormValue("parent_folder_id") == "null" || c.FormValue("parent_folder_id") == "" {
-			parentFolderID = nil
-		} else {
-			parentFolderID = new(int)
-			*parentFolderID, err = strconv.Atoi(c.FormValue("parent_folder_id"))
-			if err != nil {
-				return err
-			}
-		}
-
-		err = database.MoveBookmarkFolder(userID, folderID, parentFolderID)
-		if err != nil {
-			return err
-		}
-
-		return c.JSON(http.StatusOK, map[string]interface{}{
-			"success": true,
-		})
-	}))
-
 	e.POST("/bookmarks/rename-folder", auth.RequireAuth(func(c echo.Context) error {
 		userID := c.Get("user_id").(int)
 		folderID, err := strconv.Atoi(c.FormValue("folder_id"))

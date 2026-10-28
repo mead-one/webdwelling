@@ -61,7 +61,7 @@ Findings from a code review on 2026-10-21, ordered by priority. File references 
 
 ## 4. Duplication and Simplification
 
-- [ ] Remove the duplicate `/bookmarks/move-folder` route (`routes.go:327`).
+- [x] Remove the duplicate `/bookmarks/move-folder` route (`routes.go:327`).
 - [ ] Pull the `"null"`/`""` → `*int` form parsing into a `parseOptionalInt(c, key)` helper. It's currently repeated five times.
 - [ ] Put `json` tags on `database.Bookmark` and `database.BookmarkFolder`, then delete `BookmarkResponse` (declared twice) and `BookmarkFolderResponse`.
 - [ ] Merge the three template-route closures in `routes.go:436-464` into one handler with different wrappers.
