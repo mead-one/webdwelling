@@ -38,20 +38,31 @@ func TemplateRenderer(templatesDir string) *Template {
 }
 
 type NavItem struct {
-	Name   string
-	URL    string
-	Weight int
-	Method string // Empty means an ordinary GET link
+	Name        string
+	URL         string
+	Weight      int
+	Method      string // Empty means an ordinary GET link
+	RequireAuth bool
+	HideIfAuth  bool
 }
 
-func GetNavItems(templatesDir string, isAuthenticated bool) []NavItem {
-	files, _ := filepath.Glob(filepath.Join(templatesDir, "*.html"))
+func filterNavItems(items []NavItem, isAuthenticated bool) []NavItem {
+	var filtered []NavItem = make([]NavItem, 0, len(items))
 
-	return buildNavItems(files, isAuthenticated)
+	for _, item := range items {
+		if item.RequireAuth && !isAuthenticated || item.HideIfAuth && isAuthenticated {
+			continue
+		}
+		filtered = append(filtered, item)
+	}
+
+	return filtered
 }
 
-func buildNavItems(files []string, isAuthenticated bool) []NavItem {
+func buildNavItems(files []string) []NavItem {
 	var navItems []NavItem
+	// Set up language caser for casing titles
+	caser := cases.Title(language.BritishEnglish)
 
 	for _, file := range files {
 		var base string = filepath.Base(file)
@@ -68,9 +79,9 @@ func buildNavItems(files []string, isAuthenticated bool) []NavItem {
 		if err != nil {
 			continue
 		}
-		defer f.Close()
 
 		line, err := getNavComment(f)
+		f.Close()
 		if err != nil {
 			fmt.Println(err)
 			continue
@@ -78,31 +89,25 @@ func buildNavItems(files []string, isAuthenticated bool) []NavItem {
 
 		include, weight, requireAuth, hideIfAuth := parseNavComment(line)
 
-		if (requireAuth && !isAuthenticated) || (hideIfAuth && isAuthenticated) {
-			continue
-		}
-
-		// Set up language caser for casing titles
-		caser := cases.Title(language.BritishEnglish)
-
 		if include {
 			navItems = append(navItems, NavItem{
-				Name:   caser.String(name),
-				URL:    url,
-				Weight: weight,
+				Name:        caser.String(name),
+				URL:         url,
+				Weight:      weight,
+				RequireAuth: requireAuth,
+				HideIfAuth:  hideIfAuth,
 			})
 		}
 	}
 
-	// Include logout link if user is authenticated
-	if isAuthenticated {
-		navItems = append(navItems, NavItem{
-			Name:   "Logout",
-			URL:    "/logout",
-			Weight: 100,
-			Method: "POST",
-		})
-	}
+	navItems = append(navItems, NavItem{
+		Name:        "Logout",
+		URL:         "/logout",
+		Weight:      100,
+		Method:      "POST",
+		RequireAuth: true,
+		HideIfAuth:  false,
+	})
 
 	sort.Slice(navItems, func(i, j int) bool {
 		if navItems[i].Weight == navItems[j].Weight {

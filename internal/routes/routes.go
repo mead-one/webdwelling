@@ -58,13 +58,23 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 
 	files, _ := filepath.Glob(filepath.Join(templatesDir, "*.html"))
 
+	var navItems []NavItem = buildNavItems(files)
+	var navLoggedIn []NavItem = filterNavItems(navItems, true)
+	var navLoggedOut []NavItem = filterNavItems(navItems, false)
+
+	navFor := func(isAuthenticated bool) []NavItem {
+		if isAuthenticated {
+			return navLoggedIn
+		}
+		return navLoggedOut
+	}
+
 	// Set up language caser for casing titles
 	caser := cases.Title(language.BritishEnglish)
 
 	// Route / to rendered homepage
 	e.GET("/", func(c echo.Context) error {
 		var isAuthenticated bool = auth.IsUserAuthenticated(c)
-		navItems := GetNavItems(templatesDir, isAuthenticated)
 		var username string
 		var bookmarks database.BookmarkFolder
 		var err error
@@ -79,7 +89,7 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 			return c.Render(http.StatusInternalServerError, "error.html", map[string]interface{}{
 				"BasePath":     basePath,
 				"Title":        "Error",
-				"NavItems":     navItems,
+				"NavItems":     navFor(isAuthenticated),
 				"ErrorCode":    http.StatusInternalServerError,
 				"ErrorMessage": "Failed to get bookmarks",
 			})
@@ -88,7 +98,7 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 		return c.Render(http.StatusOK, "home.html", map[string]interface{}{
 			"BasePath":        basePath,
 			"Title":           "Home",
-			"NavItems":        navItems,
+			"NavItems":        navFor(isAuthenticated),
 			"IsAuthenticated": isAuthenticated,
 			"Username":        username,
 			"Bookmarks":       bookmarks,
@@ -97,16 +107,14 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 
 	// Bookmarks route
 	e.GET("/bookmarks", auth.RequireAuth(func(c echo.Context) error {
-		navItems := GetNavItems(templatesDir, true)
 		userID := c.Get("user_id").(int)
 		bookmarks, err := database.GetBookmarksByUserID(userID, true)
-
 		if err != nil {
 			log.Printf("Failed to get bookmarks: %v", err)
 			return c.Render(http.StatusInternalServerError, "error.html", map[string]interface{}{
 				"BasePath":     basePath,
 				"Title":        "Error",
-				"NavItems":     navItems,
+				"NavItems":     navFor(true),
 				"ErrorCode":    http.StatusInternalServerError,
 				"ErrorMessage": "Failed to get bookmarks",
 			})
@@ -115,7 +123,7 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 		return c.Render(http.StatusOK, "bookmarks.html", map[string]interface{}{
 			"BasePath":  basePath,
 			"Title":     "Bookmarks",
-			"NavItems":  navItems,
+			"NavItems":  navFor(true),
 			"Bookmarks": bookmarks,
 		})
 	}))
@@ -435,6 +443,7 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 	for _, file := range files {
 		var base string = filepath.Base(file)
 		var name string = strings.TrimSuffix(base, ".html")
+		var title string = caser.String(name)
 		var url string = "/" + name
 		var blacklisted bool = false
 
@@ -451,10 +460,10 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 		if err != nil {
 			continue
 		}
-		defer f.Close()
 
 		// Read and parse metadata comment
 		line, err := getNavComment(f)
+		f.Close()
 		if err != nil {
 			fmt.Println(err)
 			continue
@@ -463,32 +472,27 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 
 		if requireAuth {
 			e.GET(url, auth.RequireAuth(func(c echo.Context) error {
-				var isAuthenticated bool = auth.IsUserAuthenticated(c)
-				navItems := GetNavItems(templatesDir, isAuthenticated)
 				return c.Render(http.StatusOK, name+".html", map[string]interface{}{
 					"BasePath": basePath,
-					"Title":    caser.String(name),
-					"NavItems": navItems,
+					"Title":    title,
+					"NavItems": navFor(true),
 				})
 			}))
 		} else if hideIfAuth {
 			e.GET(url, auth.RequireNoAuth(func(c echo.Context) error {
-				var isAuthenticated bool = auth.IsUserAuthenticated(c)
-				navItems := GetNavItems(templatesDir, isAuthenticated)
 				return c.Render(http.StatusOK, name+".html", map[string]interface{}{
 					"BasePath": basePath,
-					"Title":    caser.String(name),
-					"NavItems": navItems,
+					"Title":    title,
+					"NavItems": navFor(false),
 				})
 			}))
 		} else {
 			e.GET(url, func(c echo.Context) error {
 				var isAuthenticated bool = auth.IsUserAuthenticated(c)
-				navItems := GetNavItems(templatesDir, isAuthenticated)
 				return c.Render(http.StatusOK, name+".html", map[string]interface{}{
 					"BasePath": basePath,
-					"Title":    caser.String(name),
-					"NavItems": navItems,
+					"Title":    title,
+					"NavItems": navFor(isAuthenticated),
 				})
 			})
 		}
