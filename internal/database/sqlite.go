@@ -110,9 +110,9 @@ func createTables() {
 	if _, err = DB.Exec(`CREATE TABLE IF NOT EXISTS bookmarks (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER NOT NULL,
-        title TEXT,
+        title TEXT NOT NULL,
         url TEXT NOT NULL,
-        tags TEXT,
+        tags TEXT NOT NULL DEFAULT '',
         folder_id INTEGER,
         public INTEGER NOT NULL DEFAULT 1,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -346,7 +346,6 @@ func AddBookmark(userID int, title string, url string, tags string, folderID *in
 		return nil, fmt.Errorf("create bookmark: %w", err)
 	}
 
-	// Create bookmark struct
 	bookmark := &Bookmark{
 		ID:        newID,
 		Title:     title,
@@ -384,38 +383,23 @@ func MoveBookmark(userID int, bookmarkID int64, folderID *int64) error {
 
 // Edit a bookmark
 func EditBookmark(userID int, bookmarkID int64, title string, url string, tags string, folderID *int64, public bool) (*Bookmark, error) {
-	result, err := DB.Exec(`
+	bookmark := &Bookmark{}
+	err := DB.QueryRow(`
 		UPDATE bookmarks SET title = :title, url = :url, tags = :tags, folder_id = :folder_id, public = :public
 		WHERE id = :bookmark_id AND user_id = :user_id
 		AND (:folder_id IS NULL
 			OR EXISTS (SELECT 1 FROM bookmark_folders
 				WHERE id = :folder_id AND user_id = :user_id))
+		RETURNING id,title,url,tags,folder_id,public,created_at
 	`, sql.Named("user_id", userID), sql.Named("bookmark_id", bookmarkID),
 		sql.Named("title", title), sql.Named("url", url),
 		sql.Named("tags", tags), sql.Named("folder_id", folderID),
-		sql.Named("public", public))
+		sql.Named("public", public)).Scan(&bookmark.ID, &bookmark.Title, &bookmark.URL,
+		&bookmark.Tags, &bookmark.FolderID, &bookmark.Public, &bookmark.CreatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, fmt.Errorf("edit bookmark %d: %w", bookmarkID, ErrNotFound)
 	} else if err != nil {
 		return nil, fmt.Errorf("edit bookmark %d: %w", bookmarkID, err)
-	}
-	n, err := result.RowsAffected()
-	if err != nil {
-		return nil, fmt.Errorf("edit bookmark %d: %w", bookmarkID, err)
-	}
-	if n == 0 {
-		return nil, fmt.Errorf("edit bookmark %d: %w", bookmarkID, ErrNotFound)
-	}
-
-	// Create bookmark struct
-	bookmark := &Bookmark{
-		ID:        bookmarkID,
-		Title:     title,
-		URL:       url,
-		Tags:      tags,
-		FolderID:  folderID,
-		Public:    public,
-		CreatedAt: time.Now().Format("2006-01-02 15:04:05"),
 	}
 
 	return bookmark, nil
@@ -427,6 +411,7 @@ func DeleteBookmark(userID int, bookmarkID int64) error {
 	DELETE FROM bookmarks
 	WHERE id = :bookmark_id AND user_id = :user_id
 	`, sql.Named("bookmark_id", bookmarkID), sql.Named("user_id", userID))
+	// Create bookmark struct
 	if err != nil {
 		return fmt.Errorf("delete bookmark %d: %w", bookmarkID, err)
 	}

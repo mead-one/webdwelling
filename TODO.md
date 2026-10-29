@@ -48,7 +48,7 @@ Findings from a code review on 2026-10-21, ordered by priority. File references 
 - [x] **Make `DeleteBookmarkFolder` one transaction** (`sqlite.go:526-582`), ideally a single recursive CTE. It currently deletes child bookmarks twice and can leave a half-deleted tree.
 - [x] **Make ownership checks atomic.** Replace each SELECT-then-UPDATE with `UPDATE … WHERE id = ? AND user_id = ?` and check `RowsAffected`. In `MoveBookmarkFolder`, check ownership before `FolderIsDescendant` runs.
 - [x] **Return correct status codes:** 400 for bad input, 403/404 for other users' records. For JSON endpoints, return 401 JSON rather than redirecting to the login page.
-- [ ] **Fix `EditBookmark` returning `CreatedAt` as the current time.**
+- [x] **Fix `EditBookmark` returning `CreatedAt` as the current time.**
 - [x] **Fix the folder-select tree for new or moved folders** (`bookmarks.ts:1128-1144`). The `<ul>` and `<li>` are nested in the reverse of the template's structure, and `moveBookmarkFolderToFolder` leaves the child `<ul>` behind.
 - [ ] **Smaller frontend fixes:**
   - ~~Don't turn on drag and drop on the read-only home page.~~ (done)
