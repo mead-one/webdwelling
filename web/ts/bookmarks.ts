@@ -345,19 +345,25 @@ function submitAddBookmarkForm(event: SubmitEvent) {
     const folderRadio: HTMLInputElement | null =
         form.elements.namedItem("folder-select") as HTMLInputElement;
 
-    const title = titleInput.value;
-    const url = urlInput.value;
-    const tags = tagsInput.value;
-    const isPublic = isPublicInput.checked;
-    const folderID = folderRadio.value === "0" ? null : folderRadio.value;
-    if (title === null) {
+    const title: string = titleInput.value;
+    const url: string = urlInput.value;
+    const tags: string = tagsInput.value;
+    const isPublic: boolean = isPublicInput.checked;
+    const folderID: string | null = folderRadio.value === "0" ? null : folderRadio.value;
+    if (title.trim() === "") {
         return;
     }
 
     fetch(addBasePath("/bookmarks/add-bookmark"), {
         method: "POST",
         headers: postHeaders(),
-        body: `title=${title}&url=${url}&tags=${tags}&public=${isPublic}&folder_id=${folderID}`
+        body: new URLSearchParams({
+            title,
+            url,
+            tags,
+            public: String(isPublic),
+            folder_id: folderID ?? ""
+        })
     }).then(function(response) {
         if (!response.ok) {
             throw new Error(response.statusText);
@@ -444,7 +450,7 @@ function openEditBookmarkModal(event: MouseEvent) {
     editBookmarkForm.reset();
     bookmarkRadio.value = bookmarkID;
     bookmarkTitleInput.value = bookmarkTitle.innerText;
-    bookmarkUrlInput.value = bookmarkTitle.href;
+    bookmarkUrlInput.value = bookmarkTitle.getAttribute("href") ?? "";
     if (bookmarkLi.querySelector("span.bookmark-edit-bookmark-tags") != null) {
         bookmarkTagsInput.value = bookmarkTags.innerText;
     }
@@ -459,7 +465,10 @@ function moveBookmarkToFolder(bookmarkID: string, folderID: string) {
     fetch(addBasePath("/bookmarks/move-bookmark"), {
         method: "POST",
         headers: postHeaders(),
-        body: `bookmark_id=${bookmarkID}&folder_id=${folderID}`
+        body: new URLSearchParams({
+            bookmark_id: bookmarkID,
+            folder_id: folderID
+        })
     }).then(function(response) {
         if (!response.ok) {
             throw new Error(response.statusText);
@@ -490,7 +499,10 @@ function moveBookmarkFolderToFolder(folderID: string, parentFolderID: string | n
     fetch(addBasePath("/bookmarks/move-folder"), {
         method: "POST",
         headers: postHeaders(),
-        body: `folder_id=${folderID}&parent_folder_id=${parentFolderID}`
+        body: new URLSearchParams({
+            folder_id: folderID,
+            parent_folder_id: parentFolderID ?? ""
+        })
     }).then(function(response) {
         if (!response.ok) {
             throw new Error(response.statusText);
@@ -542,7 +554,7 @@ function submitEditBookmarkForm(event: SubmitEvent) {
     const isPublic: boolean = isPublicInput.checked;
     const folderID: string | null = folderRadio.value === "0" ? null : folderRadio.value;
 
-    if (title === null) {
+    if (title.trim() === "") {
         return;
     }
 
@@ -551,7 +563,14 @@ function submitEditBookmarkForm(event: SubmitEvent) {
     fetch(addBasePath("/bookmarks/edit-bookmark"), {
         method: "POST",
         headers: postHeaders(),
-        body: `bookmark_id=${bookmarkID}&title=${title}&url=${url}&tags=${tags}&public=${isPublic}&folder_id=${folderID}`
+        body: new URLSearchParams({
+            bookmark_id: bookmarkID,
+            title,
+            url,
+            tags,
+            public: String(isPublic),
+            folder_id: folderID ?? ""
+        })
     }).then(function(response) {
         if (!response.ok) {
             throw new Error(response.statusText);
@@ -572,7 +591,7 @@ function submitEditBookmarkForm(event: SubmitEvent) {
             parentDiv = parentFolder.querySelector(":scope > details.bookmark-edit-folder-details > ul.bookmark-edit-bookmark-list");
         }
         bookmarkTitle.innerText = data.title;
-        bookmarkTitle.href = data.url;
+        bookmarkTitle.setAttribute("href", data.url);
         bookmarkTags.innerText = data.tags;
         // Update the folder tree and folder select tree
         if (parentDiv !== null) parentDiv.appendChild(bookmarkLi);
@@ -621,7 +640,9 @@ function submitDeleteBookmark(event: Event) {
     fetch(addBasePath("/bookmarks/delete-bookmark"), {
         method: "POST",
         headers: postHeaders(),
-        body: `bookmark_id=${bookmarkID}`
+        body: new URLSearchParams({
+            bookmark_id: bookmarkID
+        })
     }).then(function(response) {
         if (!response.ok) {
             throw new Error(response.statusText);
@@ -697,7 +718,11 @@ function submitAddFolderForm(event: SubmitEvent) {
     fetch(addBasePath("/bookmarks/add-folder"), {
         method: "POST",
         headers: postHeaders(),
-        body: `name=${name}&public=${isPublic}&parent_folder_id=${parentFolderID}`
+        body: new URLSearchParams({
+            name,
+            public: String(isPublic),
+            parent_folder_id: parentFolderID ?? ""
+        })
     }).then(function(response) {
         if (!response.ok) {
             throw new Error(response.statusText);
@@ -785,24 +810,34 @@ function openRenameFolderForm(event: MouseEvent) {
 }
 
 function submitRenameFolderForm(event: SubmitEvent) {
+    event.preventDefault();
     const form: HTMLFormElement = event.target as HTMLFormElement;
     const parentFolder: HTMLDivElement | null = form.closest(".bookmark-edit-folder") as HTMLDivElement;
-    const folderID = parentFolder.dataset.id;
+    const folderID: string | undefined = parentFolder.dataset.id;
+    if (folderID === undefined) {
+        console.error("Missing folder ID");
+        return;
+    }
     const folderNameSpan: HTMLSpanElement | null = document.getElementById(`bookmark-edit-folder-name-${folderID}`) as HTMLSpanElement;
     const folderNameInput: HTMLInputElement | null = form.elements.namedItem("name") as HTMLInputElement;
-    const folderName: string | undefined = folderNameInput.value;
-    if (folderNameInput === null || folderName === undefined) {
-        console.error("Missing elements");
+    if (folderNameInput === null) {
+        console.error("Missing folder name element");
+        return;
+    }
+    const name: string = folderNameInput.value;
+    if (name.trim() == "") {
+        console.error("Folder name can't be empty");
         return;
     }
     const folderActions: HTMLSpanElement | null = document.getElementById(`bookmark-edit-folder-actions-${folderID}`) as HTMLSpanElement;
 
-    event.preventDefault();
-
     fetch(addBasePath("/bookmarks/rename-folder"), {
         method: "POST",
         headers: postHeaders(),
-        body: `folder_id=${folderID}&name=${folderName}`
+        body: new URLSearchParams({
+            folder_id: folderID,
+            name
+        })
     }).then(function(response) {
         if (!response.ok) {
             throw new Error(response.statusText);
@@ -870,7 +905,9 @@ function submitDeleteFolder(event: MouseEvent) {
     fetch(addBasePath("/bookmarks/delete-folder"), {
         method: "POST",
         headers: postHeaders(),
-        body: `folder_id=${folderID}`
+        body: new URLSearchParams({
+            folder_id: folderID
+        })
     }).then(function(response) {
         if (!response.ok) {
             throw new Error(response.statusText);
@@ -914,9 +951,9 @@ function updateFolderTreeWithBookmark(bookmark: Bookmark) {
         bookmarkTitle.innerText = bookmark.Title;
 
         if (typeof bookmark.URL !== "undefined" && bookmark.URL !== null) {
-            bookmarkTitle.href = bookmark.URL;
+            bookmarkTitle.setAttribute("href", bookmark.URL);
         } else {
-            bookmarkTitle.href = "";
+            bookmarkTitle.setAttribute("href", "");
         }
 
         if (typeof bookmark.Tags !== "undefined" && bookmark.Tags !== null) {
@@ -939,7 +976,7 @@ function updateFolderTreeWithBookmark(bookmark: Bookmark) {
         bookmarkLi.appendChild(bookmarkTitleSpan);
 
         const bookmarkTitle: HTMLAnchorElement | null = document.createElement("a");
-        bookmarkTitle.href = bookmark.URL;
+        bookmarkTitle.setAttribute("href", bookmark.URL);
         bookmarkTitle.target = "_blank";
         bookmarkTitle.classList.add("bookmark-edit-bookmark-link");
         bookmarkTitle.innerText = bookmark.Title;

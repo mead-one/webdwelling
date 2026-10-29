@@ -34,8 +34,8 @@ Findings from a code review on 2026-10-21, ordered by priority. File references 
 
 - [x] **Use `cfg.Port`.** `main.go:38` always listens on `:1323`.
 - [x] **Fix the shared `cases.Caser` data race** (`routes.go:41`). It isn't safe to use from several goroutines. Compute page titles once at startup.
-- [ ] **URL-encode request bodies in `bookmarks.ts`.** Use `new URLSearchParams({...})`. Currently URLs containing `&` or `#` get cut off and `+` turns into a space.
-- [ ] **Stop the edit dialog rewriting relative URLs** (`bookmarks.ts:466`). Read `getAttribute("href")` instead of `.href`, which the browser has already resolved, so `example.com` doesn't come back as `https://host/example.com`.
+- [x] **URL-encode request bodies in `bookmarks.ts`.** Use `new URLSearchParams({...})`. Currently URLs containing `&` or `#` get cut off and `+` turns into a space.
+- [x] **Stop the edit dialog rewriting relative URLs** (`bookmarks.ts:466`). Read `getAttribute("href")` instead of `.href`, which the browser has already resolved, so `example.com` doesn't come back as `https://host/example.com`.
 - [x] **Fix the schema** (`sqlite.go:57-97`):
   - ~~The foreign keys reference a table `folders` that doesn't exist; it should be `bookmark_folders`.~~
   - ~~Enable `PRAGMA foreign_keys = ON`, e.g. with `?_foreign_keys=on` in the DSN.~~
