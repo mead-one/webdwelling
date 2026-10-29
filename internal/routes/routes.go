@@ -2,7 +2,6 @@
 package routes
 
 import (
-	"database/sql"
 	"errors"
 	"fmt"
 	"log"
@@ -34,9 +33,9 @@ const (
 
 // Bookmark folder response type
 type BookmarkFolderResponse struct {
-	ID             int    `json:"id"`
+	ID             int64  `json:"id"`
 	Name           string `json:"name"`
-	ParentFolderID *int   `json:"parent_folder_id,omitempty"`
+	ParentFolderID *int64 `json:"parent_folder_id,omitempty"`
 	Public         bool   `json:"public"`
 	CreatedAt      string `json:"created_at"`
 }
@@ -131,27 +130,27 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 
 	e.POST("/bookmarks/add-bookmark", auth.RequireAuth(func(c echo.Context) error {
 		userID := c.Get("user_id").(int)
-		var folderID *int
+		var folderID *int64
 
 		fields, err := readBookmarkFields(c)
 		if err != nil {
 			log.Printf("Invalid bookmark fields: %v", err)
 			return c.JSON(http.StatusBadRequest, map[string]interface{}{
-				"error":      err.Error(),
-				"error_code": http.StatusBadRequest,
+				"success": false,
+				"error":   err.Error(),
 			})
 		}
 
 		if c.FormValue("folder_id") == "null" || c.FormValue("folder_id") == "" {
 			folderID = nil
 		} else {
-			folderID = new(int)
-			*folderID, err = strconv.Atoi(c.FormValue("folder_id"))
+			folderID = new(int64)
+			*folderID, err = strconv.ParseInt(c.FormValue("folder_id"), 10, 64)
 			if err != nil {
 				log.Printf("Failed to parse folder ID: %v", err)
 				return c.JSON(http.StatusBadRequest, map[string]interface{}{
-					"error":      "Invalid folder ID",
-					"error_code": http.StatusBadRequest,
+					"success": false,
+					"error":   "Invalid folder ID",
 				})
 			}
 		}
@@ -159,21 +158,28 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 		var public bool = c.FormValue("public") == "true"
 
 		newBookmark, err := database.AddBookmark(userID, fields.Title, fields.URL, fields.Tags, folderID, public)
+		if errors.Is(err, database.ErrNotFound) {
+			log.Printf("Failed to add bookmark: %v", err)
+			return c.JSON(http.StatusNotFound, map[string]interface{}{
+				"success": false,
+				"error":   "Destination folder not found",
+			})
+		}
 		if err != nil {
 			log.Printf("Failed to add bookmark: %v", err)
 			return c.JSON(http.StatusInternalServerError, map[string]interface{}{
-				"error":      "Failed to add bookmark",
-				"error_code": http.StatusInternalServerError,
+				"success": false,
+				"error":   "Failed to add bookmark",
 			})
 		}
 
 		// Bookmark response type
 		type BookmarkResponse struct {
-			ID        int    `json:"id"`
+			ID        int64  `json:"id"`
 			Title     string `json:"title"`
 			URL       string `json:"url"`
 			Tags      string `json:"tags"`
-			FolderID  *int   `json:"folder_id,omitempty"`
+			FolderID  *int64 `json:"folder_id,omitempty"`
 			Public    bool   `json:"public"`
 			CreatedAt string `json:"created_at"`
 		}
@@ -194,27 +200,43 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 
 	e.POST("/bookmarks/move-bookmark", auth.RequireAuth(func(c echo.Context) error {
 		userID := c.Get("user_id").(int)
-		bookmarkID, err := strconv.Atoi(c.FormValue("bookmark_id"))
+		bookmarkID, err := strconv.ParseInt(c.FormValue("bookmark_id"), 10, 64)
 		if err != nil {
-			return err
+			return c.JSON(http.StatusBadRequest, map[string]interface{}{
+				"success": false,
+				"error":   "Invalid bookmark ID",
+			})
 		}
 
 		var folderIDValue string = c.FormValue("folder_id")
 
-		var folderID *int
+		var folderID *int64
 		if folderIDValue == "" {
 			folderID = nil
 		} else {
-			folderIDConv, err := strconv.Atoi(folderIDValue)
+			folderIDConv, err := strconv.ParseInt(folderIDValue, 10, 64)
 			if err != nil {
-				return err
+				return c.JSON(http.StatusBadRequest, map[string]interface{}{
+					"success": false,
+					"error":   "Invalid folder ID",
+				})
 			}
 			folderID = &folderIDConv
 		}
 
 		err = database.MoveBookmark(userID, bookmarkID, folderID)
+		if errors.Is(err, database.ErrNotFound) {
+			return c.JSON(http.StatusNotFound, map[string]interface{}{
+				"success": false,
+				"error":   "Bookmark or folder not found",
+			})
+		}
 		if err != nil {
-			return err
+			log.Printf("Failed to move bookmark: %v", err)
+			return c.JSON(http.StatusInternalServerError, map[string]interface{}{
+				"success": false,
+				"error":   "Something went wrong",
+			})
 		}
 
 		return c.JSON(http.StatusOK, map[string]interface{}{
@@ -224,26 +246,54 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 
 	e.POST("/bookmarks/move-folder", auth.RequireAuth(func(c echo.Context) error {
 		userID := c.Get("user_id").(int)
-		folderID, err := strconv.Atoi(c.FormValue("folder_id"))
+		folderID, err := strconv.ParseInt(c.FormValue("folder_id"), 10, 64)
 		if err != nil {
-			return err
+			return c.JSON(http.StatusBadRequest, map[string]interface{}{
+				"success": false,
+				"error":   "Invalid folder ID",
+			})
 		}
 
-		var parentFolderID *int
+		var parentFolderID *int64
 
 		if c.FormValue("parent_folder_id") == "null" || c.FormValue("parent_folder_id") == "" {
 			parentFolderID = nil
 		} else {
-			parentFolderID = new(int)
-			*parentFolderID, err = strconv.Atoi(c.FormValue("parent_folder_id"))
+			parentFolderID = new(int64)
+			*parentFolderID, err = strconv.ParseInt(c.FormValue("parent_folder_id"), 10, 64)
 			if err != nil {
-				return err
+				return c.JSON(http.StatusBadRequest, map[string]interface{}{
+					"success": false,
+					"error":   "Invalid parent folder ID",
+				})
 			}
 		}
 
 		err = database.MoveBookmarkFolder(userID, folderID, parentFolderID)
-		if err != nil {
-			return err
+		if errors.Is(err, database.ErrNotFound) {
+			log.Printf("Failed to move folder %d: %v", folderID, err)
+			return c.JSON(http.StatusNotFound, map[string]interface{}{
+				"success": false,
+				"error":   "Destination folder not found",
+			})
+		} else if errors.Is(err, database.ErrInvalidMove) {
+			log.Printf("Failed to move folder %d: %v", folderID, err)
+			return c.JSON(http.StatusBadRequest, map[string]interface{}{
+				"success": false,
+				"error":   "A folder can't be moved into one of its own subfolders",
+			})
+		} else if errors.Is(err, database.ErrDuplicateName) {
+			log.Printf("Failed to move folder %d: %v", folderID, err)
+			return c.JSON(http.StatusBadRequest, map[string]interface{}{
+				"success": false,
+				"error":   "A folder of that name already exists there",
+			})
+		} else if err != nil {
+			log.Printf("Failed to move folder %d: %v", folderID, err)
+			return c.JSON(http.StatusInternalServerError, map[string]interface{}{
+				"success": false,
+				"error":   "Something went wrong",
+			})
 		}
 
 		return c.JSON(http.StatusOK, map[string]interface{}{
@@ -253,49 +303,63 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 
 	e.POST("/bookmarks/edit-bookmark", auth.RequireAuth(func(c echo.Context) error {
 		userID := c.Get("user_id").(int)
-		bookmarkID, err := strconv.Atoi(c.FormValue("bookmark_id"))
+		bookmarkID, err := strconv.ParseInt(c.FormValue("bookmark_id"), 10, 64)
 		if err != nil {
-			return err
+			return c.JSON(http.StatusBadRequest, map[string]interface{}{
+				"success": false,
+				"error":   "Invalid bookmark ID",
+			})
 		}
 
 		fields, err := readBookmarkFields(c)
 		if err != nil {
 			log.Printf("Invalid bookmark fields: %v", err)
 			return c.JSON(http.StatusBadRequest, map[string]interface{}{
-				"error":      err.Error(),
-				"error_code": http.StatusBadRequest,
+				"success": false,
+				"error":   err.Error(),
 			})
 		}
 
-		var folderID *int
+		var folderID *int64
 		if c.FormValue("folder_id") == "null" || c.FormValue("folder_id") == "" {
 			folderID = nil
 		} else {
-			folderID = new(int)
-			*folderID, err = strconv.Atoi(c.FormValue("folder_id"))
+			folderID = new(int64)
+			*folderID, err = strconv.ParseInt(c.FormValue("folder_id"), 10, 64)
 			if err != nil {
-				return err
+				log.Printf("Invalid folder ID: %v", err)
+				return c.JSON(http.StatusBadRequest, map[string]interface{}{
+					"success": false,
+					"error":   "Invalid folder ID",
+				})
 			}
 		}
 
 		var public bool = c.FormValue("public") == "true"
 
 		newBookmark, err := database.EditBookmark(userID, bookmarkID, fields.Title, fields.URL, fields.Tags, folderID, public)
+		if errors.Is(err, database.ErrNotFound) {
+			log.Printf("Failed to edit bookmark: %v", err)
+			return c.JSON(http.StatusNotFound, map[string]interface{}{
+				"success": false,
+				"error":   "Bookmark or folder not found",
+			})
+		}
 		if err != nil {
 			log.Printf("Failed to edit bookmark: %v", err)
 			return c.JSON(http.StatusInternalServerError, map[string]interface{}{
-				"error":      "Failed to edit bookmark",
-				"error_code": http.StatusInternalServerError,
+				"success": false,
+				"error":   "Failed to edit bookmark",
 			})
 		}
 
 		// Bookmark response type
 		type BookmarkResponse struct {
-			ID        int    `json:"id"`
+			ID        int64  `json:"id"`
 			Title     string `json:"title"`
 			URL       string `json:"url"`
 			Tags      string `json:"tags"`
-			FolderID  *int   `json:"folder_id,omitempty"`
+			FolderID  *int64 `json:"folder_id,omitempty"`
 			Public    bool   `json:"public"`
 			CreatedAt string `json:"created_at"`
 		}
@@ -316,14 +380,28 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 
 	e.POST("/bookmarks/delete-bookmark", auth.RequireAuth(func(c echo.Context) error {
 		userID := c.Get("user_id").(int)
-		bookmarkID, err := strconv.Atoi(c.FormValue("bookmark_id"))
+		bookmarkID, err := strconv.ParseInt(c.FormValue("bookmark_id"), 10, 64)
 		if err != nil {
-			return err
+			return c.JSON(http.StatusBadRequest, map[string]interface{}{
+				"success": false,
+				"error":   "Invalid bookmark ID",
+			})
 		}
 
 		err = database.DeleteBookmark(userID, bookmarkID)
+		if errors.Is(err, database.ErrNotFound) {
+			log.Printf("Failed to delete bookmark %d: %v", bookmarkID, err)
+			return c.JSON(http.StatusNotFound, map[string]interface{}{
+				"success": false,
+				"error":   "Bookmark not found",
+			})
+		}
 		if err != nil {
-			return err
+			log.Printf("Failed to delete bookmark %d: %v", bookmarkID, err)
+			return c.JSON(http.StatusInternalServerError, map[string]interface{}{
+				"success": false,
+				"error":   "Something went wrong",
+			})
 		}
 
 		return c.JSON(http.StatusOK, map[string]interface{}{
@@ -333,35 +411,52 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 
 	e.POST("/bookmarks/add-folder", auth.RequireAuth(func(c echo.Context) error {
 		userID := c.Get("user_id").(int)
-		var parentFolderID *int
+		var parentFolderID *int64
 
 		fields, err := readFolderFields(c)
 		if err != nil {
 			log.Printf("Invalid folder fields: %v", err)
 			return c.JSON(http.StatusBadRequest, map[string]interface{}{
-				"error":      err.Error(),
-				"error_code": http.StatusBadRequest,
+				"success": false,
+				"error":   err.Error(),
 			})
 		}
 
 		if c.FormValue("parent_folder_id") == "null" || c.FormValue("parent_folder_id") == "" {
 			parentFolderID = nil
 		} else {
-			parentFolderID = new(int)
-			*parentFolderID, err = strconv.Atoi(c.FormValue("parent_folder_id"))
+			parentFolderID = new(int64)
+			*parentFolderID, err = strconv.ParseInt(c.FormValue("parent_folder_id"), 10, 64)
 			if err != nil {
-				return err
+				return c.JSON(http.StatusBadRequest, map[string]interface{}{
+					"success": false,
+					"error":   "Invalid parent folder ID",
+				})
 			}
 		}
 
 		var public bool = c.FormValue("public") == "true"
 
 		newFolder, err := database.AddBookmarkFolder(userID, fields.Name, parentFolderID, public)
+		if errors.Is(err, database.ErrDuplicateName) {
+			log.Printf("Failed to add folder: %v", err)
+			return c.JSON(http.StatusConflict, map[string]interface{}{
+				"success": false,
+				"error":   "There is already a folder by that name in that place",
+			})
+		}
+		if errors.Is(err, database.ErrNotFound) {
+			log.Printf("Failed to add folder: %v", err)
+			return c.JSON(http.StatusNotFound, map[string]interface{}{
+				"success": false,
+				"error":   "Folder not found",
+			})
+		}
 		if err != nil {
 			log.Printf("Failed to add folder: %v", err)
 			return c.JSON(http.StatusInternalServerError, map[string]interface{}{
-				"error":      "Failed to add folder",
-				"error_code": http.StatusInternalServerError,
+				"success": false,
+				"error":   "Failed to add folder",
 			})
 		}
 
@@ -379,23 +474,42 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 
 	e.POST("/bookmarks/rename-folder", auth.RequireAuth(func(c echo.Context) error {
 		userID := c.Get("user_id").(int)
-		folderID, err := strconv.Atoi(c.FormValue("folder_id"))
+		folderID, err := strconv.ParseInt(c.FormValue("folder_id"), 10, 64)
 		if err != nil {
-			return err
+			return c.JSON(http.StatusBadRequest, map[string]interface{}{
+				"success": false,
+				"error":   "Invalid folder ID",
+			})
 		}
 
 		fields, err := readFolderFields(c)
 		if err != nil {
 			log.Printf("Invalid folder fields: %v", err)
 			return c.JSON(http.StatusBadRequest, map[string]interface{}{
-				"error":      err.Error(),
-				"error_code": http.StatusBadRequest,
+				"success": false,
+				"error":   err.Error(),
 			})
 		}
 
 		newFolder, err := database.RenameBookmarkFolder(userID, folderID, fields.Name)
-		if err != nil {
-			return err
+		if errors.Is(err, database.ErrNotFound) {
+			log.Printf("Failed to rename folder %d: %v", folderID, err)
+			return c.JSON(http.StatusNotFound, map[string]interface{}{
+				"success": false,
+				"error":   "Folder not found",
+			})
+		} else if errors.Is(err, database.ErrDuplicateName) {
+			log.Printf("Failed to rename folder %d: %v", folderID, err)
+			return c.JSON(http.StatusBadRequest, map[string]interface{}{
+				"success": false,
+				"error":   "A folder of that name already exists there",
+			})
+		} else if err != nil {
+			log.Printf("Failed to rename folder %d: %v", folderID, err)
+			return c.JSON(http.StatusInternalServerError, map[string]interface{}{
+				"success": false,
+				"error":   "Something went wrong",
+			})
 		}
 
 		response := BookmarkFolderResponse{
@@ -410,7 +524,7 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 
 	e.POST("/bookmarks/delete-folder", auth.RequireAuth(func(c echo.Context) error {
 		userID := c.Get("user_id").(int)
-		folderID, err := strconv.Atoi(c.FormValue("folder_id"))
+		folderID, err := strconv.ParseInt(c.FormValue("folder_id"), 10, 64)
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, map[string]interface{}{
 				"success": false,
@@ -419,7 +533,7 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 		}
 
 		err = database.DeleteBookmarkFolder(userID, folderID)
-		if errors.Is(err, sql.ErrNoRows) {
+		if errors.Is(err, database.ErrNotFound) {
 			return c.JSON(http.StatusNotFound, map[string]interface{}{
 				"success": false,
 				"error":   "Folder not found",
