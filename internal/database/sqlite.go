@@ -571,72 +571,21 @@ func RenameBookmarkFolder(userID int, folderID int, name string) (*BookmarkFolde
 }
 
 func DeleteBookmarkFolder(userID int, folderID int) error {
-	folderUserID := 0
-	err := DB.QueryRow(`
-	SELECT user_id FROM bookmark_folders WHERE id = :folder_id
-	`, sql.Named("folder_id", folderID)).Scan(&folderUserID)
+	// Delete the folder, if it belongs to the user
+	result, err := DB.Exec(`
+	DELETE FROM bookmark_folders WHERE id = :folder_id AND user_id = :user_id
+	`, sql.Named("folder_id", folderID), sql.Named("user_id", userID))
 	if err != nil {
-		return fmt.Errorf("failed to get bookmark folder user ID: %w", err)
+		return fmt.Errorf("failed to delete folder(s): %w", err)
 	}
-	if folderUserID != userID {
-		return fmt.Errorf("user is not authorized to delete this folder")
-	}
-
-	// Delete all bookmarks in this folder
-	_, err = DB.Exec(`
-	DELETE FROM bookmarks WHERE folder_id = :folder_id
-	`, sql.Named("folder_id", folderID))
+	n, err := result.RowsAffected()
 	if err != nil {
-		return fmt.Errorf("failed to delete bookmarks: %w", err)
+		return err
 	}
-
-	// Recursively delete all descendant folders
-	// Get all child folders
-	rows, err := DB.Query(`
-	SELECT id FROM bookmark_folders WHERE parent_folder_id = :folder_id
-	`, sql.Named("folder_id", folderID))
-	if err != nil {
-		return fmt.Errorf("failed to get child folders: %w", err)
+	if n == 0 {
+		return sql.ErrNoRows
 	}
-	defer rows.Close()
-
-	// Iterate over rows, storing child folder IDs
-	var childFolderIDs []int
-	for rows.Next() {
-		var childFolderID int
-		if err := rows.Scan(&childFolderID); err != nil {
-			return fmt.Errorf("failed to scan child folder ID: %w", err)
-		}
-
-		childFolderIDs = append(childFolderIDs, childFolderID)
-	}
-	if err := rows.Err(); err != nil {
-		return fmt.Errorf("failed to scan child folder ID: %w", err)
-	}
-
-	for _, childFolderID := range childFolderIDs {
-		// Delete child bookmarks
-		_, err = DB.Exec(`
-		DELETE FROM bookmarks WHERE folder_id = :child_folder_id
-		`, sql.Named("child_folder_id", childFolderID))
-		if err != nil {
-			return fmt.Errorf("failed to delete child bookmarks: %w", err)
-		}
-
-		// Recursively delete child folders
-		err = DeleteBookmarkFolder(userID, childFolderID)
-		if err != nil {
-			return fmt.Errorf("failed to delete child folder: %w", err)
-		}
-	}
-
-	// Delete the folder
-	_, err = DB.Exec(`
-	DELETE FROM bookmark_folders WHERE id = :folder_id
-	`, sql.Named("folder_id", folderID))
-	if err != nil {
-		return fmt.Errorf("failed to delete bookmark folder: %w", err)
-	}
+	// Database cascade handles all descendant folders and bookmarks
 
 	return nil
 }

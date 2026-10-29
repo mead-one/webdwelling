@@ -2,6 +2,7 @@
 package routes
 
 import (
+	"database/sql"
 	"errors"
 	"fmt"
 	"log"
@@ -411,12 +412,24 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 		userID := c.Get("user_id").(int)
 		folderID, err := strconv.Atoi(c.FormValue("folder_id"))
 		if err != nil {
-			return err
+			return c.JSON(http.StatusBadRequest, map[string]interface{}{
+				"success": false,
+				"error":   "Invalid folder ID",
+			})
 		}
 
 		err = database.DeleteBookmarkFolder(userID, folderID)
-		if err != nil {
-			return err
+		if errors.Is(err, sql.ErrNoRows) {
+			return c.JSON(http.StatusNotFound, map[string]interface{}{
+				"success": false,
+				"error":   "Folder not found",
+			})
+		} else if err != nil {
+			log.Printf("Failed to delete folder %d for user %d: %v", folderID, userID, err)
+			return c.JSON(http.StatusInternalServerError, map[string]interface{}{
+				"success": false,
+				"error":   "Failed to delete folder",
+			})
 		}
 
 		return c.JSON(http.StatusOK, map[string]interface{}{

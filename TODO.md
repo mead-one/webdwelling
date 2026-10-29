@@ -45,7 +45,7 @@ Findings from a code review on 2026-10-21, ordered by priority. File references 
 - [ ] **Add a schema migration mechanism**, e.g. `PRAGMA user_version` plus ordered migration steps. `CREATE TABLE IF NOT EXISTS` never changes an existing database, so none of the schema fixes, and none of the renames below, will reach a deployed DB without it.
 - [x] **Return folders in a stable order** (`sqlite.go:242`). The tree is built by ranging over a map. Add `ORDER BY name` and build the tree in query order.
 - [x] **Handle rows properly:** `defer rows.Close()` and check `rows.Err()` everywhere.
-- [ ] **Make `DeleteBookmarkFolder` one transaction** (`sqlite.go:526-582`), ideally a single recursive CTE. It currently deletes child bookmarks twice and can leave a half-deleted tree.
+- [x] **Make `DeleteBookmarkFolder` one transaction** (`sqlite.go:526-582`), ideally a single recursive CTE. It currently deletes child bookmarks twice and can leave a half-deleted tree.
 - [ ] **Make ownership checks atomic.** Replace each SELECT-then-UPDATE with `UPDATE … WHERE id = ? AND user_id = ?` and check `RowsAffected`. In `MoveBookmarkFolder`, check ownership before `FolderIsDescendant` runs.
 - [ ] **Return correct status codes:** 400 for bad input, 403/404 for other users' records. For JSON endpoints, return 401 JSON rather than redirecting to the login page.
 - [ ] **Fix `EditBookmark` returning `CreatedAt` as the current time.**
