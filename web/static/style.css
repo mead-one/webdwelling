@@ -322,6 +322,10 @@ div.bookmark-edit > ul.bookmark-edit-bookmark-list > li.bookmark-edit-bookmark:l
     margin: 0.5em 0;
 }
 
+.form-error {
+    color: red;
+}
+
 /* Folder rename */
 form.rename-folder-form {
     display: flex;

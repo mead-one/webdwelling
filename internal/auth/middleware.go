@@ -2,7 +2,7 @@ package auth
 
 import (
 	"errors"
-	"log"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -16,6 +16,8 @@ var JWTSecret []byte
 
 // Whether cookies are marked Secure (HTTPS only), set from config at startup
 var SecureCookies bool
+
+var ErrInvalidCredentials = errors.New("invalid username or password")
 
 // How long a login lasts before the user must log in again
 const SessionLength = 14 * 24 * time.Hour
@@ -31,17 +33,13 @@ type JWTCustomClaims struct {
 }
 
 // Authenticate a user and assign a cookie with their JWT token
-func Login(c echo.Context) error {
-	username := c.FormValue("username")
-	password := c.FormValue("password")
-
+func Login(c echo.Context, username, password string) error {
 	user, err := database.AuthenticateUser(username, password)
 	if err != nil {
-		log.Printf("Failed to authenticate user: %v", err)
-		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to authenticate user")
+		return fmt.Errorf("authenticate %s: %w", username, err)
 	}
 	if user == nil {
-		return echo.NewHTTPError(http.StatusUnauthorized, "Invalid username or password.")
+		return ErrInvalidCredentials
 	}
 
 	// Create claims
@@ -64,11 +62,7 @@ func Login(c echo.Context) error {
 
 	setAuthCookie(c, tk)
 
-	// Redirect to home page
-	basePath := c.Get("basePath").(string)
-	var homePath string = basePath + "/"
-
-	return c.Redirect(http.StatusSeeOther, homePath)
+	return nil
 }
 
 // Build the auth cookie, so setting and clearing it always use the same attributes

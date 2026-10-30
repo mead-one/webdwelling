@@ -7,19 +7,14 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-	"os"
-	"path/filepath"
 	"slices"
 	"strconv"
 	"strings"
 	"time"
 	"unicode/utf8"
 
-	"github.com/labstack/echo/v4/middleware"
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
-
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 	"github.com/mead-one/webdwelling/internal/auth"
 	"github.com/mead-one/webdwelling/internal/database"
 )
@@ -52,13 +47,19 @@ type folderFields struct {
 	Name string
 }
 
-func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDir string) {
+func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDir string) error {
+	pages, err := loadPages(templatesDir)
+	if err != nil {
+		return err
+	}
+	loginPage, ok := pages["login"]
+	if !ok {
+		return errors.New(`template "login.html" not found`)
+	}
 	renderer := TemplateRenderer(templatesDir)
 	e.Renderer = renderer
 
-	files, _ := filepath.Glob(filepath.Join(templatesDir, "*.html"))
-
-	var navItems []NavItem = buildNavItems(files)
+	var navItems []NavItem = buildNavItems(pages)
 	var navLoggedIn []NavItem = filterNavItems(navItems, true)
 	var navLoggedOut []NavItem = filterNavItems(navItems, false)
 
@@ -68,9 +69,6 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 		}
 		return navLoggedOut
 	}
-
-	// Set up language caser for casing titles
-	caser := cases.Title(language.BritishEnglish)
 
 	// Route / to rendered homepage
 	e.GET("/", func(c echo.Context) error {
@@ -553,13 +551,40 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 
 	e.Static("/", staticDir)
 
-	e.POST("/login", auth.Login, middleware.RateLimiter(
+	e.POST("/login", func(c echo.Context) error {
+		username := c.FormValue("username")
+		err := auth.Login(c, username, c.FormValue("password"))
+		if err != nil {
+			if errors.Is(err, auth.ErrInvalidCredentials) {
+				return c.Render(http.StatusUnauthorized, "login.html", map[string]interface{}{
+					"BasePath": basePath,
+					"Title":    loginPage.Title,
+					"NavItems": navFor(false),
+					"Username": username,
+					"Error":    "Invalid username or password",
+				})
+			}
+
+			log.Printf("Failed to authenticate user: %v", err)
+			return c.Render(http.StatusInternalServerError, "login.html", map[string]interface{}{
+				"BasePath": basePath,
+				"Title":    loginPage.Title,
+				"NavItems": navFor(false),
+				"Username": username,
+				"Error":    "Something went wrong. Please wait a few minutes and try again.",
+			})
+		}
+
+		basePath := c.Get("basePath").(string)
+		var homePath string = basePath + "/"
+
+		return c.Redirect(http.StatusSeeOther, homePath)
+	}, middleware.RateLimiter(
 		middleware.NewRateLimiterMemoryStoreWithConfig(
 			middleware.RateLimiterMemoryStoreConfig{
 				Rate: 1.0 / 12, Burst: 5, ExpiresIn: 10 * time.Minute,
 			},
-		),
-	))
+		)))
 
 	e.POST("/logout", auth.Logout)
 
@@ -567,63 +592,39 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 	var blacklist []string = []string{"header", "footer", "error", "home", "bookmarks"}
 
 	// Route all other templates
-	for _, file := range files {
-		var base string = filepath.Base(file)
-		var name string = strings.TrimSuffix(base, ".html")
-		var title string = caser.String(name)
-		var url string = "/" + name
-		var blacklisted bool = false
-
-		if slices.Contains(blacklist, name) {
-			blacklisted = true
-		}
-
-		if blacklisted {
+	for _, page := range pages {
+		if slices.Contains(blacklist, page.Name) {
 			continue
 		}
 
-		// Open file
-		f, err := os.Open(file)
-		if err != nil {
-			continue
-		}
-
-		// Read and parse metadata comment
-		line, err := getNavComment(f)
-		f.Close()
-		if err != nil {
-			fmt.Println(err)
-			continue
-		}
-		_, _, requireAuth, hideIfAuth := parseNavComment(line)
-
-		if requireAuth {
-			e.GET(url, auth.RequireAuth(func(c echo.Context) error {
-				return c.Render(http.StatusOK, name+".html", map[string]interface{}{
+		if page.RequireAuth {
+			e.GET(page.URL, auth.RequireAuth(func(c echo.Context) error {
+				return c.Render(http.StatusOK, page.Name+".html", map[string]interface{}{
 					"BasePath": basePath,
-					"Title":    title,
+					"Title":    page.Title,
 					"NavItems": navFor(true),
 				})
 			}))
-		} else if hideIfAuth {
-			e.GET(url, auth.RequireNoAuth(func(c echo.Context) error {
-				return c.Render(http.StatusOK, name+".html", map[string]interface{}{
+		} else if page.HideIfAuth {
+			e.GET(page.URL, auth.RequireNoAuth(func(c echo.Context) error {
+				return c.Render(http.StatusOK, page.Name+".html", map[string]interface{}{
 					"BasePath": basePath,
-					"Title":    title,
+					"Title":    page.Title,
 					"NavItems": navFor(false),
 				})
 			}))
 		} else {
-			e.GET(url, func(c echo.Context) error {
+			e.GET(page.URL, func(c echo.Context) error {
 				var isAuthenticated bool = auth.IsUserAuthenticated(c)
-				return c.Render(http.StatusOK, name+".html", map[string]interface{}{
+				return c.Render(http.StatusOK, page.Name+".html", map[string]interface{}{
 					"BasePath": basePath,
-					"Title":    title,
+					"Title":    page.Title,
 					"NavItems": navFor(isAuthenticated),
 				})
 			})
 		}
 	}
+	return nil
 }
 
 func normaliseBookmarkURL(raw string) (string, error) {

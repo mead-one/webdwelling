@@ -22,6 +22,62 @@ type Template struct {
 	templates *template.Template
 }
 
+type page struct {
+	Name, URL, Title        string
+	Include                 bool
+	Weight                  int
+	RequireAuth, HideIfAuth bool
+}
+
+func loadPages(templatesDir string) (map[string]page, error) {
+	files, err := filepath.Glob(filepath.Join(templatesDir, "*.html"))
+	if err != nil {
+		return nil, err
+	}
+	// Set up language caser for casing titles
+	caser := cases.Title(language.BritishEnglish)
+	pages := make(map[string]page)
+
+	for _, file := range files {
+		var base string = filepath.Base(file)
+		var name string = strings.TrimSuffix(base, ".html")
+		var url string
+		if name == "home" {
+			url = "/"
+		} else {
+			url = "/" + name
+		}
+		var title string = caser.String(name)
+
+		// Read comment on first line
+		f, err := os.Open(file)
+		if err != nil {
+			continue
+		}
+
+		line, err := getNavComment(f)
+		f.Close()
+		if err != nil {
+			fmt.Println(err)
+			continue
+		}
+
+		include, weight, requireAuth, hideIfAuth := parseNavComment(line)
+
+		pages[name] = page{
+			Name:        name,
+			URL:         url,
+			Include:     include,
+			Title:       title,
+			Weight:      weight,
+			RequireAuth: requireAuth,
+			HideIfAuth:  hideIfAuth,
+		}
+	}
+
+	return pages, nil
+}
+
 func (t *Template) Render(w io.Writer, name string, data interface{}, c echo.Context) error {
 	// Give every template the CSRF token set by the CSRF middleware
 	if m, ok := data.(map[string]interface{}); ok {
@@ -59,45 +115,22 @@ func filterNavItems(items []NavItem, isAuthenticated bool) []NavItem {
 	return filtered
 }
 
-func buildNavItems(files []string) []NavItem {
+func buildNavItems(pages map[string]page) []NavItem {
 	var navItems []NavItem
-	// Set up language caser for casing titles
-	caser := cases.Title(language.BritishEnglish)
 
-	for _, file := range files {
-		var base string = filepath.Base(file)
-		var name string = strings.TrimSuffix(base, ".html")
-		var url string
-		if name == "home" {
-			url = "/"
-		} else {
-			url = "/" + name
-		}
-
-		// Read comment on first line
-		f, err := os.Open(file)
-		if err != nil {
+	for _, page := range pages {
+		if !page.Include {
 			continue
 		}
 
-		line, err := getNavComment(f)
-		f.Close()
-		if err != nil {
-			fmt.Println(err)
-			continue
-		}
-
-		include, weight, requireAuth, hideIfAuth := parseNavComment(line)
-
-		if include {
-			navItems = append(navItems, NavItem{
-				Name:        caser.String(name),
-				URL:         url,
-				Weight:      weight,
-				RequireAuth: requireAuth,
-				HideIfAuth:  hideIfAuth,
-			})
-		}
+		navItems = append(navItems, NavItem{
+			Name:        page.Title,
+			URL:         page.URL,
+			Weight:      page.Weight,
+			Method:      "GET",
+			RequireAuth: page.RequireAuth,
+			HideIfAuth:  page.HideIfAuth,
+		})
 	}
 
 	navItems = append(navItems, NavItem{

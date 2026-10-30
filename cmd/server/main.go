@@ -65,7 +65,10 @@ func main() {
 	}))
 
 	// Register routes
-	routes.RegisterRoutes(e, cfg.BasePath, filepath.Join("web", "templates"), filepath.Join("web", "static"))
+	err = routes.RegisterRoutes(e, cfg.BasePath, filepath.Join("web", "templates"), filepath.Join("web", "static"))
+	if err != nil {
+		log.Fatalf("Failed to register routes: %v", err)
+	}
 
 	e.Logger.Fatal(e.Start(fmt.Sprintf(":%d", cfg.Port)))
 }

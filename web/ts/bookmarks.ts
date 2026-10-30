@@ -344,6 +344,7 @@ function submitAddBookmarkForm(event: SubmitEvent) {
     const isPublicInput: HTMLInputElement | null = form.elements.namedItem("public") as HTMLInputElement;
     const folderRadio: HTMLInputElement | null =
         form.elements.namedItem("folder-select") as HTMLInputElement;
+    const errorP = form.querySelector(".form-error") as HTMLParagraphElement;
 
     const title: string = titleInput.value;
     const url: string = urlInput.value;
@@ -383,7 +384,7 @@ function submitAddBookmarkForm(event: SubmitEvent) {
         updateNewBookmark(bookmark);
         closeAddBookmarkModal();
     }).catch(function(error) {
-        alert(`Failed to add bookmark: ${error}`);
+        errorP.textContent = `Failed to add bookmark: ${error.message}`;
     });
 }
 
@@ -391,10 +392,12 @@ function submitAddBookmarkForm(event: SubmitEvent) {
 function closeAddBookmarkModal() {
     const modalContainer: HTMLDivElement | null = document.getElementById("modal-container") as HTMLDivElement;
     const addBookmarkForm: HTMLFormElement | null = document.getElementById("add-bookmark-form") as HTMLFormElement;
+    const errorP = addBookmarkForm.querySelector(".form-error") as HTMLParagraphElement;
 
     modalContainer.style.display = "none";
     addBookmarkForm.style.display = "none";
     addBookmarkForm.reset();
+    errorP.textContent = "";
 }
 
 // Open the edit bookmark modal
@@ -540,6 +543,7 @@ function submitEditBookmarkForm(event: SubmitEvent) {
     const isPublicInput: HTMLInputElement | null = form.elements.namedItem("public") as HTMLInputElement;
     const folderRadio: HTMLInputElement | null =
         form.elements.namedItem("folder-select") as HTMLInputElement;
+    const errorP = form.querySelector(".form-error") as HTMLParagraphElement;
 
     if (bookmarkIDInput === null || titleInput === null || urlInput === null || tagsInput === null ||
         isPublicInput === null || folderRadio === null) {
@@ -598,7 +602,7 @@ function submitEditBookmarkForm(event: SubmitEvent) {
 
         closeEditBookmarkModal();
     }).catch(function(error) {
-        alert(`Failed to edit bookmark: ${error}`);
+        errorP.textContent = `Failed to edit bookmark: ${error.message}`;
     });
 }
 
@@ -606,10 +610,12 @@ function submitEditBookmarkForm(event: SubmitEvent) {
 function closeEditBookmarkModal() {
     const modalContainer: HTMLDivElement | null = document.getElementById("modal-container") as HTMLDivElement;
     const editBookmarkForm: HTMLFormElement | null = document.getElementById("edit-bookmark-form") as HTMLFormElement;
+    const errorP = editBookmarkForm.querySelector(".form-error") as HTMLParagraphElement;
 
     modalContainer.style.display = "none";
     editBookmarkForm.style.display = "none";
     editBookmarkForm.reset();
+    errorP.textContent = "";
 }
 
 function submitDeleteBookmark(event: Event) {
@@ -704,12 +710,13 @@ function submitAddFolderForm(event: SubmitEvent) {
     const isPublicInput: HTMLInputElement | null = form.elements.namedItem("public") as HTMLInputElement;
     const folderRadio: HTMLInputElement | null =
         form.elements.namedItem("folder-select") as HTMLInputElement;
+    const errorP = form.querySelector(".form-error") as HTMLParagraphElement;
 
     const name = nameInput.value;
     const isPublic = isPublicInput.checked;
     const parentFolderID = folderRadio.value === "0" ? null : folderRadio.value;
 
-    if (name === null) {
+    if (name.trim() === "") {
         return;
     }
 
@@ -740,7 +747,7 @@ function submitAddFolderForm(event: SubmitEvent) {
         updateFolder(folder);
         closeAddFolderModal();
     }).catch(function(error) {
-        alert(`Failed to add folder: ${error}`);
+        errorP.textContent = `Failed to add folder: ${error.message}`;
     });
 }
 
@@ -748,10 +755,12 @@ function submitAddFolderForm(event: SubmitEvent) {
 function closeAddFolderModal() {
     const modalContainer: HTMLDivElement | null = document.getElementById("modal-container") as HTMLDivElement;
     const addFolderForm: HTMLFormElement | null = document.getElementById("add-folder-form") as HTMLFormElement;
+    const errorP = addFolderForm.querySelector(".form-error") as HTMLParagraphElement;
 
     modalContainer.style.display = "none";
     addFolderForm.style.display = "none";
     addFolderForm.reset();
+    errorP.textContent = "";
 }
 
 function openRenameFolderForm(event: MouseEvent) {
