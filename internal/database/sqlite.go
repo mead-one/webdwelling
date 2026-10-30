@@ -95,7 +95,7 @@ func createTables() {
         name TEXT NOT NULL,
         parent_folder_id INTEGER,
         public INTEGER NOT NULL DEFAULT 1,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY(user_id) REFERENCES users(id),
         FOREIGN KEY(parent_folder_id) REFERENCES bookmark_folders(id) ON DELETE CASCADE,
         UNIQUE(user_id, parent_folder_id, name)
@@ -115,7 +115,7 @@ func createTables() {
         tags TEXT NOT NULL DEFAULT '',
         folder_id INTEGER,
         public INTEGER NOT NULL DEFAULT 1,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY(user_id) REFERENCES users(id),
         FOREIGN KEY(folder_id) REFERENCES bookmark_folders(id) ON DELETE CASCADE
     )`); err != nil {
@@ -173,7 +173,6 @@ func CreateUser(username string, password string, email *string, public_slug *st
 		return nil, fmt.Errorf("failed to write user to database: %w", err)
 	}
 
-	// Create user struct
 	user := User{
 		Username:   username,
 		Password:   string(hashedPassword),
@@ -411,7 +410,7 @@ func DeleteBookmark(userID int, bookmarkID int64) error {
 	DELETE FROM bookmarks
 	WHERE id = :bookmark_id AND user_id = :user_id
 	`, sql.Named("bookmark_id", bookmarkID), sql.Named("user_id", userID))
-	// Create bookmark struct
+
 	if err != nil {
 		return fmt.Errorf("delete bookmark %d: %w", bookmarkID, err)
 	}
