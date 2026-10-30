@@ -4,11 +4,16 @@ Description=Web app for dwelling on the web
 After=network.target
 
 [Service]
-User=www-data
-Group=www-data
+User=webdwelling
+Group=webdwelling
 WorkingDirectory=/opt/webdwelling
 EnvironmentFile=/opt/webdwelling/.env
 ExecStart=/opt/webdwelling/bin/webdwelling
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+ReadWritePaths=/opt/webdwelling/data
 
 [Install]
 WantedBy=multi-user.target
