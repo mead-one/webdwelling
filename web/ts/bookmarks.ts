@@ -333,21 +333,24 @@ function openAddBookmarkModal(event: MouseEvent) {
     const modalContainer: HTMLDivElement | null = document.getElementById("modal-container") as HTMLDivElement;
     const addBookmarkForm: HTMLFormElement | null = document.getElementById("add-bookmark-form") as HTMLFormElement;
     const folderSelectWrapper: HTMLDivElement | null = document.getElementById("add-bookmark-folder-select-wrapper") as HTMLDivElement;
+    if (modalContainer === null || addBookmarkForm === null || folderSelectWrapper === null) {
+        console.error(`One or more is missing: modal form container, add bookmark form, folder select wrapper.`);
+        return;
+    }
+
+    openModal(addBookmarkForm, folderSelectWrapper);
+
     const folderSelect: HTMLDivElement | null = document.getElementById("folder-select") as HTMLDivElement;
 
-    // Form elements
     const folderRadio: HTMLInputElement | null =
         addBookmarkForm.elements.namedItem("folder-select") as HTMLInputElement;
     const bookmarkTitle: HTMLInputElement =
         addBookmarkForm.elements.namedItem("title") as HTMLInputElement;
 
-    if (folderSelectWrapper === null || addBookmarkForm === null || folderSelect === null ||
-        modalContainer === null || folderRadio === null || bookmarkTitle === null) {
+    if (folderSelect === null || folderRadio === null || bookmarkTitle === null) {
         console.error("Missing elements");
         return;
     }
-
-    openModal(addBookmarkForm, folderSelectWrapper);
     folderRadio.value = parentFolderID ? parentFolderID : "";
     bookmarkTitle.focus();
 }
@@ -415,9 +418,21 @@ function openEditBookmarkModal(event: MouseEvent) {
     }
 
     const parentFolderID: string | undefined = parentFolder.dataset.id;
+    if (parentFolderID === undefined) {
+        console.error("Failed to retrieve parent folder ID.");
+        return;
+    }
+
     const modalContainer: HTMLDivElement | null = document.getElementById("modal-container") as HTMLDivElement;
     const editBookmarkForm: HTMLFormElement | null = document.getElementById("edit-bookmark-form") as HTMLFormElement;
     const folderSelectWrapper: HTMLDivElement | null = document.getElementById("edit-bookmark-folder-select-wrapper") as HTMLDivElement;
+    if (modalContainer === null || editBookmarkForm === null || folderSelectWrapper === null) {
+        console.error(`One or more is missing: modal form container, add bookmark form, folder select wrapper.`);
+        return;
+    }
+
+    openModal(editBookmarkForm, folderSelectWrapper);
+
     const folderSelect: HTMLDivElement | null = document.getElementById("folder-select") as HTMLDivElement;
     const bookmarkID: string | undefined = bookmarkLi.dataset.id;
     const bookmarkTitle: HTMLAnchorElement | null = bookmarkLi.querySelector("a.bookmark-edit-bookmark-link") as HTMLAnchorElement;
@@ -435,8 +450,7 @@ function openEditBookmarkModal(event: MouseEvent) {
     const bookmarkTagsInput: HTMLInputElement =
         editBookmarkForm.elements.namedItem("tags") as HTMLInputElement;
 
-    if (parentFolder === null || modalContainer === null || editBookmarkForm === null ||
-        folderSelectWrapper === null || bookmarkRadio === null || folderRadio === null ||
+    if (parentFolder === null || bookmarkRadio === null || folderRadio === null ||
         bookmarkTitleInput === null || bookmarkUrlInput === null || bookmarkTagsInput === null) {
         console.error("Missing elements");
         return;
@@ -459,7 +473,6 @@ function openEditBookmarkModal(event: MouseEvent) {
         bookmarkTagsInput.value = bookmarkTags.innerText;
     }
     folderRadio.value = parentFolderID;
-    openModal(editBookmarkForm, folderSelectWrapper);
     bookmarkTitleInput.focus();
 }
 
@@ -663,6 +676,13 @@ function openAddFolderModal(event: Event) {
     const modalContainer: HTMLDivElement | null = document.getElementById("modal-container") as HTMLDivElement;
     const addFolderForm: HTMLFormElement | null = document.getElementById("add-folder-form") as HTMLFormElement;
     const folderSelectWrapper: HTMLDivElement | null = document.getElementById("add-folder-folder-select-wrapper") as HTMLDivElement;
+    if (modalContainer === null || addFolderForm === null || folderSelectWrapper === null) {
+        console.error(`One or more is missing: modal form container, add bookmark form, folder select wrapper.`);
+        return;
+    }
+
+    openModal(addFolderForm, folderSelectWrapper);
+
     const folderSelect: HTMLDivElement | null = document.getElementById("folder-select") as HTMLDivElement;
 
     // Form elements
@@ -671,8 +691,7 @@ function openAddFolderModal(event: Event) {
     const folderNameInput: HTMLInputElement =
         addFolderForm.elements.namedItem("name") as HTMLInputElement;
 
-    if (folderSelectWrapper === null || addFolderForm === null || folderSelect === null ||
-        modalContainer === null || folderRadio === null || folderNameInput === null) {
+    if (folderSelect === null || folderRadio === null || folderNameInput === null) {
         console.error("Missing elements");
         return;
     }
@@ -683,7 +702,6 @@ function openAddFolderModal(event: Event) {
     }
 
     folderRadio.value = parentFolderID;
-    openModal(addFolderForm, folderSelectWrapper);
     folderNameInput.focus();
 }
 
