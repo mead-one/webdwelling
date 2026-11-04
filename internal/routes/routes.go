@@ -130,18 +130,13 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 			})
 		}
 
-		if c.FormValue("folder_id") == "null" || c.FormValue("folder_id") == "" {
-			folderID = nil
-		} else {
-			folderID = new(int64)
-			*folderID, err = strconv.ParseInt(c.FormValue("folder_id"), 10, 64)
-			if err != nil {
-				log.Printf("Failed to parse folder ID: %v", err)
-				return c.JSON(http.StatusBadRequest, map[string]interface{}{
-					"success": false,
-					"error":   "Invalid folder ID",
-				})
-			}
+		folderID, err = parseOptionalInt(c, "folder_id")
+		if err != nil {
+			log.Printf("Failed to parse folder ID: %v", err)
+			return c.JSON(http.StatusBadRequest, map[string]interface{}{
+				"success": false,
+				"error":   "Invalid folder ID",
+			})
 		}
 
 		var public bool = c.FormValue("public") == "true"
@@ -177,6 +172,7 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 	}))
 
 	e.POST("/bookmarks/move-bookmark", auth.RequireAuth(func(c echo.Context) error {
+		var folderID *int64
 		userID := c.Get("user_id").(int)
 		bookmarkID, err := strconv.ParseInt(c.FormValue("bookmark_id"), 10, 64)
 		if err != nil {
@@ -186,20 +182,13 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 			})
 		}
 
-		var folderIDValue string = c.FormValue("folder_id")
-
-		var folderID *int64
-		if folderIDValue == "" {
-			folderID = nil
-		} else {
-			folderIDConv, err := strconv.ParseInt(folderIDValue, 10, 64)
-			if err != nil {
-				return c.JSON(http.StatusBadRequest, map[string]interface{}{
-					"success": false,
-					"error":   "Invalid folder ID",
-				})
-			}
-			folderID = &folderIDConv
+		folderID, err = parseOptionalInt(c, "folder_id")
+		if err != nil {
+			log.Printf("Failed to parse folder ID: %v", err)
+			return c.JSON(http.StatusBadRequest, map[string]interface{}{
+				"success": false,
+				"error":   "Invalid folder ID",
+			})
 		}
 
 		err = database.MoveBookmark(userID, bookmarkID, folderID)
@@ -223,28 +212,24 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 	}))
 
 	e.POST("/bookmarks/move-folder", auth.RequireAuth(func(c echo.Context) error {
+		var parentFolderID *int64
 		userID := c.Get("user_id").(int)
 		folderID, err := strconv.ParseInt(c.FormValue("folder_id"), 10, 64)
 		if err != nil {
+			log.Printf("Failed to parse folder ID: %v", err)
 			return c.JSON(http.StatusBadRequest, map[string]interface{}{
 				"success": false,
 				"error":   "Invalid folder ID",
 			})
 		}
 
-		var parentFolderID *int64
-
-		if c.FormValue("parent_folder_id") == "null" || c.FormValue("parent_folder_id") == "" {
-			parentFolderID = nil
-		} else {
-			parentFolderID = new(int64)
-			*parentFolderID, err = strconv.ParseInt(c.FormValue("parent_folder_id"), 10, 64)
-			if err != nil {
-				return c.JSON(http.StatusBadRequest, map[string]interface{}{
-					"success": false,
-					"error":   "Invalid parent folder ID",
-				})
-			}
+		parentFolderID, err = parseOptionalInt(c, "parent_folder_id")
+		if err != nil {
+			log.Printf("Failed to parse parent folder ID: %v", err)
+			return c.JSON(http.StatusBadRequest, map[string]interface{}{
+				"success": false,
+				"error":   "Invalid parent folder ID",
+			})
 		}
 
 		err = database.MoveBookmarkFolder(userID, folderID, parentFolderID)
@@ -280,6 +265,7 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 	}))
 
 	e.POST("/bookmarks/edit-bookmark", auth.RequireAuth(func(c echo.Context) error {
+		var folderID *int64
 		userID := c.Get("user_id").(int)
 		bookmarkID, err := strconv.ParseInt(c.FormValue("bookmark_id"), 10, 64)
 		if err != nil {
@@ -298,19 +284,13 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 			})
 		}
 
-		var folderID *int64
-		if c.FormValue("folder_id") == "null" || c.FormValue("folder_id") == "" {
-			folderID = nil
-		} else {
-			folderID = new(int64)
-			*folderID, err = strconv.ParseInt(c.FormValue("folder_id"), 10, 64)
-			if err != nil {
-				log.Printf("Invalid folder ID: %v", err)
-				return c.JSON(http.StatusBadRequest, map[string]interface{}{
-					"success": false,
-					"error":   "Invalid folder ID",
-				})
-			}
+		folderID, err = parseOptionalInt(c, "folder_id")
+		if err != nil {
+			log.Printf("Failed to parse folder ID: %v", err)
+			return c.JSON(http.StatusBadRequest, map[string]interface{}{
+				"success": false,
+				"error":   "Invalid folder ID",
+			})
 		}
 
 		var public bool = c.FormValue("public") == "true"
@@ -377,8 +357,8 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 	}))
 
 	e.POST("/bookmarks/add-folder", auth.RequireAuth(func(c echo.Context) error {
-		userID := c.Get("user_id").(int)
 		var parentFolderID *int64
+		userID := c.Get("user_id").(int)
 
 		fields, err := readFolderFields(c)
 		if err != nil {
@@ -389,17 +369,13 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 			})
 		}
 
-		if c.FormValue("parent_folder_id") == "null" || c.FormValue("parent_folder_id") == "" {
-			parentFolderID = nil
-		} else {
-			parentFolderID = new(int64)
-			*parentFolderID, err = strconv.ParseInt(c.FormValue("parent_folder_id"), 10, 64)
-			if err != nil {
-				return c.JSON(http.StatusBadRequest, map[string]interface{}{
-					"success": false,
-					"error":   "Invalid parent folder ID",
-				})
-			}
+		parentFolderID, err = parseOptionalInt(c, "parent_folder_id")
+		if err != nil {
+			log.Printf("Failed to parse parent folder ID: %v", err)
+			return c.JSON(http.StatusBadRequest, map[string]interface{}{
+				"success": false,
+				"error":   "Invalid parent folder ID",
+			})
 		}
 
 		var public bool = c.FormValue("public") == "true"
@@ -409,7 +385,7 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 			log.Printf("Failed to add folder: %v", err)
 			return c.JSON(http.StatusConflict, map[string]interface{}{
 				"success": false,
-				"error":   "There is already a folder by that name in that place",
+				"error":   "A folder of that name already exists there",
 			})
 		}
 		if errors.Is(err, database.ErrNotFound) {
@@ -651,4 +627,17 @@ func readFolderFields(c echo.Context) (folderFields, error) {
 	}
 
 	return fields, nil
+}
+
+func parseOptionalInt(c echo.Context, key string) (*int64, error) {
+	var value string = c.FormValue(key)
+	if value == "null" || value == "" {
+		return nil, nil
+	}
+
+	number, err := strconv.ParseInt(value, 10, 64)
+	if err != nil {
+		return nil, err
+	}
+	return &number, nil
 }
