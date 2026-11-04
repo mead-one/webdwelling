@@ -66,9 +66,9 @@ document.addEventListener("DOMContentLoaded", function() {
     if (addBookmarkForm !== null) addBookmarkForm.addEventListener("submit", submitAddBookmarkForm);
     if (editBookmarkForm !== null) editBookmarkForm.addEventListener("submit", submitEditBookmarkForm);
     if (addFolderForm !== null) addFolderForm.addEventListener("submit", submitAddFolderForm);
-    if (cancelAddBookmarkButton !== null) cancelAddBookmarkButton.addEventListener("click", closeAddBookmarkModal);
-    if (cancelEditBookmarkButton !== null) cancelEditBookmarkButton.addEventListener("click", closeEditBookmarkModal);
-    if (cancelAddFolderButton !== null) cancelAddFolderButton.addEventListener("click", closeAddFolderModal);
+    if (cancelAddBookmarkButton !== null) cancelAddBookmarkButton.addEventListener("click", () => { closeModal(addBookmarkForm) });
+    if (cancelEditBookmarkButton !== null) cancelEditBookmarkButton.addEventListener("click", () => { closeModal(editBookmarkForm) });
+    if (cancelAddFolderButton !== null) cancelAddFolderButton.addEventListener("click", () => { closeModal(addFolderForm) });
 });
 
 type Bookmark = {
@@ -299,6 +299,28 @@ function dropOnFolder(event: DragEvent) {
     }
 }
 
+// Display the elements for a modal form
+function openModal(form: HTMLFormElement, folderSelectWrapper: HTMLElement) {
+    const modalContainer = document.getElementById("modal-container") as HTMLDivElement;
+    const folderSelect = document.getElementById("folder-select") as HTMLDivElement;
+
+    form.reset();
+    folderSelectWrapper.appendChild(folderSelect);
+    modalContainer.style.display = "block";
+    form.style.display = "block";
+}
+
+// Close a modal
+function closeModal(form: HTMLFormElement) {
+    const modalContainer: HTMLDivElement | null = document.getElementById("modal-container") as HTMLDivElement;
+    const errorP = form.querySelector(".form-error") as HTMLParagraphElement;
+
+    modalContainer.style.display = "none";
+    form.style.display = "none";
+    form.reset();
+    if (errorP !== null) errorP.textContent = "";
+}
+
 // Open the add bookmark modal
 function openAddBookmarkModal(event: MouseEvent) {
     const parentFolder: HTMLDivElement | null = (event.target as HTMLFormElement).closest(".bookmark-edit-folder");
@@ -313,9 +335,6 @@ function openAddBookmarkModal(event: MouseEvent) {
     const folderSelectWrapper: HTMLDivElement | null = document.getElementById("add-bookmark-folder-select-wrapper") as HTMLDivElement;
     const folderSelect: HTMLDivElement | null = document.getElementById("folder-select") as HTMLDivElement;
 
-    // Include the folder select sub-form
-    folderSelectWrapper.appendChild(folderSelect);
-
     // Form elements
     const folderRadio: HTMLInputElement | null =
         addBookmarkForm.elements.namedItem("folder-select") as HTMLInputElement;
@@ -328,10 +347,8 @@ function openAddBookmarkModal(event: MouseEvent) {
         return;
     }
 
-    addBookmarkForm.reset();
+    openModal(addBookmarkForm, folderSelectWrapper);
     folderRadio.value = parentFolderID ? parentFolderID : "";
-    modalContainer.style.display = "block";
-    addBookmarkForm.style.display = "block";
     bookmarkTitle.focus();
 }
 
@@ -382,22 +399,10 @@ function submitAddBookmarkForm(event: SubmitEvent) {
         };
         // Add the bookmark to the bookmark edit view and folder select
         updateNewBookmark(bookmark);
-        closeAddBookmarkModal();
+        closeModal(form);
     }).catch(function(error) {
         errorP.textContent = `Failed to add bookmark: ${error.message}`;
     });
-}
-
-// Close the add bookmark modal
-function closeAddBookmarkModal() {
-    const modalContainer: HTMLDivElement | null = document.getElementById("modal-container") as HTMLDivElement;
-    const addBookmarkForm: HTMLFormElement | null = document.getElementById("add-bookmark-form") as HTMLFormElement;
-    const errorP = addBookmarkForm.querySelector(".form-error") as HTMLParagraphElement;
-
-    modalContainer.style.display = "none";
-    addBookmarkForm.style.display = "none";
-    addBookmarkForm.reset();
-    errorP.textContent = "";
 }
 
 // Open the edit bookmark modal
@@ -417,9 +422,6 @@ function openEditBookmarkModal(event: MouseEvent) {
     const bookmarkID: string | undefined = bookmarkLi.dataset.id;
     const bookmarkTitle: HTMLAnchorElement | null = bookmarkLi.querySelector("a.bookmark-edit-bookmark-link") as HTMLAnchorElement;
     const bookmarkTags: HTMLSpanElement | null = bookmarkLi.querySelector("span.bookmark-edit-bookmark-tags") as HTMLSpanElement;
-
-    // Include the folder select sub-form
-    folderSelectWrapper.appendChild(folderSelect);
 
     // Form elements
     const bookmarkRadio: HTMLInputElement | null =
@@ -450,7 +452,6 @@ function openEditBookmarkModal(event: MouseEvent) {
         return;
     }
 
-    editBookmarkForm.reset();
     bookmarkRadio.value = bookmarkID;
     bookmarkTitleInput.value = bookmarkTitle.innerText;
     bookmarkUrlInput.value = bookmarkTitle.getAttribute("href") ?? "";
@@ -458,8 +459,7 @@ function openEditBookmarkModal(event: MouseEvent) {
         bookmarkTagsInput.value = bookmarkTags.innerText;
     }
     folderRadio.value = parentFolderID;
-    modalContainer.style.display = "block";
-    editBookmarkForm.style.display = "block";
+    openModal(editBookmarkForm, folderSelectWrapper);
     bookmarkTitleInput.focus();
 }
 
@@ -600,22 +600,10 @@ function submitEditBookmarkForm(event: SubmitEvent) {
         // Update the folder tree and folder select tree
         if (parentDiv !== null) parentDiv.appendChild(bookmarkLi);
 
-        closeEditBookmarkModal();
+        closeModal(form);
     }).catch(function(error) {
         errorP.textContent = `Failed to edit bookmark: ${error.message}`;
     });
-}
-
-// Close the edit bookmark modal
-function closeEditBookmarkModal() {
-    const modalContainer: HTMLDivElement | null = document.getElementById("modal-container") as HTMLDivElement;
-    const editBookmarkForm: HTMLFormElement | null = document.getElementById("edit-bookmark-form") as HTMLFormElement;
-    const errorP = editBookmarkForm.querySelector(".form-error") as HTMLParagraphElement;
-
-    modalContainer.style.display = "none";
-    editBookmarkForm.style.display = "none";
-    editBookmarkForm.reset();
-    errorP.textContent = "";
 }
 
 function submitDeleteBookmark(event: Event) {
@@ -677,9 +665,6 @@ function openAddFolderModal(event: Event) {
     const folderSelectWrapper: HTMLDivElement | null = document.getElementById("add-folder-folder-select-wrapper") as HTMLDivElement;
     const folderSelect: HTMLDivElement | null = document.getElementById("folder-select") as HTMLDivElement;
 
-    // Include the folder select sub-form
-    folderSelectWrapper.appendChild(folderSelect);
-
     // Form elements
     const folderRadio: HTMLInputElement | null =
         addFolderForm.elements.namedItem("folder-select") as HTMLInputElement;
@@ -697,10 +682,8 @@ function openAddFolderModal(event: Event) {
         return;
     }
 
-    addFolderForm.reset();
     folderRadio.value = parentFolderID;
-    modalContainer.style.display = "block";
-    addFolderForm.style.display = "block";
+    openModal(addFolderForm, folderSelectWrapper);
     folderNameInput.focus();
 }
 
@@ -745,22 +728,10 @@ function submitAddFolderForm(event: SubmitEvent) {
             CreatedAt: data.created_at,
         };
         updateFolder(folder);
-        closeAddFolderModal();
+        closeModal(form);
     }).catch(function(error) {
         errorP.textContent = `Failed to add folder: ${error.message}`;
     });
-}
-
-// Close the add folder modal
-function closeAddFolderModal() {
-    const modalContainer: HTMLDivElement | null = document.getElementById("modal-container") as HTMLDivElement;
-    const addFolderForm: HTMLFormElement | null = document.getElementById("add-folder-form") as HTMLFormElement;
-    const errorP = addFolderForm.querySelector(".form-error") as HTMLParagraphElement;
-
-    modalContainer.style.display = "none";
-    addFolderForm.style.display = "none";
-    addFolderForm.reset();
-    errorP.textContent = "";
 }
 
 function openRenameFolderForm(event: MouseEvent) {
