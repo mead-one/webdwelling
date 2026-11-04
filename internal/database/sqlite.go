@@ -136,23 +136,23 @@ type User struct {
 }
 
 type BookmarkFolder struct {
-	ID             int64
-	Name           string
-	ParentFolderID *int64
-	Public         bool
-	CreatedAt      string
-	ChildFolders   []*BookmarkFolder
-	ChildBookmarks []*Bookmark
+	ID             int64				`json:"id"`
+	Name           string				`json:"name"`
+	ParentFolderID *int64				`json:"parent_folder_id,omitempty"`
+	Public         bool					`json:"public"`
+	CreatedAt      string				`json:"created_at"`
+	ChildFolders   []*BookmarkFolder	`json:"child_folders"`
+	ChildBookmarks []*Bookmark			`json:"child_bookmarks"`
 }
 
 type Bookmark struct {
-	ID        int64
-	Title     string
-	URL       string
-	Tags      string
-	FolderID  *int64
-	Public    bool
-	CreatedAt string
+	ID        int64  `json:"id"`
+	Title     string `json:"title"`
+	URL       string `json:"url"`
+	Tags      string `json:"tags"`
+	FolderID  *int64 `json:"folder_id,omitempty"`
+	Public    bool   `json:"public"`
+	CreatedAt string `json:"created_at"`
 }
 
 // ### User functions ###

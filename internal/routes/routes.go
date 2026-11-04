@@ -26,15 +26,6 @@ const (
 	maxFolderNameLength    = 64
 )
 
-// Bookmark folder response type
-type BookmarkFolderResponse struct {
-	ID             int64  `json:"id"`
-	Name           string `json:"name"`
-	ParentFolderID *int64 `json:"parent_folder_id,omitempty"`
-	Public         bool   `json:"public"`
-	CreatedAt      string `json:"created_at"`
-}
-
 // Bookmark-related form values
 type bookmarkFields struct {
 	Title string
@@ -171,18 +162,7 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 			})
 		}
 
-		// Bookmark response type
-		type BookmarkResponse struct {
-			ID        int64  `json:"id"`
-			Title     string `json:"title"`
-			URL       string `json:"url"`
-			Tags      string `json:"tags"`
-			FolderID  *int64 `json:"folder_id,omitempty"`
-			Public    bool   `json:"public"`
-			CreatedAt string `json:"created_at"`
-		}
-
-		response := BookmarkResponse{
+		response := database.Bookmark{
 			ID:        newBookmark.ID,
 			Title:     newBookmark.Title,
 			URL:       newBookmark.URL,
@@ -351,18 +331,7 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 			})
 		}
 
-		// Bookmark response type
-		type BookmarkResponse struct {
-			ID        int64  `json:"id"`
-			Title     string `json:"title"`
-			URL       string `json:"url"`
-			Tags      string `json:"tags"`
-			FolderID  *int64 `json:"folder_id,omitempty"`
-			Public    bool   `json:"public"`
-			CreatedAt string `json:"created_at"`
-		}
-
-		response := BookmarkResponse{
+		response := database.Bookmark{
 			ID:        newBookmark.ID,
 			Title:     newBookmark.Title,
 			URL:       newBookmark.URL,
@@ -458,7 +427,7 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 			})
 		}
 
-		response := BookmarkFolderResponse{
+		response := database.BookmarkFolder{
 			ID:             newFolder.ID,
 			Name:           newFolder.Name,
 			ParentFolderID: newFolder.ParentFolderID,
@@ -510,7 +479,7 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 			})
 		}
 
-		response := BookmarkFolderResponse{
+		response := database.BookmarkFolder{
 			ID:             newFolder.ID,
 			Name:           newFolder.Name,
 			ParentFolderID: newFolder.ParentFolderID,
