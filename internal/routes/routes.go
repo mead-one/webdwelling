@@ -39,7 +39,7 @@ type folderFields struct {
 }
 
 func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDir string) error {
-	pages, err := loadPages(templatesDir)
+	renderer, pages, err := loadPages(templatesDir)
 	if err != nil {
 		return err
 	}
@@ -47,7 +47,6 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 	if !ok {
 		return errors.New(`template "login.html" not found`)
 	}
-	renderer := TemplateRenderer(templatesDir)
 	e.Renderer = renderer
 
 	var navItems []NavItem = buildNavItems(pages)

@@ -3,10 +3,12 @@ package routes
 
 import (
 	"bufio"
+	"bytes"
 	"errors"
 	"fmt"
 	"html/template"
 	"io"
+	"log"
 	"os"
 	"path/filepath"
 	"sort"
@@ -29,14 +31,15 @@ type page struct {
 	RequireAuth, HideIfAuth bool
 }
 
-func loadPages(templatesDir string) (map[string]page, error) {
+func loadPages(templatesDir string) (*Template, map[string]page, error) {
 	files, err := filepath.Glob(filepath.Join(templatesDir, "*.html"))
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	// Set up language caser for casing titles
 	caser := cases.Title(language.BritishEnglish)
 	pages := make(map[string]page)
+	root := template.New("")
 
 	for _, file := range files {
 		var base string = filepath.Base(file)
@@ -49,16 +52,19 @@ func loadPages(templatesDir string) (map[string]page, error) {
 		}
 		var title string = caser.String(name)
 
-		// Read comment on first line
-		f, err := os.Open(file)
+		content, err := os.ReadFile(file)
 		if err != nil {
-			continue
+			return nil, nil, fmt.Errorf("read %s: %w", base, err)
 		}
 
-		line, err := getNavComment(f)
-		f.Close()
+		_, err = root.New(base).Parse(string(content))
 		if err != nil {
-			fmt.Println(err)
+			return nil, nil, fmt.Errorf("parse %s: %w", base, err)
+		}
+
+		line, err := getNavComment(bytes.NewReader(content))
+		if err != nil {
+			log.Printf("Failed to retrieve nav comment from %s: %v", base, err)
 			continue
 		}
 
@@ -75,7 +81,7 @@ func loadPages(templatesDir string) (map[string]page, error) {
 		}
 	}
 
-	return pages, nil
+	return &Template{templates: root}, pages, nil
 }
 
 func (t *Template) Render(w io.Writer, name string, data interface{}, c echo.Context) error {
@@ -85,12 +91,6 @@ func (t *Template) Render(w io.Writer, name string, data interface{}, c echo.Con
 	}
 
 	return t.templates.ExecuteTemplate(w, name, data)
-}
-
-func TemplateRenderer(templatesDir string) *Template {
-	return &Template{
-		templates: template.Must(template.ParseGlob(filepath.Join(templatesDir, "*.html"))),
-	}
 }
 
 type NavItem struct {
@@ -153,9 +153,8 @@ func buildNavItems(pages map[string]page) []NavItem {
 }
 
 // Scan every line in file until one with nav: comment is found
-func getNavComment(f *os.File) (line string, err error) {
-	scanner := bufio.NewScanner(f)
-
+func getNavComment(reader io.Reader) (line string, err error) {
+	scanner := bufio.NewScanner(reader)
 	// Values contained in metadata comment
 	var keys []string = []string{"nav:", "weight:", "auth:"}
 
@@ -172,7 +171,7 @@ func getNavComment(f *os.File) (line string, err error) {
 		}
 	}
 
-	return "", errors.New("no nav comment found in file: " + f.Name())
+	return "", errors.New("no nav comment found in file")
 }
 
 func parseNavComment(line string) (include bool, weight int, requireAuth bool, hideIfAuth bool) {
