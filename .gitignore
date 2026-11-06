@@ -29,7 +29,5 @@ data/webdwelling.db
 
 main
 node_modules/
-package-lock.json
-package.json
 web/static/*.js
 bin
