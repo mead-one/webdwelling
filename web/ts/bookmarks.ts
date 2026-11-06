@@ -385,11 +385,12 @@ function submitAddBookmarkForm(event: SubmitEvent) {
             public: String(isPublic),
             folder_id: folderID ?? ""
         })
-    }).then(function(response) {
+    }).then(async function(response) {
+        const data = await response.json().catch(() => null);
         if (!response.ok) {
-            throw new Error(response.statusText);
+            throw new Error(data?.error ?? response.statusText);
         }
-        return response.json();
+        return data;
     }).then(function(data) {
         const bookmark: Bookmark = {
             ID: data.id,
@@ -485,11 +486,12 @@ function moveBookmarkToFolder(bookmarkID: string, folderID: string) {
             bookmark_id: bookmarkID,
             folder_id: folderID
         })
-    }).then(function(response) {
+    }).then(async function(response) {
+        const data = await response.json().catch(() => null);
         if (!response.ok) {
-            throw new Error(response.statusText);
+            throw new Error(data?.error ?? response.statusText);
         }
-        return response.json();
+        return data;
     }).then(function(data) {
         if (data.success === true) {
             // Update the folder tree and folder select tree
@@ -507,7 +509,7 @@ function moveBookmarkToFolder(bookmarkID: string, folderID: string) {
             alert(`Failed to move bookmark: ${data.error}`);
         }
     }).catch(function(error) {
-        alert(`Failed to move bookmark: ${error}`);
+        alert(`Failed to move bookmark: ${error.message}`);
     });
 }
 
@@ -519,11 +521,12 @@ function moveBookmarkFolderToFolder(folderID: string, parentFolderID: string | n
             folder_id: folderID,
             parent_folder_id: parentFolderID ?? ""
         })
-    }).then(function(response) {
+    }).then(async function(response) {
+        const data = await response.json().catch(() => null);
         if (!response.ok) {
-            throw new Error(response.statusText);
+            throw new Error(data?.error ?? response.statusText);
         }
-        return response.json();
+        return data;
     }).then(function(data) {
         if (data.success === true) {
             // Update the folder tree and folder select tree
@@ -543,7 +546,7 @@ function moveBookmarkFolderToFolder(folderID: string, parentFolderID: string | n
             alert(`Failed to move folder: ${data.error}`);
         }
     }).catch(function(error) {
-        alert(`Failed to move folder: ${error}`);
+        alert(`Failed to move folder: ${error.message}`);
     });
 }
 
@@ -588,11 +591,12 @@ function submitEditBookmarkForm(event: SubmitEvent) {
             public: String(isPublic),
             folder_id: folderID ?? ""
         })
-    }).then(function(response) {
+    }).then(async function(response) {
+        const data = await response.json().catch(() => null);
         if (!response.ok) {
-            throw new Error(response.statusText);
+            throw new Error(data?.error ?? response.statusText);
         }
-        return response.json();
+        return data;
     }).then(function(data) {
         // Update the bookmark li element from the editBookmarkForm
         const bookmarkLi: HTMLLIElement | null = document.getElementById(`bookmark-edit-bookmark-${data.id}`) as HTMLLIElement;
@@ -650,21 +654,22 @@ function submitDeleteBookmark(event: Event) {
         body: new URLSearchParams({
             bookmark_id: bookmarkID
         })
-    }).then(function(response) {
+    }).then(async function(response) {
+        const data = await response.json().catch(() => null);
         if (!response.ok) {
-            throw new Error(response.statusText);
+            throw new Error(data?.error ?? response.statusText);
         }
-        return response.json();
+        return data;
     }).then(function(data) {
         if (data.success === true) {
-            // Remove the boomark li element from the folder tree
+            // Remove the bookmark li element from the folder tree
             const bookmarkLi: HTMLLIElement | null = document.getElementById(`bookmark-edit-bookmark-${bookmarkID}`) as HTMLLIElement;
             if (bookmarkLi !== null) bookmarkLi.remove();
         } else {
             alert(`Failed to delete bookmark: ${data.error}`);
         }
     }).catch(function(error) {
-        alert(`Failed to delete bookmark: ${error}`);
+        alert(`Failed to delete bookmark: ${error.message}`);
     });
 }
 
@@ -731,11 +736,12 @@ function submitAddFolderForm(event: SubmitEvent) {
             public: String(isPublic),
             parent_folder_id: parentFolderID ?? ""
         })
-    }).then(function(response) {
+    }).then(async function(response) {
+        const data = await response.json().catch(() => null);
         if (!response.ok) {
-            throw new Error(response.statusText);
+            throw new Error(data?.error ?? response.statusText);
         }
-        return response.json();
+        return data;
     }).then(function(data) {
         // Add the folder to the bookmark edit view and folder select
         const folder: BookmarkFolder = {
@@ -836,11 +842,12 @@ function submitRenameFolderForm(event: SubmitEvent) {
             folder_id: folderID,
             name
         })
-    }).then(function(response) {
+    }).then(async function(response) {
+        const data = await response.json().catch(() => null);
         if (!response.ok) {
-            throw new Error(response.statusText);
+            throw new Error(data?.error ?? response.statusText);
         }
-        return response.json();
+        return data;
     }).then(function(data) {
         // Update the folder name in the folder tree
         const folder: BookmarkFolder = {
@@ -852,15 +859,12 @@ function submitRenameFolderForm(event: SubmitEvent) {
         };
         updateFolder(folder);
 
-        // Close the form
-        //document.getElementById(`cancel-rename-folder-${data.id}`).click();
         form.remove();
 
-        // Show the hidden spans
         folderNameSpan.style.display = "inline";
         folderActions.style.display = "inline";
     }).catch(function(error) {
-        alert(`Failed to rename folder: ${error}`);
+        alert(`Failed to rename folder: ${error.message}`);
     });
 }
 
@@ -906,11 +910,12 @@ function submitDeleteFolder(event: MouseEvent) {
         body: new URLSearchParams({
             folder_id: folderID
         })
-    }).then(function(response) {
+    }).then(async function(response) {
+        const data = await response.json().catch(() => null);
         if (!response.ok) {
-            throw new Error(response.statusText);
+            throw new Error(data?.error ?? response.statusText);
         }
-        return response.json();
+        return data;
     }).then(function(data) {
         const folderLi: HTMLLIElement | null = document.getElementById(`bookmark-edit-folder-${folderID}`) as HTMLLIElement;
         const folderSelectLi: HTMLLIElement | null = document.getElementById(`folder-select-folder-${folderID}`) as HTMLLIElement;
@@ -919,7 +924,7 @@ function submitDeleteFolder(event: MouseEvent) {
         // Remove the folder from the folder select tree
         folderSelectLi.remove();
     }).catch(function(error) {
-        alert(`Failed to delete folder: ${error}`);
+        alert(`Failed to delete folder: ${error.message}`);
     });
 }
 

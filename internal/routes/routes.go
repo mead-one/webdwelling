@@ -141,19 +141,8 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 		var public bool = c.FormValue("public") == "true"
 
 		newBookmark, err := database.AddBookmark(userID, fields.Title, fields.URL, fields.Tags, folderID, public)
-		if errors.Is(err, database.ErrNotFound) {
-			log.Printf("Failed to add bookmark: %v", err)
-			return c.JSON(http.StatusNotFound, map[string]interface{}{
-				"success": false,
-				"error":   "Destination folder not found",
-			})
-		}
 		if err != nil {
-			log.Printf("Failed to add bookmark: %v", err)
-			return c.JSON(http.StatusInternalServerError, map[string]interface{}{
-				"success": false,
-				"error":   "Failed to add bookmark",
-			})
+			return handleDBError(c, fmt.Sprintf("add bookmark %q", fields.Title), err)
 		}
 
 		response := database.Bookmark{
@@ -191,18 +180,8 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 		}
 
 		err = database.MoveBookmark(userID, bookmarkID, folderID)
-		if errors.Is(err, database.ErrNotFound) {
-			return c.JSON(http.StatusNotFound, map[string]interface{}{
-				"success": false,
-				"error":   "Bookmark or folder not found",
-			})
-		}
 		if err != nil {
-			log.Printf("Failed to move bookmark: %v", err)
-			return c.JSON(http.StatusInternalServerError, map[string]interface{}{
-				"success": false,
-				"error":   "Something went wrong",
-			})
+			return handleDBError(c, fmt.Sprintf("move bookmark %d", bookmarkID), err)
 		}
 
 		return c.JSON(http.StatusOK, map[string]interface{}{
@@ -232,30 +211,8 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 		}
 
 		err = database.MoveBookmarkFolder(userID, folderID, parentFolderID)
-		if errors.Is(err, database.ErrNotFound) {
-			log.Printf("Failed to move folder %d: %v", folderID, err)
-			return c.JSON(http.StatusNotFound, map[string]interface{}{
-				"success": false,
-				"error":   "Destination folder not found",
-			})
-		} else if errors.Is(err, database.ErrInvalidMove) {
-			log.Printf("Failed to move folder %d: %v", folderID, err)
-			return c.JSON(http.StatusBadRequest, map[string]interface{}{
-				"success": false,
-				"error":   "A folder can't be moved into one of its own subfolders",
-			})
-		} else if errors.Is(err, database.ErrDuplicateName) {
-			log.Printf("Failed to move folder %d: %v", folderID, err)
-			return c.JSON(http.StatusBadRequest, map[string]interface{}{
-				"success": false,
-				"error":   "A folder of that name already exists there",
-			})
-		} else if err != nil {
-			log.Printf("Failed to move folder %d: %v", folderID, err)
-			return c.JSON(http.StatusInternalServerError, map[string]interface{}{
-				"success": false,
-				"error":   "Something went wrong",
-			})
+		if err != nil {
+			return handleDBError(c, fmt.Sprintf("move folder %d", folderID), err)
 		}
 
 		return c.JSON(http.StatusOK, map[string]interface{}{
@@ -295,19 +252,8 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 		var public bool = c.FormValue("public") == "true"
 
 		newBookmark, err := database.EditBookmark(userID, bookmarkID, fields.Title, fields.URL, fields.Tags, folderID, public)
-		if errors.Is(err, database.ErrNotFound) {
-			log.Printf("Failed to edit bookmark: %v", err)
-			return c.JSON(http.StatusNotFound, map[string]interface{}{
-				"success": false,
-				"error":   "Bookmark or folder not found",
-			})
-		}
 		if err != nil {
-			log.Printf("Failed to edit bookmark: %v", err)
-			return c.JSON(http.StatusInternalServerError, map[string]interface{}{
-				"success": false,
-				"error":   "Failed to edit bookmark",
-			})
+			return handleDBError(c, fmt.Sprintf("edit bookmark %d", bookmarkID), err)
 		}
 
 		response := database.Bookmark{
@@ -335,19 +281,8 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 		}
 
 		err = database.DeleteBookmark(userID, bookmarkID)
-		if errors.Is(err, database.ErrNotFound) {
-			log.Printf("Failed to delete bookmark %d: %v", bookmarkID, err)
-			return c.JSON(http.StatusNotFound, map[string]interface{}{
-				"success": false,
-				"error":   "Bookmark not found",
-			})
-		}
 		if err != nil {
-			log.Printf("Failed to delete bookmark %d: %v", bookmarkID, err)
-			return c.JSON(http.StatusInternalServerError, map[string]interface{}{
-				"success": false,
-				"error":   "Something went wrong",
-			})
+			return handleDBError(c, fmt.Sprintf("delete bookmark %d", bookmarkID), err)
 		}
 
 		return c.JSON(http.StatusOK, map[string]interface{}{
@@ -380,26 +315,8 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 		var public bool = c.FormValue("public") == "true"
 
 		newFolder, err := database.AddBookmarkFolder(userID, fields.Name, parentFolderID, public)
-		if errors.Is(err, database.ErrDuplicateName) {
-			log.Printf("Failed to add folder: %v", err)
-			return c.JSON(http.StatusConflict, map[string]interface{}{
-				"success": false,
-				"error":   "A folder of that name already exists there",
-			})
-		}
-		if errors.Is(err, database.ErrNotFound) {
-			log.Printf("Failed to add folder: %v", err)
-			return c.JSON(http.StatusNotFound, map[string]interface{}{
-				"success": false,
-				"error":   "Folder not found",
-			})
-		}
 		if err != nil {
-			log.Printf("Failed to add folder: %v", err)
-			return c.JSON(http.StatusInternalServerError, map[string]interface{}{
-				"success": false,
-				"error":   "Failed to add folder",
-			})
+			return handleDBError(c, fmt.Sprintf("add folder %q", fields.Name), err)
 		}
 
 		response := database.BookmarkFolder{
@@ -434,24 +351,8 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 		}
 
 		newFolder, err := database.RenameBookmarkFolder(userID, folderID, fields.Name)
-		if errors.Is(err, database.ErrNotFound) {
-			log.Printf("Failed to rename folder %d: %v", folderID, err)
-			return c.JSON(http.StatusNotFound, map[string]interface{}{
-				"success": false,
-				"error":   "Folder not found",
-			})
-		} else if errors.Is(err, database.ErrDuplicateName) {
-			log.Printf("Failed to rename folder %d: %v", folderID, err)
-			return c.JSON(http.StatusBadRequest, map[string]interface{}{
-				"success": false,
-				"error":   "A folder of that name already exists there",
-			})
-		} else if err != nil {
-			log.Printf("Failed to rename folder %d: %v", folderID, err)
-			return c.JSON(http.StatusInternalServerError, map[string]interface{}{
-				"success": false,
-				"error":   "Something went wrong",
-			})
+		if err != nil {
+			return handleDBError(c, fmt.Sprintf("rename folder %d", folderID), err)
 		}
 
 		response := database.BookmarkFolder{
@@ -475,17 +376,8 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 		}
 
 		err = database.DeleteBookmarkFolder(userID, folderID)
-		if errors.Is(err, database.ErrNotFound) {
-			return c.JSON(http.StatusNotFound, map[string]interface{}{
-				"success": false,
-				"error":   "Folder not found",
-			})
-		} else if err != nil {
-			log.Printf("Failed to delete folder %d for user %d: %v", folderID, userID, err)
-			return c.JSON(http.StatusInternalServerError, map[string]interface{}{
-				"success": false,
-				"error":   "Failed to delete folder",
-			})
+		if err != nil {
+			return handleDBError(c, fmt.Sprintf("delete folder %d", folderID), err)
 		}
 
 		return c.JSON(http.StatusOK, map[string]interface{}{
@@ -639,4 +531,31 @@ func parseOptionalInt(c echo.Context, key string) (*int64, error) {
 		return nil, err
 	}
 	return &number, nil
+}
+
+func handleDBError(c echo.Context, action string, err error) error {
+	log.Printf("Failed to %s: %v", action, err)
+
+	switch {
+	case errors.Is(err, database.ErrNotFound):
+		return c.JSON(http.StatusNotFound, map[string]interface{}{
+			"success": false,
+			"error":   "Not found",
+		})
+	case errors.Is(err, database.ErrDuplicateName):
+		return c.JSON(http.StatusConflict, map[string]interface{}{
+			"success": false,
+			"error":   "A folder of that name already exists there",
+		})
+	case errors.Is(err, database.ErrInvalidMove):
+		return c.JSON(http.StatusBadRequest, map[string]interface{}{
+			"success": false,
+			"error":   "Attempted to move a folder into one of its own subfolders",
+		})
+	default:
+		return c.JSON(http.StatusInternalServerError, map[string]interface{}{
+			"success": false,
+			"error":   "Something went wrong",
+		})
+	}
 }

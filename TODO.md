@@ -64,7 +64,7 @@ Findings from a code review on 2026-10-21, ordered by priority. File references 
 - [x] Remove the duplicate `/bookmarks/move-folder` route (`routes.go:327`).
 - [x] Pull the `"null"`/`""` → `*int64` form parsing into a `parseOptionalInt(c, key)` helper. It's currently repeated five times.
 - [x] Put `json` tags on `database.Bookmark` and `database.BookmarkFolder`, then delete `BookmarkResponse` (declared twice) and `BookmarkFolderResponse`.
-- [ ] Merge the three template-route closures in `routes.go:436-464` into one handler with different wrappers.
+- [x] Merge the three template-route closures in `routes.go:436-464` into one handler with different wrappers.
 - [x] Build both nav lists once at startup instead of re-reading every template on every request (`templates.go:41`). This also removes `defer f.Close()` from inside loops (`templates.go:65`, `routes.go:425`).
 - [x] Read template files once and use the list for both nav items and pages (currently reads once for each)
 - [x] Combine the repeated open/close modal code in `bookmarks.ts`, and run its null checks before the values are used.
