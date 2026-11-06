@@ -19,18 +19,24 @@ const JWTSecretEnv = "JWT_SECRET"
 const minJWTSecretLength = 32
 
 type Config struct {
-	Port          int    `yaml:"port"`
-	BasePath      string `yaml:"base_path"`
-	SecureCookies bool   `yaml:"secure_cookies"`
-	JWTSecret     []byte `yaml:"-"` // Not in yaml file, loaded from environment
+	Port               int    `yaml:"port"`
+	BasePath           string `yaml:"base_path"`
+	DataDirectory      string `yaml:"data_directory"`
+	TemplatesDirectory string `yaml:"templates_directory"`
+	StaticDirectory    string `yaml:"static_directory"`
+	SecureCookies      bool   `yaml:"secure_cookies"`
+	JWTSecret          []byte `yaml:"-"` // Not in yaml file, loaded from environment
 }
 
 // Defaults for any option that is commented out or missing from the config file
 func defaultConfig() Config {
 	return Config{
-		Port:          1323,
-		BasePath:      "",
-		SecureCookies: true,
+		Port:               1323,
+		BasePath:           "",
+		DataDirectory:      "./data",
+		TemplatesDirectory: "./web/templates",
+		StaticDirectory:    "./web/static",
+		SecureCookies:      true,
 	}
 }
 
@@ -45,6 +51,16 @@ func LoadConfig(path string) (*Config, error) {
 	// A file containing only comments decodes as io.EOF, which just means "use the defaults"
 	if err := yaml.NewDecoder(file).Decode(&cfg); err != nil && !errors.Is(err, io.EOF) {
 		return nil, fmt.Errorf("failed to parse %s: %w", path, err)
+	}
+
+	if cfg.DataDirectory == "" {
+		return nil, errors.New("empty data_directory provided")
+	}
+	if cfg.TemplatesDirectory == "" {
+		return nil, errors.New("empty templates_directory provided")
+	}
+	if cfg.StaticDirectory == "" {
+		return nil, errors.New("empty static_directory provided")
 	}
 
 	secret := os.Getenv(JWTSecretEnv)

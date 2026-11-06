@@ -87,7 +87,7 @@ Findings from a code review on 2026-10-21, ordered by priority. File references 
   - ~~use the standard library `slices` instead of `golang.org/x/exp/slices`~~
 - [ ] **Fix the Makefile:** ~~`go vet ./...`, `go test ./...`, and `go build -o $(BINARY_PATH) ./cmd/server`.~~ Add tests, starting with the database layer against an in-memory SQLite.
 - [x] **Commit `package.json` and its lockfile** so the TypeScript version is pinned. Change the tsconfig `module` to `none` or `es2020` for a browser script.
-- [ ] **Make the paths configurable:** data directory, templates, static files and the config file location.
+- [x] **Make the paths configurable:** data directory, templates, static files and the config file location.
 - [x] **Harden `system/webdwelling.service`:**
   - ~~`NoNewPrivileges=yes`~~
   - ~~`ProtectSystem=strict`~~

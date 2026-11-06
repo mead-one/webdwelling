@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"path/filepath"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -49,7 +48,7 @@ func main() {
 		}
 	})
 
-	database.InitDB()
+	database.InitDB(cfg.DataDirectory)
 
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
@@ -65,7 +64,7 @@ func main() {
 	}))
 
 	// Register routes
-	err = routes.RegisterRoutes(e, cfg.BasePath, filepath.Join("web", "templates"), filepath.Join("web", "static"))
+	err = routes.RegisterRoutes(e, cfg.BasePath, cfg.TemplatesDirectory, cfg.StaticDirectory)
 	if err != nil {
 		log.Fatalf("Failed to register routes: %v", err)
 	}

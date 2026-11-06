@@ -38,13 +38,10 @@ var DB *sql.DB
 var dummyHash, _ = bcrypt.GenerateFromPassword([]byte("b7$MQ4lIIp"), bcrypt.DefaultCost)
 
 // Initialise the database connection
-func InitDB() {
+func InitDB(dataDir string) {
 	// Ensure data directory exists
-	dataDir := "./data"
-	if _, err := os.Stat(dataDir); os.IsNotExist(err) {
-		if err := os.Mkdir(dataDir, 0755); err != nil {
-			log.Fatalf("Failed to create data directory: %v", err)
-		}
+	if err := os.MkdirAll(dataDir, 0755); err != nil {
+		log.Fatalf("Failed to create data directory: %v", err)
 	}
 
 	dbPath := filepath.Join(dataDir, "webdwelling.db?_foreign_keys=on")

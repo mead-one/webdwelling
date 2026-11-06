@@ -4,14 +4,17 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
+	"log"
 	"net/mail"
 	"os"
 	"strings"
 
+	"github.com/mead-one/webdwelling/config"
 	"github.com/mead-one/webdwelling/internal/database"
 )
 
 var (
+	configPath string
 	username   string
 	password   string
 	email      string
@@ -20,6 +23,7 @@ var (
 )
 
 func init() {
+	flag.StringVar(&configPath, "config", config.DefaultPath, "path to the config file")
 	flag.StringVar(&username, "username", "", "New user's username")
 	flag.StringVar(&password, "password", "", "Unhashed new password")
 	flag.StringVar(&email, "email", "", "New user's email address")
@@ -33,6 +37,11 @@ func main() {
 	password = strings.TrimSpace(password)
 	email = strings.TrimSpace(email)
 	publicSlug = strings.ReplaceAll(publicSlug, " ", "")
+
+	cfg, err := config.LoadConfig(configPath)
+	if err != nil {
+		log.Fatalf("Error loading config: %v", err)
+	}
 
 	// --- Validation ---
 	if username == "" || len(password) <= 8 || !isValidEmail(email) || publicSlug == "" {
@@ -106,7 +115,7 @@ func main() {
 	fmt.Printf("User is admin: %t\n", admin)
 
 	// --- Database Operations ---
-	database.InitDB()
+	database.InitDB(cfg.DataDirectory)
 
 	user, err := database.CreateUser(username, password, &email, &publicSlug, admin)
 	if err != nil {

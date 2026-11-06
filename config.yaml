@@ -1,11 +1,27 @@
 # Configuration file for webdwelling
 # Options that are commented out use the default value shown
 
-# Port to listen on
+# The port that webdwelling will listen on.
 #port: 1323
 
-# Base path for the web app
+# Base path for the web app, e.g. '/webdwelling' if using a reverse proxy to
+# run several services on one domain.
 #base_path: ''
+
+# The location of the SQLite database. Relative paths are resolved from the
+# working directory. If changing this value, and webdwelling is being run via
+# systemd, ensure the change is reflected in the service file's ReadWritePaths
+# setting, and has been reloaded with `systemctl daemon-reload`.
+#data_directory: './data'
+
+# The location of the HTML templates for webdwelling to render as web pages.
+# Relative paths are resolved from the working directory.
+#templates_directory: './web/templates'
+
+# Directory containing static assets. Relative paths are resolved from the
+# working directory. If changing this value, ensure the change is reflected in
+# outDir in tsconfig.json
+#static_directory: './web/static'
 
 # Mark cookies Secure (HTTPS only). Turn off only for local development over plain HTTP.
 #secure_cookies: true
