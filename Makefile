@@ -19,12 +19,10 @@ test:
 	go vet ./...
 	staticcheck ./...
 
-build:
-	build_ts
+build: build_ts
 	go build -o $(BINARY_PATH) ./cmd/server
 
-run:
-	build_ts
+run: build_ts
 	go run ./cmd/server
 
 clean:
