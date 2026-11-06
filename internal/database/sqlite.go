@@ -133,13 +133,13 @@ type User struct {
 }
 
 type BookmarkFolder struct {
-	ID             int64				`json:"id"`
-	Name           string				`json:"name"`
-	ParentFolderID *int64				`json:"parent_folder_id,omitempty"`
-	Public         bool					`json:"public"`
-	CreatedAt      string				`json:"created_at"`
-	ChildFolders   []*BookmarkFolder	`json:"child_folders"`
-	ChildBookmarks []*Bookmark			`json:"child_bookmarks"`
+	ID             int64             `json:"id"`
+	Name           string            `json:"name"`
+	ParentFolderID *int64            `json:"parent_folder_id,omitempty"`
+	Public         bool              `json:"public"`
+	CreatedAt      string            `json:"created_at"`
+	ChildFolders   []*BookmarkFolder `json:"child_folders"`
+	ChildBookmarks []*Bookmark       `json:"child_bookmarks"`
 }
 
 type Bookmark struct {
