@@ -7,25 +7,28 @@ BINARY_PATH=$(BINARY_DIR)/$(BINARY_NAME)
 -include .env
 export JWT_SECRET
 
+.PHONY: all build_ts test build run clean registeruser
+
 all: build_ts test build
 
 build_ts:
 	npx tsc
 
 test:
-	go test -v cmd/server/main.go
+	go test ./...
 	go vet ./...
+	staticcheck ./...
 
 build:
-	go build -o $(BINARY_PATH) cmd/server/main.go
+	go build -o $(BINARY_PATH) ./cmd/server
 
 run:
 	npx tsc
-	go run cmd/server/main.go
+	go run ./cmd/server
 
 clean:
 	go clean
 	rm -rf $(BINARY_DIR)
 
 registeruser:
-	go run cmd/registeruser/main.go $(ARGS)
+	go run ./cmd/registeruser $(ARGS)
