@@ -20,10 +20,11 @@ test:
 	staticcheck ./...
 
 build:
+	build_ts
 	go build -o $(BINARY_PATH) ./cmd/server
 
 run:
-	npx tsc
+	build_ts
 	go run ./cmd/server
 
 clean:
