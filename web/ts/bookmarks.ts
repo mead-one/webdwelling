@@ -402,7 +402,7 @@ function submitAddBookmarkForm(event: SubmitEvent) {
             CreatedAt: data.created_at,
         };
         // Add the bookmark to the bookmark edit view and folder select
-        updateNewBookmark(bookmark);
+        updateBookmark(bookmark);
         closeModal(form);
     }).catch(function(error) {
         errorP.textContent = `Failed to add bookmark: ${error.message}`;
@@ -603,29 +603,16 @@ function submitEditBookmarkForm(event: SubmitEvent) {
         return data;
     }).then(function(data) {
         // Update the bookmark li element from the editBookmarkForm
-        const bookmarkLi: HTMLLIElement | null = document.getElementById(`bookmark-edit-bookmark-${data.id}`) as HTMLLIElement;
-        const bookmarkTitle: HTMLAnchorElement | null = bookmarkLi.querySelector("a.bookmark-edit-bookmark-link") as HTMLAnchorElement;
-        const bookmarkTags: HTMLSpanElement | null = bookmarkLi.querySelector("span.bookmark-edit-bookmark-tags") as HTMLSpanElement;
-
-        let parentFolder: HTMLDivElement | null, parentDiv: HTMLDivElement | null;
-        if (data.folder_id === null || data.folder_id === undefined || data.folder_id === "") {
-            parentFolder = document.getElementById("bookmark-edit-folder-root") as HTMLDivElement;
-            parentDiv = parentFolder.querySelector(":scope > ul.bookmark-edit-bookmark-list");
-        } else {
-            parentFolder = document.getElementById(`bookmark-edit-folder-${data.folder_id}`) as HTMLDivElement;
-            parentDiv = parentFolder.querySelector(":scope > details.bookmark-edit-folder-details > ul.bookmark-edit-bookmark-list");
-        }
-        bookmarkTitle.innerText = data.title;
-        bookmarkTitle.setAttribute("href", data.url);
-        bookmarkTags.innerText = data.tags;
-        if (data.public) {
-            bookmarkLi.setAttribute("data-public", "");
-        } else {
-            bookmarkLi.removeAttribute("data-public");
-        }
-        // Update the folder tree and folder select tree
-        if (parentDiv !== null) parentDiv.appendChild(bookmarkLi);
-
+        const bookmark: Bookmark = {
+            ID: data.id,
+            Title: data.title,
+            URL: data.url,
+            Tags: data.tags,
+            FolderID: data.folder_id,
+            Public: data.public,
+            CreatedAt: data.created_at
+        };
+        updateBookmark(bookmark);
         closeModal(form);
     }).catch(function(error) {
         errorP.textContent = `Failed to edit bookmark: ${error.message}`;
@@ -801,6 +788,7 @@ function openRenameFolderForm(event: MouseEvent) {
     folderPublicLabel.setAttribute("for", `rename-folder-check-${folderID}`);
     folderPublicLabel.textContent = "Public:";
     const folderPublicCheck: HTMLInputElement = document.createElement("input");
+    folderPublicCheck.id = `rename-folder-check-${folderID}`;
     folderPublicCheck.type = "checkbox";
     folderPublicCheck.name = "public";
     folderPublicCheck.checked = folderPublic;
@@ -956,7 +944,7 @@ function submitDeleteFolder(event: MouseEvent) {
 }
 
 // Update the folder tree after adding a new bookmark
-function updateNewBookmark(bookmark: Bookmark) {
+function updateBookmark(bookmark: Bookmark) {
     updateFolderTreeWithBookmark(bookmark);
 }
 
@@ -1032,8 +1020,12 @@ function updateFolderTreeWithBookmark(bookmark: Bookmark) {
         bookmarkActions.appendChild(editBookmarkButton);
         bookmarkActions.appendChild(deleteBookmarkButton);
         bookmarkLi.appendChild(bookmarkActions);
+    }
 
-        parentFolder.appendChild(bookmarkLi);
+    if (bookmark.Public) {
+        bookmarkLi.setAttribute("data-public", "");
+    } else {
+        bookmarkLi.removeAttribute("data-public");
     }
 
     try {
