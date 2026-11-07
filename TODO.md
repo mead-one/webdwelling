@@ -44,7 +44,7 @@ Findings from a code review on 2026-10-21, ordered by priority. File references 
   - ~~`UNIQUE(user_id, name)` on folders blocks same-named folders under different parents. Change it to `UNIQUE(user_id, parent_folder_id, name)` and remember that NULL parents are distinct from each other.~~
   - ~~Add `created_at` to `bookmarks`.~~
   - ~~Select and honour folder `public` in `GetBookmarksByUserID`. It's never selected now, so it's always `false`.~~
-- [ ] **Add a schema migration mechanism**, e.g. `PRAGMA user_version` plus ordered migration steps. `CREATE TABLE IF NOT EXISTS` never changes an existing database, so none of the schema fixes, and none of the renames below, will reach a deployed DB without it.
+- [x] **Add a schema migration mechanism**, e.g. `PRAGMA user_version` plus ordered migration steps. `CREATE TABLE IF NOT EXISTS` never changes an existing database, so none of the schema fixes, and none of the renames below, will reach a deployed DB without it.
 - [x] **Return folders in a stable order** (`sqlite.go:242`). The tree is built by ranging over a map. Add `ORDER BY name` and build the tree in query order.
 - [x] **Handle rows properly:** `defer rows.Close()` and check `rows.Err()` everywhere.
 - [x] **Make `DeleteBookmarkFolder` one transaction** (`sqlite.go:526-582`), ideally a single recursive CTE. It currently deletes child bookmarks twice and can leave a half-deleted tree.

@@ -2,16 +2,22 @@ package database
 
 import (
 	"database/sql"
+	"embed"
 	"errors"
 	"fmt"
+	"io/fs"
 	"log"
 	"os"
+	"path"
 	"path/filepath"
 	"time"
 
 	"github.com/mattn/go-sqlite3"
 	"golang.org/x/crypto/bcrypt"
 )
+
+//go:embed migrations/*.sql
+var migrationFiles embed.FS
 
 var (
 	ErrNotFound      = errors.New("not found")
@@ -57,8 +63,10 @@ func InitDB(dataDir string) {
 
 	DB = db
 
-	// Create tables if they don't exist
-	createTables()
+	err = migrate()
+	if err != nil {
+		log.Fatalf("Database migration failed: %v", err)
+	}
 }
 
 // Close the database connection
@@ -68,56 +76,81 @@ func CloseDB() {
 	}
 }
 
-// ### Database schema ###
-// Create tables if they don't exist
-func createTables() {
-	var err error
-
-	if _, err = DB.Exec(`CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        username TEXT UNIQUE NOT NULL,
-        password TEXT NOT NULL,
-        email TEXT UNIQUE,
-        public_slug TEXT UNIQUE NOT NULL,
-        admin BOOLEAN NOT NULL DEFAULT FALSE,
-        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        last_login TEXT
-    )`); err != nil {
-		log.Fatalf("Failed to create users table: %v", err)
+// Run migrations not present in live database
+func migrate() error {
+	files, err := fs.ReadDir(migrationFiles, "migrations")
+	if err != nil {
+		return err
 	}
 
-	if _, err = DB.Exec(`CREATE TABLE IF NOT EXISTS bookmark_folders (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER NOT NULL,
-        name TEXT NOT NULL,
-        parent_folder_id INTEGER,
-        public INTEGER NOT NULL DEFAULT 1,
-        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY(user_id) REFERENCES users(id),
-        FOREIGN KEY(parent_folder_id) REFERENCES bookmark_folders(id) ON DELETE CASCADE,
-        UNIQUE(user_id, parent_folder_id, name)
-    )`); err != nil {
-		log.Fatalf("Failed to create bookmark_folders table: %v", err)
-	}
-	if _, err = DB.Exec(`CREATE UNIQUE INDEX IF NOT EXISTS bookmark_folders_unique_root_name
-	ON bookmark_folders(user_id, name) WHERE parent_folder_id IS NULL`); err != nil {
-		log.Fatalf("Failed to create unique index on top-level folders: %v", err)
+	var targetVersion int = len(files)
+	var currentVersion int
+	err = DB.QueryRow("PRAGMA user_version;").Scan(&currentVersion)
+	if err != nil {
+		return fmt.Errorf("failed to read user_version from database: %w", err)
 	}
 
-	if _, err = DB.Exec(`CREATE TABLE IF NOT EXISTS bookmarks (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER NOT NULL,
-        title TEXT NOT NULL,
-        url TEXT NOT NULL,
-        tags TEXT NOT NULL DEFAULT '',
-        folder_id INTEGER,
-        public INTEGER NOT NULL DEFAULT 1,
-        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY(user_id) REFERENCES users(id),
-        FOREIGN KEY(folder_id) REFERENCES bookmark_folders(id) ON DELETE CASCADE
-    )`); err != nil {
-		log.Fatalf("Failed to create bookmarks table: %v", err)
+	// Check that files are correctly named by schema version
+	for i, file := range files {
+		version := i + 1
+
+		pattern := fmt.Sprintf("%04d_*.sql", version)
+		matched, err := filepath.Match(pattern, file.Name())
+		if err != nil {
+			return fmt.Errorf("failed to check migration filename %s: %w", file.Name(), err)
+		}
+
+		if !matched {
+			return fmt.Errorf("filename %s isn't correct for schema version %d", file.Name(), version)
+		}
 	}
+
+	if currentVersion > targetVersion {
+		return fmt.Errorf("current schema version (%d) is newer than this build's latest migration (%d)", currentVersion, targetVersion)
+	}
+	if currentVersion == targetVersion {
+		return nil
+	}
+
+	for i, file := range files[currentVersion:] {
+		version := currentVersion + i + 1
+
+		err := applyMigration(version, file.Name())
+		if err != nil {
+			return err
+		}
+		fmt.Printf("Successfully applied migration: %q\n", file.Name())
+	}
+
+	return nil
+}
+
+func applyMigration(version int, name string) error {
+	sqlContent, err := fs.ReadFile(migrationFiles, path.Join("migrations", name))
+	if err != nil {
+		return fmt.Errorf("failed to read migration file %d from go:embed: %w", version, err)
+	}
+
+	tx, err := DB.Begin()
+	if err != nil {
+		return fmt.Errorf("failed to create database transaction: %w", err)
+	}
+	defer tx.Rollback() // Rollback has no effect if Commit successfully ran
+
+	_, err = tx.Exec(string(sqlContent))
+	if err != nil {
+		return fmt.Errorf("failed to apply migration version %d: %w", version, err)
+	}
+	_, err = tx.Exec(fmt.Sprintf("PRAGMA user_version = %d", version))
+	if err != nil {
+		return fmt.Errorf("failed to update user_version to %d: %w", version, err)
+	}
+	err = tx.Commit()
+	if err != nil {
+		return fmt.Errorf("failed to commit database transaction for migration %d: %w", version, err)
+	}
+
+	return nil
 }
 
 // ### Database types ###
