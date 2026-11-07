@@ -544,15 +544,15 @@ func FolderIsDescendant(folderID int64, destinationFolderID *int64) bool {
 	return FolderIsDescendant(folderID, destinationFolder.ParentFolderID)
 }
 
-func RenameBookmarkFolder(userID int, folderID int64, name string) (*BookmarkFolder, error) {
+func RenameBookmarkFolder(userID int, folderID int64, isPublic bool, name string) (*BookmarkFolder, error) {
 	folder := &BookmarkFolder{}
 
 	err := DB.QueryRow(`
 	UPDATE bookmark_folders
-	SET name = :name
+	SET name = :name, public = :public
 	WHERE id = :folder_id AND user_id = :user_id
 	RETURNING id,name,parent_folder_id,public,created_at
-	`, sql.Named("name", name), sql.Named("folder_id", folderID), sql.Named("user_id", userID),
+	`, sql.Named("name", name), sql.Named("public", isPublic), sql.Named("folder_id", folderID), sql.Named("user_id", userID),
 	).Scan(&folder.ID, &folder.Name, &folder.ParentFolderID, &folder.Public, &folder.CreatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, fmt.Errorf("rename folder %d: %w", folderID, ErrNotFound)

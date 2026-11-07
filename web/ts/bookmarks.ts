@@ -771,10 +771,12 @@ function openRenameFolderForm(event: MouseEvent) {
     const button: HTMLButtonElement | null = event.target as HTMLButtonElement;
     const parentFolder: HTMLDivElement | null = button.closest(".bookmark-edit-folder") as HTMLDivElement;
     const folderID: string | undefined = parentFolder.dataset.id;
+    const folderLi: HTMLElement | null = document.getElementById(`bookmark-edit-folder-${folderID}`) as HTMLLIElement;
     const folderSummary: HTMLElement | null = document.querySelector(`#bookmark-edit-folder-${folderID} > details.bookmark-edit-folder-details > summary`) as HTMLElement;
     const folderSpan: HTMLSpanElement | null = document.getElementById(`bookmark-edit-folder-name-${folderID}`) as HTMLSpanElement;
     const folderActions: HTMLSpanElement | null = document.getElementById(`bookmark-edit-folder-actions-${folderID}`) as HTMLSpanElement;
     const folderName: string = folderSpan.innerText;
+    const folderPublic: boolean = folderLi.hasAttribute("data-public");
     const renameFolderForm: HTMLFormElement | null = document.createElement("form");
 
     // Ensure no existing rename folder forms
@@ -795,7 +797,16 @@ function openRenameFolderForm(event: MouseEvent) {
     folderNameInput.maxLength = 64;
     folderNameInput.value = folderName;
     folderNameInput.required = true;
+    const folderPublicLabel: HTMLLabelElement = document.createElement("label");
+    folderPublicLabel.setAttribute("for", `rename-folder-check-${folderID}`);
+    folderPublicLabel.textContent = "Public:";
+    const folderPublicCheck: HTMLInputElement = document.createElement("input");
+    folderPublicCheck.type = "checkbox";
+    folderPublicCheck.name = "public";
+    folderPublicCheck.checked = folderPublic;
     folderRenameSpan.appendChild(folderNameInput);
+    folderRenameSpan.appendChild(folderPublicLabel);
+    folderRenameSpan.appendChild(folderPublicCheck);
 
     const renameActions: HTMLSpanElement = document.createElement("span");
     renameActions.classList.add("bookmark-edit-folder-actions");
@@ -837,11 +848,17 @@ function submitRenameFolderForm(event: SubmitEvent) {
         console.error("Missing folder name element");
         return;
     }
+    const folderPublicCheck: HTMLInputElement | null = form.elements.namedItem("public") as HTMLInputElement;
+    if (folderPublicCheck === null) {
+        console.error("Missing folder public element");
+        return;
+    }
     const name: string = folderNameInput.value;
     if (name.trim() == "") {
         console.error("Folder name can't be empty");
         return;
     }
+    const isPublic: boolean = folderPublicCheck.checked;
     const folderActions: HTMLSpanElement | null = document.getElementById(`bookmark-edit-folder-actions-${folderID}`) as HTMLSpanElement;
 
     fetch(addBasePath("/bookmarks/rename-folder"), {
@@ -849,7 +866,8 @@ function submitRenameFolderForm(event: SubmitEvent) {
         headers: postHeaders(),
         body: new URLSearchParams({
             folder_id: folderID,
-            name
+            name,
+            public: String(isPublic)
         })
     }).then(async function(response) {
         const data = await response.json().catch(() => null);
@@ -1135,6 +1153,12 @@ function updateFolderTreeWithFolder(folder: BookmarkFolder) {
 
         // Set folder li
         folderLi.appendChild(folderDetails);
+    }
+
+    if (folder.Public) {
+        folderLi.setAttribute("data-public", "");
+    } else {
+        folderLi.removeAttribute("data-public");
     }
 
     try {

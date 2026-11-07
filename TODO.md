@@ -5,7 +5,7 @@ Findings from a code review on 2026-10-21, ordered by priority. File references 
 ## 1. Fix First
 
 - [x] **Respect public setting when opening bookmark for editing**
-- [ ] **Allow switching of public <-> private when renaming folders**
+- [x] **Allow switching of public <-> private when renaming folders**
 - [x] **Replace the hardcoded JWT secret** (`internal/auth/middleware.go:15`). The repo is public, so anyone can sign a token for any `user_id`. Load the secret from an environment variable or a root-only file (systemd `EnvironmentFile`), refuse to start if it's missing or shorter than 32 bytes, and rotate it. Rotating logs everyone out.
 - [x] **Add CSRF protection.** Set `SameSite=Strict` (or `Lax`) on the `jwt` cookie and add Echo's `middleware.CSRF()`. Send the token from `bookmarks.ts` and include it in the login form.
 - [x] **Make logout a POST** (`routes.go:400`). As a GET, an `<img>` tag on any site can log you out.

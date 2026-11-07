@@ -15,7 +15,7 @@
 {{end}}
 
 {{define "bookmark-edit-folder"}}
-<li id="bookmark-edit-folder-{{.ID}}" class="bookmark-edit-folder" data-id="{{.ID}}">
+<li id="bookmark-edit-folder-{{.ID}}" class="bookmark-edit-folder" data-id="{{.ID}}" {{if.Public}}data-public=""{{end}}>
 <details class="bookmark-edit-folder-details">
     <summary>
         <span class="folder-icon-closed">📁</span>

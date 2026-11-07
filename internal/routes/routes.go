@@ -35,7 +35,8 @@ type bookmarkFields struct {
 
 // Folder-related form values
 type folderFields struct {
-	Name string
+	Name   string
+	Public bool
 }
 
 func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDir string) error {
@@ -350,7 +351,7 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 			})
 		}
 
-		newFolder, err := database.RenameBookmarkFolder(userID, folderID, fields.Name)
+		newFolder, err := database.RenameBookmarkFolder(userID, folderID, fields.Public, fields.Name)
 		if err != nil {
 			return handleDBError(c, fmt.Sprintf("rename folder %d", folderID), err)
 		}
@@ -510,7 +511,8 @@ func readBookmarkFields(c echo.Context) (bookmarkFields, error) {
 
 func readFolderFields(c echo.Context) (folderFields, error) {
 	fields := folderFields{
-		Name: strings.TrimSpace(c.FormValue("name")),
+		Name:   strings.TrimSpace(c.FormValue("name")),
+		Public: c.FormValue("public") == "true",
 	}
 
 	if length := utf8.RuneCountInString(fields.Name); length == 0 || length > maxFolderNameLength {
