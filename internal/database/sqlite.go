@@ -119,7 +119,7 @@ func migrate() error {
 		if err != nil {
 			return err
 		}
-		fmt.Printf("Successfully applied migration: %q\n", file.Name())
+		log.Printf("Successfully applied migration: %q", file.Name())
 	}
 
 	return nil
