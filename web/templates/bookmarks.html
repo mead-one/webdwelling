@@ -2,7 +2,7 @@
 {{- /* Bookmark edit view. Its class names and ids are also the hooks bookmarks.js uses,
        so the bookmark view on the home page (home.html) has its own bookmark-view-* names. */ -}}
 {{define "bookmark-edit-bookmark"}}
-<li id="bookmark-edit-bookmark-{{.ID}}" class="bookmark-edit-bookmark" data-id="{{.ID}}">
+<li id="bookmark-edit-bookmark-{{.ID}}" class="bookmark-edit-bookmark" data-id="{{.ID}}" {{if.Public}}data-public=""{{end}}>
     <span class="bookmark-edit-bookmark-title" draggable="false">
         <a href="{{.URL}}" target="_blank" class="bookmark-edit-bookmark-link">{{.Title}}</a>
     </span>

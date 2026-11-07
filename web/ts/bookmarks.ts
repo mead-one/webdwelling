@@ -438,6 +438,7 @@ function openEditBookmarkModal(event: MouseEvent) {
     const bookmarkID: string | undefined = bookmarkLi.dataset.id;
     const bookmarkTitle: HTMLAnchorElement | null = bookmarkLi.querySelector("a.bookmark-edit-bookmark-link") as HTMLAnchorElement;
     const bookmarkTags: HTMLSpanElement | null = bookmarkLi.querySelector("span.bookmark-edit-bookmark-tags") as HTMLSpanElement;
+    const isPublic: boolean = bookmarkLi.hasAttribute("data-public");
 
     // Form elements
     const bookmarkRadio: HTMLInputElement | null =
@@ -450,9 +451,11 @@ function openEditBookmarkModal(event: MouseEvent) {
         editBookmarkForm.elements.namedItem("url") as HTMLInputElement;
     const bookmarkTagsInput: HTMLInputElement =
         editBookmarkForm.elements.namedItem("tags") as HTMLInputElement;
+    const bookmarkPublicCheck: HTMLInputElement | null =
+        editBookmarkForm.elements.namedItem("public") as HTMLInputElement;
 
-    if (parentFolder === null || bookmarkRadio === null || folderRadio === null ||
-        bookmarkTitleInput === null || bookmarkUrlInput === null || bookmarkTagsInput === null) {
+    if (parentFolder === null || bookmarkRadio === null || folderRadio === null || bookmarkTitleInput === null ||
+        bookmarkUrlInput === null || bookmarkTagsInput === null || bookmarkPublicCheck === null) {
         console.error("Missing elements");
         return;
     }
@@ -473,6 +476,7 @@ function openEditBookmarkModal(event: MouseEvent) {
     if (bookmarkLi.querySelector("span.bookmark-edit-bookmark-tags") != null) {
         bookmarkTagsInput.value = bookmarkTags.innerText;
     }
+    bookmarkPublicCheck.checked = isPublic;
     folderRadio.value = parentFolderID;
     bookmarkTitleInput.focus();
 }
@@ -614,6 +618,11 @@ function submitEditBookmarkForm(event: SubmitEvent) {
         bookmarkTitle.innerText = data.title;
         bookmarkTitle.setAttribute("href", data.url);
         bookmarkTags.innerText = data.tags;
+        if (data.public) {
+            bookmarkLi.setAttribute("data-public", "");
+        } else {
+            bookmarkLi.removeAttribute("data-public");
+        }
         // Update the folder tree and folder select tree
         if (parentDiv !== null) parentDiv.appendChild(bookmarkLi);
 
