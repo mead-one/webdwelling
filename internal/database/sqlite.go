@@ -192,25 +192,22 @@ func CreateUser(username string, password string, email *string, public_slug *st
 		return nil, fmt.Errorf("failed to hash password: %w", err)
 	}
 
+	user := User{}
+
 	// Write user to database
-	_, err = DB.Exec(`
+	err = DB.QueryRow(`
 	INSERT INTO users (username,password,email,public_slug,admin)
 	VALUES (:username, :password, :email, :public_slug, :admin)
+	RETURNING id, username, email, public_slug, admin, created_at
 	`, sql.Named("username", username), sql.Named("password", string(hashedPassword)),
 		sql.Named("email", email), sql.Named("public_slug", public_slug),
-		sql.Named("admin", admin))
+		sql.Named("admin", admin),
+	).Scan(&user.ID, &user.Username, &user.Email,
+		&user.PublicSlug, &user.Admin, &user.CreatedAt)
 	if err != nil {
 		return nil, fmt.Errorf("failed to write user to database: %w", err)
 	}
 
-	user := User{
-		Username:   username,
-		Password:   string(hashedPassword),
-		Email:      email,
-		PublicSlug: public_slug,
-		Admin:      admin,
-		CreatedAt:  time.Now().Format("2006-01-02 15:04:05"),
-	}
 	return &user, nil
 }
 
@@ -351,38 +348,23 @@ func GetBookmarksByUserID(userID int, includePrivate bool) (BookmarkFolder, erro
 
 // Add a new bookmark
 func AddBookmark(userID int, title string, url string, tags string, folderID *int64, public bool) (*Bookmark, error) {
+	bookmark := &Bookmark{}
 	// Write bookmark to database
-	result, err := DB.Exec(`
+	err := DB.QueryRow(`
 		INSERT INTO bookmarks (user_id,title,url,tags,folder_id,public)
 		SELECT :user_id, :title, :url, :tags, :folder_id, :public
 		WHERE :folder_id IS NULL
 			OR EXISTS (SELECT 1 FROM bookmark_folders WHERE id = :folder_id AND user_id = :user_id)
+		RETURNING id, title, url, tags, folder_id, public, created_at
 		`, sql.Named("user_id", userID), sql.Named("title", title), sql.Named("url", url),
 		sql.Named("tags", tags), sql.Named("folder_id", folderID), sql.Named("public", public),
-	)
-	if err != nil {
+	).Scan(&bookmark.ID, &bookmark.Title, &bookmark.URL, &bookmark.Tags,
+		&bookmark.FolderID, &bookmark.Public, &bookmark.CreatedAt)
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, fmt.Errorf("create bookmark: %w", err)
 	}
-	n, err := result.RowsAffected()
 	if err != nil {
 		return nil, fmt.Errorf("create bookmark: %w", err)
-	}
-	if n == 0 {
-		return nil, fmt.Errorf("create bookmark: %w", ErrNotFound)
-	}
-	newID, err := result.LastInsertId()
-	if err != nil {
-		return nil, fmt.Errorf("create bookmark: %w", err)
-	}
-
-	bookmark := &Bookmark{
-		ID:        newID,
-		Title:     title,
-		URL:       url,
-		Tags:      tags,
-		FolderID:  folderID,
-		Public:    public,
-		CreatedAt: time.Now().Format("2006-01-02 15:04:05"),
 	}
 
 	return bookmark, nil
