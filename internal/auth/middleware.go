@@ -36,7 +36,7 @@ type JWTCustomClaims struct {
 func Login(c echo.Context, username, password string) error {
 	user, err := database.AuthenticateUser(username, password)
 	if err != nil {
-		return fmt.Errorf("authenticate %s: %w", username, err)
+		return fmt.Errorf("authenticate user: %w", err)
 	}
 	if user == nil {
 		return ErrInvalidCredentials
@@ -114,6 +114,21 @@ func RequireNoAuth(next echo.HandlerFunc) echo.HandlerFunc {
 		if err == nil {
 			var homePath string = c.Get("basePath").(string) + "/"
 			return c.Redirect(http.StatusSeeOther, homePath)
+		}
+
+		return next(c)
+	}
+}
+
+// Check if a user is logged in, with JSON response
+func RequireAuthJSON(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		err := checkCookie(c)
+		if err != nil {
+			return c.JSON(http.StatusUnauthorized, map[string]interface{}{
+				"success": false,
+				"error":   "Not logged in",
+			})
 		}
 
 		return next(c)

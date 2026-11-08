@@ -117,7 +117,7 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 		})
 	}))
 
-	e.POST("/bookmarks/add-bookmark", auth.RequireAuth(func(c echo.Context) error {
+	e.POST("/bookmarks/add-bookmark", auth.RequireAuthJSON(func(c echo.Context) error {
 		userID := c.Get("user_id").(int)
 		var folderID *int64
 
@@ -143,7 +143,7 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 
 		newBookmark, err := database.AddBookmark(userID, fields.Title, fields.URL, fields.Tags, folderID, public)
 		if err != nil {
-			return handleDBError(c, fmt.Sprintf("add bookmark %q", fields.Title), err)
+			return handleDBError(c, "add bookmark", err)
 		}
 
 		response := database.Bookmark{
@@ -160,7 +160,7 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 		return c.JSON(http.StatusOK, response)
 	}))
 
-	e.POST("/bookmarks/move-bookmark", auth.RequireAuth(func(c echo.Context) error {
+	e.POST("/bookmarks/move-bookmark", auth.RequireAuthJSON(func(c echo.Context) error {
 		var folderID *int64
 		userID := c.Get("user_id").(int)
 		bookmarkID, err := strconv.ParseInt(c.FormValue("bookmark_id"), 10, 64)
@@ -190,7 +190,7 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 		})
 	}))
 
-	e.POST("/bookmarks/move-folder", auth.RequireAuth(func(c echo.Context) error {
+	e.POST("/bookmarks/move-folder", auth.RequireAuthJSON(func(c echo.Context) error {
 		var parentFolderID *int64
 		userID := c.Get("user_id").(int)
 		folderID, err := strconv.ParseInt(c.FormValue("folder_id"), 10, 64)
@@ -221,7 +221,7 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 		})
 	}))
 
-	e.POST("/bookmarks/edit-bookmark", auth.RequireAuth(func(c echo.Context) error {
+	e.POST("/bookmarks/edit-bookmark", auth.RequireAuthJSON(func(c echo.Context) error {
 		var folderID *int64
 		userID := c.Get("user_id").(int)
 		bookmarkID, err := strconv.ParseInt(c.FormValue("bookmark_id"), 10, 64)
@@ -271,7 +271,7 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 		return c.JSON(http.StatusOK, response)
 	}))
 
-	e.POST("/bookmarks/delete-bookmark", auth.RequireAuth(func(c echo.Context) error {
+	e.POST("/bookmarks/delete-bookmark", auth.RequireAuthJSON(func(c echo.Context) error {
 		userID := c.Get("user_id").(int)
 		bookmarkID, err := strconv.ParseInt(c.FormValue("bookmark_id"), 10, 64)
 		if err != nil {
@@ -291,7 +291,7 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 		})
 	}))
 
-	e.POST("/bookmarks/add-folder", auth.RequireAuth(func(c echo.Context) error {
+	e.POST("/bookmarks/add-folder", auth.RequireAuthJSON(func(c echo.Context) error {
 		var parentFolderID *int64
 		userID := c.Get("user_id").(int)
 
@@ -317,7 +317,7 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 
 		newFolder, err := database.AddBookmarkFolder(userID, fields.Name, parentFolderID, public)
 		if err != nil {
-			return handleDBError(c, fmt.Sprintf("add folder %q", fields.Name), err)
+			return handleDBError(c, "add folder", err)
 		}
 
 		response := database.BookmarkFolder{
@@ -332,7 +332,7 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 		return c.JSON(http.StatusOK, response)
 	}))
 
-	e.POST("/bookmarks/rename-folder", auth.RequireAuth(func(c echo.Context) error {
+	e.POST("/bookmarks/rename-folder", auth.RequireAuthJSON(func(c echo.Context) error {
 		userID := c.Get("user_id").(int)
 		folderID, err := strconv.ParseInt(c.FormValue("folder_id"), 10, 64)
 		if err != nil {
@@ -366,7 +366,7 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 		return c.JSON(http.StatusOK, response)
 	}))
 
-	e.POST("/bookmarks/delete-folder", auth.RequireAuth(func(c echo.Context) error {
+	e.POST("/bookmarks/delete-folder", auth.RequireAuthJSON(func(c echo.Context) error {
 		userID := c.Get("user_id").(int)
 		folderID, err := strconv.ParseInt(c.FormValue("folder_id"), 10, 64)
 		if err != nil {
@@ -434,32 +434,22 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 			continue
 		}
 
-		if page.RequireAuth {
-			e.GET(page.URL, auth.RequireAuth(func(c echo.Context) error {
-				return c.Render(http.StatusOK, page.Name+".html", map[string]interface{}{
-					"BasePath": basePath,
-					"Title":    page.Title,
-					"NavItems": navFor(true),
-				})
-			}))
-		} else if page.HideIfAuth {
-			e.GET(page.URL, auth.RequireNoAuth(func(c echo.Context) error {
-				return c.Render(http.StatusOK, page.Name+".html", map[string]interface{}{
-					"BasePath": basePath,
-					"Title":    page.Title,
-					"NavItems": navFor(false),
-				})
-			}))
-		} else {
-			e.GET(page.URL, func(c echo.Context) error {
-				var isAuthenticated bool = auth.IsUserAuthenticated(c)
-				return c.Render(http.StatusOK, page.Name+".html", map[string]interface{}{
-					"BasePath": basePath,
-					"Title":    page.Title,
-					"NavItems": navFor(isAuthenticated),
-				})
+		renderPage := func(c echo.Context) error {
+			var isAuthenticated bool = auth.IsUserAuthenticated(c)
+			return c.Render(http.StatusOK, page.Name+".html", map[string]interface{}{
+				"BasePath": basePath,
+				"Title":    page.Title,
+				"NavItems": navFor(isAuthenticated),
 			})
 		}
+
+		if page.RequireAuth {
+			renderPage = auth.RequireAuth(renderPage)
+		} else if page.HideIfAuth {
+			renderPage = auth.RequireNoAuth(renderPage)
+		}
+
+		e.GET(page.URL, renderPage)
 	}
 	return nil
 }
