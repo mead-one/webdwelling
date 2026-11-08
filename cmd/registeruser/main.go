@@ -25,7 +25,6 @@ var (
 func init() {
 	flag.StringVar(&configPath, "config", config.DefaultPath, "path to the config file")
 	flag.StringVar(&username, "username", "", "New user's username")
-	flag.StringVar(&password, "password", "", "Unhashed new password")
 	flag.StringVar(&email, "email", "", "New user's email address")
 	flag.StringVar(&publicSlug, "public_slug", "", "New user's public slug, used in their public URL")
 	flag.BoolVar(&admin, "admin", false, "Whether the new user has admin privileges")
@@ -34,9 +33,9 @@ func init() {
 func main() {
 	flag.Parse()
 	username = strings.TrimSpace(username)
-	password = strings.TrimSpace(password)
 	email = strings.TrimSpace(email)
 	publicSlug = strings.ReplaceAll(publicSlug, " ", "")
+	reader := bufio.NewReader(os.Stdin)
 
 	cfg, err := config.LoadConfig(configPath)
 	if err != nil {
@@ -44,8 +43,7 @@ func main() {
 	}
 
 	// --- Validation ---
-	if username == "" || len(password) <= 8 || !isValidEmail(email) || publicSlug == "" {
-		reader := bufio.NewReader(os.Stdin)
+	if username == "" || !isValidEmail(email) || publicSlug == "" {
 		var err error
 
 		if username == "" {
@@ -61,17 +59,6 @@ func main() {
 				fmt.Println("Username must be between 3 and 12 characters long")
 				return
 			}
-		}
-
-		if len(password) <= 9 {
-			fmt.Println("Password:")
-			fmt.Print("-> ")
-			password, err = reader.ReadString('\n')
-			if err != nil {
-				fmt.Println("Failed to read a valid password")
-				return
-			}
-			password = strings.TrimSpace(password)
 		}
 
 		if !isValidEmail(email) {
@@ -107,6 +94,15 @@ func main() {
 			}
 		}
 	}
+
+	fmt.Println("Password:")
+	fmt.Print("-> ")
+	password, err = reader.ReadString('\n')
+	if err != nil {
+		fmt.Println("Failed to read a valid password")
+		return
+	}
+	password = strings.TrimSpace(password)
 
 	fmt.Printf("Username: %s\n", username)
 	fmt.Printf("Email: %s\n", email)
