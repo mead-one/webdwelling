@@ -109,7 +109,6 @@ func main() {
 	}
 
 	fmt.Printf("Username: %s\n", username)
-	fmt.Printf("Password: %s\n", password)
 	fmt.Printf("Email: %s\n", email)
 	fmt.Printf("Public slug: %s\n", publicSlug)
 	fmt.Printf("User is admin: %t\n", admin)
