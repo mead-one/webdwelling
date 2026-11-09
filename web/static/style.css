@@ -269,8 +269,9 @@ li.bookmark-edit-bookmark {
 }
 
 li.bookmark-edit-folder.dragover {
-    margin: 0.1em 0 0.1em 0.5em;
-    border: 2px solid darkgrey;
+    outline: 2px solid var(--color-foreground2);
+    outline-offset: -2px;
+    margin-left: 16px;
     border-radius: 0.5em 0 0 0.5em;
 }
 
