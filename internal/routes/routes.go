@@ -16,6 +16,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/mead-one/webdwelling/internal/auth"
+	"github.com/mead-one/webdwelling/internal/bookmarkfile"
 	"github.com/mead-one/webdwelling/internal/database"
 )
 
@@ -385,6 +386,49 @@ func RegisterRoutes(e *echo.Echo, basePath string, templatesDir string, staticDi
 			"success": true,
 		})
 	}))
+
+	e.POST("/bookmarks/import-bookmarks", auth.RequireAuthJSON(func(c echo.Context) error {
+		userID := c.Get("user_id").(int)
+		fileHeader, err := c.FormFile("file")
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, map[string]interface{}{
+				"success": false,
+				"error":   "Failed to load file",
+			})
+		}
+
+		// invalidMimeJSON := c.JSON(http.StatusInternalServerError, map[string]interface{}{
+		// 	"success": false,
+		// 	"error":   "Invalid file format",
+		// })
+		// invalidFilenameJSON := c.JSON(http.StatusBadRequest, map[string]interface{}{
+		// 	"success": false,
+		// 	"error":   "Invalid filetype",
+		// })
+
+		bookmarks, err := bookmarkfile.Parse(fileHeader)
+		if err != nil {
+			log.Printf("Failed to parse bookmark file: %v", err)
+			return c.JSON(http.StatusBadRequest, map[string]interface{}{
+				"success": false,
+				"error":   "Failed to parse bookmark file",
+			})
+		}
+
+		err = database.ImportBookmarks(userID, *bookmarks)
+		if err != nil {
+			log.Printf("recursively add bookmark folder structure: %v", err)
+			return c.JSON(http.StatusInternalServerError, map[string]interface{}{
+				"success": false,
+				"error":   "Failed to import bookmarks into database",
+			})
+		}
+
+		return c.JSON(http.StatusOK, map[string]interface{}{
+			"success": true,
+			"error":   "Bookmarks imported successfully",
+		})
+	}), middleware.BodyLimit("10M"))
 
 	e.Static("/", staticDir)
 

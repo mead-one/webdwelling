@@ -31,7 +31,12 @@ func main() {
 	e.IPExtractor = echo.ExtractIPFromXFFHeader()
 
 	// Maximum 16KB request bodies
-	e.Use(middleware.BodyLimit("16K"))
+	e.Use(middleware.BodyLimitWithConfig(middleware.BodyLimitConfig{
+		Limit: "16K",
+		Skipper: func(c echo.Context) bool {
+			return c.Path() == "/bookmarks/import-bookmarks"
+		},
+	}))
 	// Protection against XSS, content type sniffing, clickjacking, etc.
 	e.Use(middleware.SecureWithConfig(middleware.SecureConfig{
 		ContentTypeNosniff:    "nosniff",

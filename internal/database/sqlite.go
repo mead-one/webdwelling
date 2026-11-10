@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/mattn/go-sqlite3"
+	"github.com/mead-one/webdwelling/internal/bookmarkfile"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -185,6 +186,12 @@ type Bookmark struct {
 	CreatedAt string `json:"created_at"`
 }
 
+// Allow *sql.DB and *sql.Tx to be used interchangably
+type querier interface {
+	Exec(query string, args ...any) (sql.Result, error)
+	QueryRow(query string, args ...any) *sql.Row
+}
+
 // ### User functions ###
 func CreateUser(username string, password string, email *string, public_slug *string, admin bool) (*User, error) {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
@@ -347,10 +354,14 @@ func GetBookmarksByUserID(userID int, includePrivate bool) (BookmarkFolder, erro
 }
 
 // Add a new bookmark
-func AddBookmark(userID int, title string, url string, tags string, folderID *int64, public bool) (*Bookmark, error) {
+func AddBookmark(userID int, title, url, tags string, folderID *int64, public bool) (*Bookmark, error) {
+	return addBookmark(DB, userID, title, url, tags, folderID, public)
+}
+
+func addBookmark(q querier, userID int, title, url, tags string, folderID *int64, public bool) (*Bookmark, error) {
 	bookmark := &Bookmark{}
 	// Write bookmark to database
-	err := DB.QueryRow(`
+	err := q.QueryRow(`
 		INSERT INTO bookmarks (user_id,title,url,tags,folder_id,public)
 		SELECT :user_id, :title, :url, :tags, :folder_id, :public
 		WHERE :folder_id IS NULL
@@ -439,7 +450,11 @@ func DeleteBookmark(userID int, bookmarkID int64) error {
 
 // Add a new bookmark folder
 func AddBookmarkFolder(userID int, name string, parentFolderID *int64, public bool) (*BookmarkFolder, error) {
-	result, err := DB.Exec(`
+	return addBookmarkFolder(DB, userID, name, parentFolderID, public)
+}
+
+func addBookmarkFolder(q querier, userID int, name string, parentFolderID *int64, public bool) (*BookmarkFolder, error) {
+	result, err := q.Exec(`
 		INSERT INTO bookmark_folders (user_id,name,parent_folder_id,public)
 		SELECT :user_id, :name, :parent_folder_id, :public
 		WHERE :parent_folder_id IS NULL
@@ -473,6 +488,42 @@ func AddBookmarkFolder(userID int, name string, parentFolderID *int64, public bo
 		ChildFolders:   make([]*BookmarkFolder, 0),
 	}
 	return folder, nil
+}
+
+// Recurse into bookmark structure and write into database
+func ImportBookmarks(userID int, root bookmarkfile.ImportFolder) error {
+	tx, err := DB.Begin()
+	if err != nil {
+		return fmt.Errorf("create transaction for bookmarks import: %w", err)
+	}
+	defer tx.Rollback()
+
+	if err := importFolder(tx, userID, nil, root); err != nil {
+		return fmt.Errorf("import folder: %w", err)
+	}
+
+	return tx.Commit()
+}
+
+// Recursive version of AddBookmarkFolder that receives a transaction
+func importFolder(q querier, userID int, parentID *int64, folder bookmarkfile.ImportFolder) error {
+	created, err := addBookmarkFolder(q, userID, folder.Name, parentID, true)
+	if err != nil {
+		return err
+	}
+
+	for _, childBookmark := range folder.ChildBookmarks {
+		if _, err := addBookmark(q, userID, childBookmark.Title, childBookmark.URL, childBookmark.Tags, &created.ID, true); err != nil {
+			return fmt.Errorf("recursively add bookmark: %w", err)
+		}
+	}
+
+	for _, childFolder := range folder.ChildFolders {
+		if err := importFolder(q, userID, &created.ID, *childFolder); err != nil {
+			return fmt.Errorf("recursively add folder: %w", err)
+		}
+	}
+	return nil
 }
 
 // Move a bookmark folder to a new parent folder
