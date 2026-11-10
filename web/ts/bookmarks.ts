@@ -127,7 +127,7 @@ function addBasePath(url: string) {
 }
 
 // Headers for form POSTs, including the CSRF token from the page's meta tag
-function postHeaders(contentType: string): HeadersInit {
+function postHeaders(contentType?: string): HeadersInit {
     const csrfMeta: HTMLMetaElement | null = document.querySelector('meta[name="csrf-token"]');
     return contentType ? {
         "Content-Type": contentType,
