@@ -7,12 +7,17 @@ document.addEventListener("DOMContentLoaded", function() {
     const folderButtons: NodeListOf<HTMLButtonElement> = document.querySelectorAll("button.add-folder");
     const renameFolderButtons: NodeListOf<HTMLButtonElement> = document.querySelectorAll("button.rename-folder");
     const deleteFolderButtons: NodeListOf<HTMLButtonElement> = document.querySelectorAll("button.delete-folder");
+    const importBookmarksButton: HTMLButtonElement | null = document.getElementById("import-bookmarks-btn") as HTMLButtonElement;
     const addBookmarkForm: HTMLFormElement | null = document.getElementById("add-bookmark-form") as HTMLFormElement;
     const editBookmarkForm: HTMLFormElement | null = document.getElementById("edit-bookmark-form") as HTMLFormElement;
     const addFolderForm: HTMLFormElement | null = document.getElementById("add-folder-form") as HTMLFormElement;
+    const importBookmarksForm: HTMLFormElement | null = document.getElementById("import-bookmarks-form") as HTMLFormElement;
+    const importBookmarksFileInput: HTMLInputElement | null = importBookmarksForm.elements.namedItem("file") as HTMLInputElement;
+    const importBookmarksErrorP: HTMLParagraphElement = importBookmarksForm.querySelector(".form-error") as HTMLParagraphElement;
     const cancelAddBookmarkButton: HTMLButtonElement | null = document.getElementById("cancel-add-bookmark") as HTMLButtonElement;
     const cancelEditBookmarkButton: HTMLButtonElement | null = document.getElementById("cancel-edit-bookmark") as HTMLButtonElement;
     const cancelAddFolderButton: HTMLButtonElement | null = document.getElementById("cancel-add-folder") as HTMLButtonElement;
+    const cancelImportBookmarksButton: HTMLButtonElement | null = document.getElementById("cancel-import-bookmarks") as HTMLButtonElement;
 
     // Drag and drop
     bookmarkLIs.forEach(li => {
@@ -65,12 +70,25 @@ document.addEventListener("DOMContentLoaded", function() {
         button.addEventListener("click", submitDeleteFolder);
     });
 
+    importBookmarksButton.addEventListener("click", openImportBookmarksForm);
+
+    importBookmarksFileInput.addEventListener("change", (e) => {
+        const input: HTMLInputElement = e.target as HTMLInputElement;
+        if (input === null || input.files === null) return;
+        if (input.files.length !== 1) {
+            importBookmarksErrorP.textContent = "Upload only one file.";
+            input.value = "";
+        }
+    });
+
     if (addBookmarkForm !== null) addBookmarkForm.addEventListener("submit", submitAddBookmarkForm);
     if (editBookmarkForm !== null) editBookmarkForm.addEventListener("submit", submitEditBookmarkForm);
     if (addFolderForm !== null) addFolderForm.addEventListener("submit", submitAddFolderForm);
+    if (importBookmarksForm !== null) importBookmarksForm.addEventListener("submit", submitImportBookmarksForm);
     if (cancelAddBookmarkButton !== null) cancelAddBookmarkButton.addEventListener("click", () => { closeModal(addBookmarkForm) });
     if (cancelEditBookmarkButton !== null) cancelEditBookmarkButton.addEventListener("click", () => { closeModal(editBookmarkForm) });
     if (cancelAddFolderButton !== null) cancelAddFolderButton.addEventListener("click", () => { closeModal(addFolderForm) });
+    if (cancelImportBookmarksButton !== null) cancelImportBookmarksButton.addEventListener("click", () => { closeModal(importBookmarksForm) });
 });
 
 type Bookmark = {
@@ -109,10 +127,12 @@ function addBasePath(url: string) {
 }
 
 // Headers for form POSTs, including the CSRF token from the page's meta tag
-function postHeaders(): HeadersInit {
+function postHeaders(contentType: string): HeadersInit {
     const csrfMeta: HTMLMetaElement | null = document.querySelector('meta[name="csrf-token"]');
-    return {
-        "Content-Type": "application/x-www-form-urlencoded",
+    return contentType ? {
+        "Content-Type": contentType,
+        "X-CSRF-Token": csrfMeta !== null ? csrfMeta.content : "",
+    } : {
         "X-CSRF-Token": csrfMeta !== null ? csrfMeta.content : "",
     };
 }
@@ -207,12 +227,12 @@ function folderFromEvent(event: Event): HTMLElement | null {
 }
 
 // Display the elements for a modal form
-function openModal(form: HTMLFormElement, folderSelectWrapper: HTMLElement) {
+function openModal(form: HTMLFormElement, folderSelectWrapper: HTMLElement | null) {
     const modalContainer = document.getElementById("modal-container") as HTMLDivElement;
     const folderSelect = document.getElementById("folder-select") as HTMLDivElement;
 
     form.reset();
-    folderSelectWrapper.appendChild(folderSelect);
+    if (folderSelectWrapper) folderSelectWrapper.appendChild(folderSelect);
     modalContainer.style.display = "block";
     form.style.display = "block";
 }
@@ -282,7 +302,7 @@ function submitAddBookmarkForm(event: SubmitEvent) {
 
     fetch(addBasePath("/bookmarks/add-bookmark"), {
         method: "POST",
-        headers: postHeaders(),
+        headers: postHeaders("application/x-www-form-urlencoded"),
         body: new URLSearchParams({
             title,
             url,
@@ -389,7 +409,7 @@ function openEditBookmarkModal(event: MouseEvent) {
 function moveBookmarkToFolder(bookmarkID: string, folderID: string) {
     fetch(addBasePath("/bookmarks/move-bookmark"), {
         method: "POST",
-        headers: postHeaders(),
+        headers: postHeaders("application/x-www-form-urlencoded"),
         body: new URLSearchParams({
             bookmark_id: bookmarkID,
             folder_id: folderID
@@ -424,7 +444,7 @@ function moveBookmarkToFolder(bookmarkID: string, folderID: string) {
 function moveBookmarkFolderToFolder(folderID: string, parentFolderID: string | null) {
     fetch(addBasePath("/bookmarks/move-folder"), {
         method: "POST",
-        headers: postHeaders(),
+        headers: postHeaders("application/x-www-form-urlencoded"),
         body: new URLSearchParams({
             folder_id: folderID,
             parent_folder_id: parentFolderID ?? ""
@@ -490,7 +510,7 @@ function submitEditBookmarkForm(event: SubmitEvent) {
 
     fetch(addBasePath("/bookmarks/edit-bookmark"), {
         method: "POST",
-        headers: postHeaders(),
+        headers: postHeaders("application/x-www-form-urlencoded"),
         body: new URLSearchParams({
             bookmark_id: bookmarkID,
             title,
@@ -550,7 +570,7 @@ function submitDeleteBookmark(event: Event) {
 
     fetch(addBasePath("/bookmarks/delete-bookmark"), {
         method: "POST",
-        headers: postHeaders(),
+        headers: postHeaders("application/x-www-form-urlencoded"),
         body: new URLSearchParams({
             bookmark_id: bookmarkID
         })
@@ -628,7 +648,7 @@ function submitAddFolderForm(event: SubmitEvent) {
 
     fetch(addBasePath("/bookmarks/add-folder"), {
         method: "POST",
-        headers: postHeaders(),
+        headers: postHeaders("application/x-www-form-urlencoded"),
         body: new URLSearchParams({
             name,
             public: String(isPublic),
@@ -653,6 +673,50 @@ function submitAddFolderForm(event: SubmitEvent) {
         closeModal(form);
     }).catch(function(error) {
         errorP.textContent = `Failed to add folder: ${error.message}`;
+    });
+}
+
+function openImportBookmarksForm() {
+    const addFolderForm: HTMLFormElement | null = document.getElementById("import-bookmarks-form") as HTMLFormElement;
+    openModal(addFolderForm, null);
+}
+
+function submitImportBookmarksForm(event: SubmitEvent) {
+    event.preventDefault();
+    const form: HTMLFormElement = event.target as HTMLFormElement;
+    const fileInput: HTMLInputElement | null = form.elements.namedItem("file") as HTMLInputElement;
+    const replaceInput: HTMLInputElement | null = form.elements.namedItem("replace") as HTMLInputElement;
+    const errorP: HTMLParagraphElement | null = form.querySelector(".form-error") as HTMLParagraphElement;
+
+    if (fileInput === null || replaceInput === null || errorP === null) {
+        console.error("Missing elements");
+        return;
+    }
+
+    const files: FileList | null = fileInput.files;
+    if (files === null || files.length !== 1) {
+        errorP.textContent = "Exactly one file is required";
+        return;
+    }
+
+    fetch(addBasePath("/bookmarks/import-bookmarks"), {
+        method: "POST",
+        headers: postHeaders(),
+        body: new FormData(form)
+    }).then(async function(response) {
+        const data = await response.json().catch(() => null);
+        if (!response.ok) {
+            throw new Error(data?.error ?? response.statusText);
+        }
+        return data;
+    }).then(function(data) {
+        if (data.success === true) {
+
+        } else {
+            errorP.textContent = `Failed to move bookmark: ${data.error}`;
+        }
+    }).catch(function(error) {
+        errorP.textContent = `Failed to import bookmarks: ${error.message}`;
     });
 }
 
@@ -753,7 +817,7 @@ function submitRenameFolderForm(event: SubmitEvent) {
 
     fetch(addBasePath("/bookmarks/rename-folder"), {
         method: "POST",
-        headers: postHeaders(),
+        headers: postHeaders("application/x-www-form-urlencoded"),
         body: new URLSearchParams({
             folder_id: folderID,
             name,
@@ -823,7 +887,7 @@ function submitDeleteFolder(event: MouseEvent) {
 
     fetch(addBasePath("/bookmarks/delete-folder"), {
         method: "POST",
-        headers: postHeaders(),
+        headers: postHeaders("application/x-www-form-urlencoded"),
         body: new URLSearchParams({
             folder_id: folderID
         })

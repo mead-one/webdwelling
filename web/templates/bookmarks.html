@@ -64,6 +64,7 @@
             <button data-collapse-all>Collapse all</button>
             <button class="add-bookmark">+ Bookmark</button>
             <button class="add-folder">+ Folder</button>
+            <button type="button" id="import-bookmarks-btn">Import</button>
         </span>
         <ul id="bookmark-edit-folder-list-root" class="bookmark-edit-folder-list">
         {{ range .Bookmarks.ChildFolders }}
@@ -128,6 +129,19 @@
             {{ end }}
         </ul>
     </div>
+    <form id="import-bookmarks-form" class="modal-form" method="POST" action="{{ .BasePath }}/bookmarks/import-bookmarks">
+        <h2>Import Bookmarks from a File</h2>
+        <p>Export the bookmarks file from your browser.</p>
+        <label for="import-bookmarks-file-input">File: </label>
+        <input type="file" accept=".html,.htm,text/html,application/json" name="file" id="import-bookmarks-file-input" required>
+        <label for="import-bookmarks-replace-check">Replace existing bookmarks: </label>
+        <input type="checkbox" name="replace" id="import-bookmarks-replace-check">
+        <span>(If not, the bookmarks will be inserted into a new folder.) (Currently non-functional.)</span>
+
+        <p class="form-error" role="alert"></p>
+        <button type="submit">Import</button>
+        <button type="button" id="cancel-import-bookmarks">Cancel</button>
+    </form>
 </div>
 
 {{ template "footer.html" . }}
