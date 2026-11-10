@@ -685,10 +685,9 @@ function submitImportBookmarksForm(event: SubmitEvent) {
     event.preventDefault();
     const form: HTMLFormElement = event.target as HTMLFormElement;
     const fileInput: HTMLInputElement | null = form.elements.namedItem("file") as HTMLInputElement;
-    const replaceInput: HTMLInputElement | null = form.elements.namedItem("replace") as HTMLInputElement;
     const errorP: HTMLParagraphElement | null = form.querySelector(".form-error") as HTMLParagraphElement;
 
-    if (fileInput === null || replaceInput === null || errorP === null) {
+    if (fileInput === null || errorP === null) {
         console.error("Missing elements");
         return;
     }
